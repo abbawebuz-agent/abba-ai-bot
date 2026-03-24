@@ -112,3 +112,37 @@ def send_message(user_id, text):
     }
 
     requests.post(url, json=payload)
+    import requests
+
+@app.post("/webhook")
+async def receive_message(request: Request):
+    data = await request.json()
+    print("DATA:", data)
+
+    if "entry" in data:
+        for entry in data["entry"]:
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+                messages = value.get("messages")
+
+                if messages:
+                    for msg in messages:
+                        user_id = msg["from"]
+                        text = msg["text"]["body"]
+
+                        reply = get_reply(user_id, text)
+
+                        send_message(user_id, reply)
+
+    return {"status": "ok"}
+
+
+def send_message(user_id, text):
+    url = f"https://graph.facebook.com/v19.0/me/messages?access_token={IGAAUZBsqxiYWRBZAGJkdmtHVV9SX0kwb2dfMU1SUXFQMzhXWmVvODRuc3lBY1FxTE5kMlpHNHJ4b2ZAYaDZACbjVmamNOOTRjY1RCcVJQUy1VemxaakNhM0dHVVdCOGFtWVNkRmlsX09MdHhLMXFnYVFaVGpRcXdtR1ktLUZAiRTRpawZDZD}"
+
+    payload = {
+        "recipient": {"id": user_id},
+        "message": {"text": text}
+    }
+
+    requests.post(url, json=payload)
