@@ -6,7 +6,7 @@ from openai import OpenAI
 app = FastAPI()
 
 VERIFY_TOKEN = "abba_verify_123"
-
+PAGE_ACCESS_TOKEN = "IGAAUZBsqxiYWRBZAGJkdmtHVV9SX0kwb2dfMU1SUXFQMzhXWmVvODRuc3lBY1FxTE5kMlpHNHJ4b2ZAYaDZACbjVmamNOOTRjY1RCcVJQUy1VemxaakNhM0dHVVdCOGFtWVNkRmlsX09MdHhLMXFnYVFaVGpRcXdtR1ktLUZAiRTRpawZDZD"
 # --- WEBHOOK VERIFY ---
 @app.get("/webhook")
 async def verify(request: Request):
@@ -101,3 +101,14 @@ async def chat(msg: Message):
     except Exception as e:
         print("ERROR:", e)
         return {"reply": "Xatolik yuz berdi"}
+        import requests
+
+def send_message(user_id, text):
+    url = f"https://graph.facebook.com/v19.0/me/messages?access_token={IGAAUZBsqxiYWRBZAGJkdmtHVV9SX0kwb2dfMU1SUXFQMzhXWmVvODRuc3lBY1FxTE5kMlpHNHJ4b2ZAYaDZACbjVmamNOOTRjY1RCcVJQUy1VemxaakNhM0dHVVdCOGFtWVNkRmlsX09MdHhLMXFnYVFaVGpRcXdtR1ktLUZAiRTRpawZDZD}"
+
+    payload = {
+        "recipient": {"id": user_id},
+        "message": {"text": text}
+    }
+
+    requests.post(url, json=payload)
