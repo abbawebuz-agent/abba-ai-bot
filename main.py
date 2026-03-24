@@ -1,8 +1,36 @@
 from fastapi import FastAPI
+from fastapi import Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from openai import OpenAI
 
 app = FastAPI()
+VERIFY_TOKEN = "abba_verify_123"
+
+@app.get("/webhook")
+async def verify(request: Request):
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        return PlainTextResponse(challenge)
+
+    return {"error": "Verification failed"}
+from fastapi import Request
+
+VERIFY_TOKEN = "abba_verify_123"
+
+@app.get("/webhook")
+async def verify(request: Request):
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        return int(challenge)
+
+    return {"error": "Verification failed"}
 client = OpenAI()
 
 SYSTEM_PROMPT = """
