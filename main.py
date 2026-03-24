@@ -16,8 +16,6 @@ async def verify(request: Request):
     if mode == "subscribe" and token == VERIFY_TOKEN:
         return PlainTextResponse(challenge)
 
-    return {"error": "Verification failed"}
-from fastapi import Request
 
 VERIFY_TOKEN = "abba_verify_123"
 
