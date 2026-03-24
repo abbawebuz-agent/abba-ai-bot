@@ -1,12 +1,13 @@
-from fastapi import FastAPI
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from openai import OpenAI
 
 app = FastAPI()
+
 VERIFY_TOKEN = "abba_verify_123"
 
+# --- WEBHOOK VERIFY ---
 @app.get("/webhook")
 async def verify(request: Request):
     mode = request.query_params.get("hub.mode")
@@ -16,19 +17,10 @@ async def verify(request: Request):
     if mode == "subscribe" and token == VERIFY_TOKEN:
         return PlainTextResponse(challenge)
 
-
-VERIFY_TOKEN = "abba_verify_123"
-
-@app.get("/webhook")
-async def verify(request: Request):
-    mode = request.query_params.get("hub.mode")
-    token = request.query_params.get("hub.verify_token")
-    challenge = request.query_params.get("hub.challenge")
-
-    if mode == "subscribe" and token == VERIFY_TOKEN:
-        return int(challenge)
-
     return {"error": "Verification failed"}
+
+
+# --- OPENAI ---
 client = OpenAI()
 
 SYSTEM_PROMPT = """
@@ -41,10 +33,6 @@ MAQSAD:
 
 TIL QOIDASI:
 - User qaysi tilda yozsa, o‘sha tilda javob ber
-- Uzbek → Uzbek
-- Russian → Russian
-- English → English
-- Hech qachon "men bu tilda gaplasha olmayman" deb yozma
 
 QOIDALAR:
 - 1-2 gapdan oshma
@@ -100,17 +88,14 @@ def get_reply(user_id, user_message):
     return reply
 
 
+# --- CHAT API ---
 @app.post("/chat")
 async def chat(msg: Message):
     try:
         if not msg.text:
             return {"reply": "Iltimos, savolingizni yozing."}
 
-        user_text = msg.text.strip()
-        user_id = msg.user_id
-
-        reply = get_reply(user_id, user_text)
-
+        reply = get_reply(msg.user_id, msg.text.strip())
         return {"reply": reply}
 
     except Exception as e:
