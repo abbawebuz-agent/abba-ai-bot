@@ -1,0 +1,43 @@
+# Django core
+Django==5.0.6
+django-environ==0.11.2
+django-simple-history==3.5.0
+django-ratelimit==4.1.0
+
+# Async / ASGI
+uvicorn[standard]==0.30.1
+gunicorn==22.0.0
+
+# REST / serializers
+djangorestframework==3.15.1
+django-cors-headers==4.3.1
+
+# Database
+psycopg[binary]==3.1.19
+
+# Cache / broker
+redis==5.0.4
+django-redis==5.4.0
+
+# Celery
+celery==5.3.6
+django-celery-beat==2.6.0
+django-celery-results==2.5.1
+
+# Telegram bot
+aiogram==3.5.0
+
+# Images / QR
+qrcode[pil]==7.4.2
+Pillow==10.3.0
+playwright==1.44.0
+
+# Excel / CSV export
+openpyxl==3.1.2
+
+# Geocoding (Nominatim client)
+geopy==2.4.1
+
+# Utils
+python-dateutil==2.9.0
+requests==2.32.3

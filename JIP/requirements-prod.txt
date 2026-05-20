@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Production-only
+sentry-sdk==2.5.0
