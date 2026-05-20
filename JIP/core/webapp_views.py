@@ -229,12 +229,12 @@ def santenik_leaderboard(request: HttpRequest) -> JsonResponse:
     qs = TelegramUser.objects.filter(user_type=TelegramUser.USER_TYPE_SANTENIK)
 
     if period == 'month':
-        start = date.today().replace(day=1)
+        start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         qs = qs.annotate(
             period_points=Sum('scanned_qrcodes__points', filter=Q(scanned_qrcodes__scanned_at__gte=start)),
         ).order_by('-period_points')
     elif period == 'year':
-        start = date.today().replace(month=1, day=1)
+        start = timezone.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         qs = qs.annotate(
             period_points=Sum('scanned_qrcodes__points', filter=Q(scanned_qrcodes__scanned_at__gte=start)),
         ).order_by('-period_points')

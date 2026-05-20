@@ -29,10 +29,10 @@ from core.models import (
 # ---------------------------------------------------------------------------
 
 @sync_to_async
-def get_or_create_user(telegram_id: int, **defaults) -> tuple[TelegramUser, bool]:
+def get_or_create_user(telegram_id: int, defaults: dict | None = None) -> tuple[TelegramUser, bool]:
     user, created = TelegramUser.objects.get_or_create(
         telegram_id=telegram_id,
-        defaults=defaults,
+        defaults=defaults or {},
     )
     return user, created
 
