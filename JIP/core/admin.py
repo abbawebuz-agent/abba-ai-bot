@@ -29,6 +29,7 @@ from .models import (
     TelegramUser,
     UzDistrict,
     UzRegion,
+    VideoInstruction,
 )
 
 
