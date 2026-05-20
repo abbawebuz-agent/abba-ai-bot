@@ -1,0 +1,260 @@
+# JIP O'zbekcha (lotin) tarjimasi
+msgid ""
+msgstr ""
+"Project-Id-Version: JIP 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-20 00:00+0000\n"
+"PO-Revision-Date: 2026-05-20 00:00+0000\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Santenik"
+msgstr "Santenik"
+
+msgid "Sotuvchi"
+msgstr "Sotuvchi"
+
+msgid "O'zbek (Lotin)"
+msgstr "O'zbek (Lotin)"
+
+msgid "Русский"
+msgstr "Ruscha"
+
+msgid "Viloyat"
+msgstr "Viloyat"
+
+msgid "Viloyatlar"
+msgstr "Viloyatlar"
+
+msgid "Tuman"
+msgstr "Tuman"
+
+msgid "Tumanlar"
+msgstr "Tumanlar"
+
+msgid "Do'kon"
+msgstr "Do'kon"
+
+msgid "Do'konlar"
+msgstr "Do'konlar"
+
+msgid "Do'kon nomi"
+msgstr "Do'kon nomi"
+
+msgid "Yuridik nom"
+msgstr "Yuridik nom"
+
+msgid "To'liq manzil"
+msgstr "To'liq manzil"
+
+msgid "Egasi (sotuvchi)"
+msgstr "Egasi (sotuvchi)"
+
+msgid "Komissiya foizi"
+msgstr "Komissiya foizi"
+
+msgid "Telegram foydalanuvchisi"
+msgstr "Telegram foydalanuvchisi"
+
+msgid "Telegram foydalanuvchilari"
+msgstr "Telegram foydalanuvchilari"
+
+msgid "Batch nomi"
+msgstr "Batch nomi"
+
+msgid "Kutilmoqda"
+msgstr "Kutilmoqda"
+
+msgid "Generatsiya jarayonida"
+msgstr "Generatsiya jarayonida"
+
+msgid "Tayyor"
+msgstr "Tayyor"
+
+msgid "Xatolik"
+msgstr "Xatolik"
+
+msgid "Hali jo'natilmagan"
+msgstr "Hali jo'natilmagan"
+
+msgid "Jo'natildi"
+msgstr "Jo'natildi"
+
+msgid "Yetkazib berildi"
+msgstr "Yetkazib berildi"
+
+msgid "Batch"
+msgstr "Batch"
+
+msgid "Batch'lar"
+msgstr "Batch'lar"
+
+msgid "Agent ismi"
+msgstr "Agent ismi"
+
+msgid "Skretch-karta (QR)"
+msgstr "Skretch-karta (QR)"
+
+msgid "Skretch-kartalar"
+msgstr "Skretch-kartalar"
+
+msgid "Sovg'a"
+msgstr "Sovg'a"
+
+msgid "Sovg'alar"
+msgstr "Sovg'alar"
+
+msgid "Sovg'a buyurtmasi"
+msgstr "Sovg'a buyurtmasi"
+
+msgid "Sovg'a buyurtmalari"
+msgstr "Sovg'a buyurtmalari"
+
+msgid "So'rov qabul qilindi"
+msgstr "So'rov qabul qilindi"
+
+msgid "Mahsulot tayyorlash bosqichida"
+msgstr "Mahsulot tayyorlash bosqichida"
+
+msgid "Yetkazib berishga topshirildi"
+msgstr "Yetkazib berishga topshirildi"
+
+msgid "Bekor qilindi"
+msgstr "Bekor qilindi"
+
+msgid "Foydalanuvchi olmadi"
+msgstr "Foydalanuvchi olmadi"
+
+msgid "Foydalanuvchi bekor qildi"
+msgstr "Foydalanuvchi bekor qildi"
+
+msgid "Sotuvchi tranzaksiyasi"
+msgstr "Sotuvchi tranzaksiyasi"
+
+msgid "Sotuvchi tranzaksiyalari"
+msgstr "Sotuvchi tranzaksiyalari"
+
+msgid "Admin qo'shdi"
+msgstr "Admin qo'shdi"
+
+msgid "Sotuv bonusi"
+msgstr "Sotuv bonusi"
+
+msgid "Tuzatish"
+msgstr "Tuzatish"
+
+msgid "Jarima"
+msgstr "Jarima"
+
+msgid "Musbat — qo'shish, manfiy — ayirish"
+msgstr "Musbat — qo'shish, manfiy — ayirish"
+
+msgid "Ushbu tranzaksiya qaysi sotuvga bog'liq (ixtiyoriy)"
+msgstr "Ushbu tranzaksiya qaysi sotuvga bog'liq (ixtiyoriy)"
+
+msgid "Bo'sh = cheksiz"
+msgstr "Bo'sh = cheksiz"
+
+msgid "Oylik lotereya bileti"
+msgstr "Oylik lotereya bileti"
+
+msgid "Oylik lotereya biletlari"
+msgstr "Oylik lotereya biletlari"
+
+msgid "Mass-rassilka"
+msgstr "Mass-rassilka"
+
+msgid "Mass-rassilka'lar"
+msgstr "Mass-rassilka'lar"
+
+msgid "Qoralama"
+msgstr "Qoralama"
+
+msgid "Navbatda"
+msgstr "Navbatda"
+
+msgid "Jo'natilmoqda"
+msgstr "Jo'natilmoqda"
+
+msgid "Tugadi"
+msgstr "Tugadi"
+
+msgid "Promotsiya banneri"
+msgstr "Promotsiya banneri"
+
+msgid "Promotsiya bannerlari"
+msgstr "Promotsiya bannerlari"
+
+msgid "Maxfiylik siyosati"
+msgstr "Maxfiylik siyosati"
+
+msgid "Maxfiylik siyosatlari"
+msgstr "Maxfiylik siyosatlari"
+
+msgid "Admin kontaktlari"
+msgstr "Admin kontaktlari"
+
+msgid "Yo'riqnoma video"
+msgstr "Yo'riqnoma video"
+
+msgid "Yo'riqnoma videolari"
+msgstr "Yo'riqnoma videolari"
+
+msgid "Telegram file_id (cache)"
+msgstr "Telegram file_id (kesh)"
+
+msgid "Jonli efir"
+msgstr "Jonli efir"
+
+msgid "Jonli efirlar"
+msgstr "Jonli efirlar"
+
+msgid "Rejalashtirilgan"
+msgstr "Rejalashtirilgan"
+
+msgid "Efirda"
+msgstr "Efirda"
+
+msgid "Tugagan"
+msgstr "Tugagan"
+
+msgid "Bekor qilingan"
+msgstr "Bekor qilingan"
+
+msgid "Efir g'olibi"
+msgstr "Efir g'olibi"
+
+msgid "Efir g'oliblari"
+msgstr "Efir g'oliblari"
+
+msgid "Oylik eslatma sozlamalari"
+msgstr "Oylik eslatma sozlamalari"
+
+msgid "Oylik eslatma logi"
+msgstr "Oylik eslatma logi"
+
+msgid "Oylik eslatma loglari"
+msgstr "Oylik eslatma loglari"
+
+msgid "Oyning qaysi kuni (1-28)"
+msgstr "Oyning qaysi kuni (1-28)"
+
+msgid "QR skanlash urinishi"
+msgstr "QR skanlash urinishi"
+
+msgid "QR skanlash urinishlari"
+msgstr "QR skanlash urinishlari"
+
+msgid "Promo-kod urinishi"
+msgstr "Promo-kod urinishi"
+
+msgid "Promo-kod urinishlari"
+msgstr "Promo-kod urinishlari"
+
+msgid "Rassilka log"
+msgstr "Rassilka log"
+
+msgid "Rassilka loglari"
+msgstr "Rassilka loglari"

@@ -82,6 +82,40 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     search_fields = ('name', 'store__name')
     autocomplete_fields = ('store',)
     readonly_fields = ('status', 'zip_file', 'error_message', 'created_at', 'completed_at', 'created_by')
+    actions = ['action_generate_zip', 'action_mark_shipped', 'action_mark_delivered']
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+            if not obj.name:
+                from datetime import date
+                today = date.today()
+                prefix = today.strftime('%b').upper()
+                idx = QRCodeBatch.objects.filter(
+                    store=obj.store, created_at__year=today.year, created_at__month=today.month,
+                ).count() + 1
+                obj.name = f"{prefix}-{today.year}-{idx:03d}"
+        super().save_model(request, obj, form, change)
+        if not change:
+            from core.tasks import generate_batch_zip
+            generate_batch_zip.delay(obj.pk)
+
+    @admin.action(description="ZIP qayta generatsiya qilish")
+    def action_generate_zip(self, request, queryset):
+        from core.tasks import generate_batch_zip
+        for b in queryset:
+            generate_batch_zip.delay(b.pk)
+        self.message_user(request, f"{queryset.count()} batch uchun ZIP generatsiya navbatga qo'yildi")
+
+    @admin.action(description="Jo'natildi deb belgilash")
+    def action_mark_shipped(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(delivery_status=QRCodeBatch.DELIVERY_SHIPPED, shipped_at=timezone.now())
+
+    @admin.action(description="Yetkazib berildi deb belgilash")
+    def action_mark_delivered(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(delivery_status=QRCodeBatch.DELIVERY_DELIVERED, delivered_at=timezone.now())
 
 
 @admin.register(QRCode)
@@ -122,6 +156,14 @@ class SellerPointsTransactionAdmin(SimpleHistoryAdmin):
     search_fields = ('seller__first_name', 'seller__last_name', 'note')
     autocomplete_fields = ('seller', 'store')
     readonly_fields = ('created_by', 'created_at')
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+        # Sotuvchi balansini invalidatsiya qilish
+        from core.tasks import recalc_user_points
+        recalc_user_points.delay(obj.seller_id)
 
 
 @admin.register(Gift)

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JIP — Sotuvchi paneli</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #000000);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --link: var(--tg-theme-link-color, #1976D2);
+            --button: var(--tg-theme-button-color, #1976D2);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+        .store-header {
+            background: var(--button); color: var(--button-text);
+            padding: 16px; border-radius: 14px; margin-bottom: 14px;
+        }
+        .store-header .name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+        .store-header .addr { opacity: 0.85; font-size: 13px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .stat {
+            background: var(--secondary-bg); padding: 14px; border-radius: 12px;
+        }
+        .stat .label { font-size: 12px; color: var(--hint); }
+        .stat .value { font-size: 22px; font-weight: bold; margin-top: 4px; }
+        .stat.full { grid-column: 1 / -1; background: var(--secondary-bg); }
+        .progress {
+            height: 6px; background: var(--bg); border-radius: 3px; margin-top: 6px; overflow: hidden;
+        }
+        .progress > div { height: 100%; background: var(--link); transition: width 0.3s; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+        .tab {
+            padding: 8px 12px; border-radius: 18px; background: var(--secondary-bg);
+            font-size: 12px; cursor: pointer; white-space: nowrap;
+        }
+        .tab.active { background: var(--button); color: var(--button-text); }
+        .tx-item {
+            background: var(--secondary-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .tx-item .meta .type { font-weight: 600; font-size: 13px; }
+        .tx-item .meta .note { font-size: 12px; color: var(--hint); margin-top: 2px; }
+        .tx-item .amount.pos { color: #2e7d32; font-weight: bold; }
+        .tx-item .amount.neg { color: #c62828; font-weight: bold; }
+        .batch-item {
+            background: var(--secondary-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px;
+        }
+        .batch-item .name { font-weight: 600; }
+        .batch-item .meta { font-size: 12px; color: var(--hint); margin: 4px 0; }
+        .nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--secondary-bg); display: flex; justify-content: space-around;
+            padding: 8px 0; border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        .nav-item { flex: 1; text-align: center; font-size: 11px; padding: 4px; cursor: pointer; color: var(--hint); }
+        .nav-item.active { color: var(--link); }
+        .nav-item .icon { font-size: 20px; display: block; }
+        .empty { text-align: center; color: var(--hint); padding: 40px 16px; }
+        .loading { text-align: center; padding: 40px; color: var(--hint); }
+        .toast {
+            position: fixed; top: 12px; left: 12px; right: 12px;
+            background: var(--button); color: var(--button-text);
+            padding: 12px 14px; border-radius: 10px; font-size: 14px;
+            z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none;
+        }
+        .toast.error { background: #d32f2f; }
+        .toast.show { display: block; }
+    </style>
+</head>
+<body>
+    <div id="toast" class="toast"></div>
+
+    <div id="page-dashboard">
+        <div class="store-header">
+            <div class="name" id="store-name">Yuklanmoqda…</div>
+            <div class="addr" id="store-addr">—</div>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <div class="label">💰 Joriy balans</div>
+                <div class="value" id="balance">—</div>
+            </div>
+            <div class="stat">
+                <div class="label">📈 Bu oy</div>
+                <div class="value" id="month-points">—</div>
+            </div>
+            <div class="stat full">
+                <div class="label">📦 Tarqatilgan kartalar</div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px">
+                    <span>Jami: <b id="cards-total">—</b></span>
+                    <span>Skanlangan: <b id="cards-scanned">—</b></span>
+                    <span>Faol: <b id="cards-pending">—</b></span>
+                </div>
+                <div class="progress"><div id="cards-progress" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-transactions" style="display:none">
+        <h2 style="margin:0 0 10px;font-size:16px">Tranzaksiyalar</h2>
+        <div id="tx-list"><div class="loading">Yuklanmoqda…</div></div>
+    </div>
+
+    <div id="page-batches" style="display:none">
+        <h2 style="margin:0 0 10px;font-size:16px">Partiyalar</h2>
+        <div id="batch-list"><div class="loading">Yuklanmoqda…</div></div>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span>Asosiy</div>
+        <div class="nav-item" data-page="transactions"><span class="icon">💸</span>Tranzaksiyalar</div>
+        <div class="nav-item" data-page="batches"><span class="icon">📦</span>Partiyalar</div>
+    </div>
+
+<script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+    const initData = tg?.initData || '';
+    const headers = { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': initData };
+
+    function toast(msg, isError = false) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = 'toast show' + (isError ? ' error' : '');
+        setTimeout(() => el.className = 'toast', 3000);
+    }
+
+    async function api(path, opts = {}) {
+        const res = await fetch(path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || `HTTP ${res.status}`);
+        }
+        return res.json();
+    }
+
+    async function loadDashboard() {
+        try {
+            const d = await api('/api/webapp/seller/dashboard');
+            document.getElementById('store-name').textContent = d.store.name || 'Do\'kon biriktirilmagan';
+            document.getElementById('store-addr').textContent = d.store.address || '';
+            document.getElementById('balance').textContent = `${d.balance} ball`;
+            document.getElementById('month-points').textContent = `+${d.month_points || 0}`;
+            document.getElementById('cards-total').textContent = d.cards.total;
+            document.getElementById('cards-scanned').textContent = d.cards.scanned;
+            document.getElementById('cards-pending').textContent = d.cards.pending;
+            const pct = d.cards.total ? (d.cards.scanned / d.cards.total * 100) : 0;
+            document.getElementById('cards-progress').style.width = pct + '%';
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function loadTransactions() {
+        try {
+            const { items } = await api('/api/webapp/seller/transactions');
+            const el = document.getElementById('tx-list');
+            if (!items.length) { el.innerHTML = '<div class="empty">Tranzaksiyalar yo\'q</div>'; return; }
+            el.innerHTML = items.map(tx => `
+                <div class="tx-item">
+                    <div class="meta">
+                        <div class="type">${tx.type_display}</div>
+                        <div class="note">${new Date(tx.created_at).toLocaleDateString()}${tx.note ? ' • ' + tx.note : ''}</div>
+                    </div>
+                    <div class="amount ${tx.points > 0 ? 'pos' : 'neg'}">${tx.points > 0 ? '+' : ''}${tx.points}</div>
+                </div>
+            `).join('');
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function loadBatches() {
+        try {
+            const { items } = await api('/api/webapp/seller/batches');
+            const el = document.getElementById('batch-list');
+            if (!items.length) { el.innerHTML = '<div class="empty">Partiyalar yo\'q</div>'; return; }
+            el.innerHTML = items.map(b => `
+                <div class="batch-item">
+                    <div class="name">${b.name}</div>
+                    <div class="meta">Jami: ${b.quantity} • Skanlangan: ${b.scanned} • ${b.activation_rate}%</div>
+                    <div class="progress"><div style="width:${b.activation_rate}%"></div></div>
+                </div>
+            `).join('');
+        } catch (e) { toast(e.message, true); }
+    }
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = () => {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+            const page = item.dataset.page;
+            document.getElementById('page-' + page).style.display = '';
+            if (page === 'transactions') loadTransactions();
+            if (page === 'batches') loadBatches();
+        };
+    });
+
+    loadDashboard();
+</script>
+</body>
+</html>

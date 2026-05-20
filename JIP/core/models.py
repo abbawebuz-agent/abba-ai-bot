@@ -149,17 +149,28 @@ class TelegramUser(models.Model):
         self.save(update_fields=['promo_failed_attempts', 'promo_blocked_until'])
         PromoCodeAttempt.objects.create(user=self, raw_code=raw_code, source=source, is_successful=True)
 
+    def _safe_cache(self):
+        """Cache bilan ishlashda Redis o'chirilgan bo'lsa qaytib turish."""
+        try:
+            from django.core.cache import cache
+            return cache
+        except Exception:  # noqa: BLE001
+            return None
+
     def calculate_points(self, force: bool = False) -> int:
         """
         Santenik: skanlangan QR ballaridan jami − sovg'aga ketgan.
         Sotuvchi: SellerPointsTransaction ballaridan jami.
         """
-        from django.core.cache import cache
+        cache = self._safe_cache()
         cache_key = f'tg_user_points:{self.pk}'
-        if not force:
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return cached
+        if cache and not force:
+            try:
+                cached = cache.get(cache_key)
+                if cached is not None:
+                    return cached
+            except Exception:  # noqa: BLE001
+                pass
 
         if self.user_type == self.USER_TYPE_SANTENIK:
             earned = self.scanned_qrcodes.filter(is_deleted=False).aggregate(s=models.Sum('points'))['s'] or 0
@@ -176,12 +187,21 @@ class TelegramUser(models.Model):
         if balance != self.points:
             type(self).objects.filter(pk=self.pk).update(points=balance)
             self.points = balance
-        cache.set(cache_key, balance, 60)
+        if cache:
+            try:
+                cache.set(cache_key, balance, 60)
+            except Exception:  # noqa: BLE001
+                pass
         return balance
 
     def invalidate_points_cache(self) -> None:
-        from django.core.cache import cache
-        cache.delete(f'tg_user_points:{self.pk}')
+        cache = self._safe_cache()
+        if not cache:
+            return
+        try:
+            cache.delete(f'tg_user_points:{self.pk}')
+        except Exception:  # noqa: BLE001
+            pass
 
 
 # ---------------------------------------------------------------------------

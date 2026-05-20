@@ -1,0 +1,260 @@
+# JIP Русский перевод
+msgid ""
+msgstr ""
+"Project-Id-Version: JIP 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-20 00:00+0000\n"
+"PO-Revision-Date: 2026-05-20 00:00+0000\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Santenik"
+msgstr "Сантехник"
+
+msgid "Sotuvchi"
+msgstr "Продавец"
+
+msgid "O'zbek (Lotin)"
+msgstr "Узбекский (Латин.)"
+
+msgid "Русский"
+msgstr "Русский"
+
+msgid "Viloyat"
+msgstr "Область"
+
+msgid "Viloyatlar"
+msgstr "Области"
+
+msgid "Tuman"
+msgstr "Район"
+
+msgid "Tumanlar"
+msgstr "Районы"
+
+msgid "Do'kon"
+msgstr "Магазин"
+
+msgid "Do'konlar"
+msgstr "Магазины"
+
+msgid "Do'kon nomi"
+msgstr "Название магазина"
+
+msgid "Yuridik nom"
+msgstr "Юридическое название"
+
+msgid "To'liq manzil"
+msgstr "Полный адрес"
+
+msgid "Egasi (sotuvchi)"
+msgstr "Владелец (продавец)"
+
+msgid "Komissiya foizi"
+msgstr "Комиссия (%)"
+
+msgid "Telegram foydalanuvchisi"
+msgstr "Пользователь Telegram"
+
+msgid "Telegram foydalanuvchilari"
+msgstr "Пользователи Telegram"
+
+msgid "Batch nomi"
+msgstr "Название партии"
+
+msgid "Kutilmoqda"
+msgstr "Ожидание"
+
+msgid "Generatsiya jarayonida"
+msgstr "Генерация"
+
+msgid "Tayyor"
+msgstr "Готово"
+
+msgid "Xatolik"
+msgstr "Ошибка"
+
+msgid "Hali jo'natilmagan"
+msgstr "Не отправлено"
+
+msgid "Jo'natildi"
+msgstr "Отправлено"
+
+msgid "Yetkazib berildi"
+msgstr "Доставлено"
+
+msgid "Batch"
+msgstr "Партия"
+
+msgid "Batch'lar"
+msgstr "Партии"
+
+msgid "Agent ismi"
+msgstr "Имя агента"
+
+msgid "Skretch-karta (QR)"
+msgstr "Скретч-карта (QR)"
+
+msgid "Skretch-kartalar"
+msgstr "Скретч-карты"
+
+msgid "Sovg'a"
+msgstr "Подарок"
+
+msgid "Sovg'alar"
+msgstr "Подарки"
+
+msgid "Sovg'a buyurtmasi"
+msgstr "Заказ подарка"
+
+msgid "Sovg'a buyurtmalari"
+msgstr "Заказы подарков"
+
+msgid "So'rov qabul qilindi"
+msgstr "Заявка принята"
+
+msgid "Mahsulot tayyorlash bosqichida"
+msgstr "Подготовка товара"
+
+msgid "Yetkazib berishga topshirildi"
+msgstr "Передано в доставку"
+
+msgid "Bekor qilindi"
+msgstr "Отменено"
+
+msgid "Foydalanuvchi olmadi"
+msgstr "Не получено пользователем"
+
+msgid "Foydalanuvchi bekor qildi"
+msgstr "Отменено пользователем"
+
+msgid "Sotuvchi tranzaksiyasi"
+msgstr "Транзакция продавца"
+
+msgid "Sotuvchi tranzaksiyalari"
+msgstr "Транзакции продавцов"
+
+msgid "Admin qo'shdi"
+msgstr "Добавлено админом"
+
+msgid "Sotuv bonusi"
+msgstr "Бонус с продаж"
+
+msgid "Tuzatish"
+msgstr "Коррекция"
+
+msgid "Jarima"
+msgstr "Штраф"
+
+msgid "Musbat — qo'shish, manfiy — ayirish"
+msgstr "Положительное — добавить, отрицательное — вычесть"
+
+msgid "Ushbu tranzaksiya qaysi sotuvga bog'liq (ixtiyoriy)"
+msgstr "К какой продаже относится (опционально)"
+
+msgid "Bo'sh = cheksiz"
+msgstr "Пусто = без ограничений"
+
+msgid "Oylik lotereya bileti"
+msgstr "Билет ежемесячной лотереи"
+
+msgid "Oylik lotereya biletlari"
+msgstr "Билеты ежемесячных лотерей"
+
+msgid "Mass-rassilka"
+msgstr "Рассылка"
+
+msgid "Mass-rassilka'lar"
+msgstr "Рассылки"
+
+msgid "Qoralama"
+msgstr "Черновик"
+
+msgid "Navbatda"
+msgstr "В очереди"
+
+msgid "Jo'natilmoqda"
+msgstr "Отправляется"
+
+msgid "Tugadi"
+msgstr "Завершено"
+
+msgid "Promotsiya banneri"
+msgstr "Рекламный баннер"
+
+msgid "Promotsiya bannerlari"
+msgstr "Рекламные баннеры"
+
+msgid "Maxfiylik siyosati"
+msgstr "Политика конфиденциальности"
+
+msgid "Maxfiylik siyosatlari"
+msgstr "Политики конфиденциальности"
+
+msgid "Admin kontaktlari"
+msgstr "Контакты администрации"
+
+msgid "Yo'riqnoma video"
+msgstr "Видео-инструкция"
+
+msgid "Yo'riqnoma videolari"
+msgstr "Видео-инструкции"
+
+msgid "Telegram file_id (cache)"
+msgstr "Telegram file_id (кеш)"
+
+msgid "Jonli efir"
+msgstr "Прямой эфир"
+
+msgid "Jonli efirlar"
+msgstr "Прямые эфиры"
+
+msgid "Rejalashtirilgan"
+msgstr "Запланирован"
+
+msgid "Efirda"
+msgstr "В эфире"
+
+msgid "Tugagan"
+msgstr "Завершён"
+
+msgid "Bekor qilingan"
+msgstr "Отменён"
+
+msgid "Efir g'olibi"
+msgstr "Победитель эфира"
+
+msgid "Efir g'oliblari"
+msgstr "Победители эфиров"
+
+msgid "Oylik eslatma sozlamalari"
+msgstr "Настройки ежемесячных напоминаний"
+
+msgid "Oylik eslatma logi"
+msgstr "Лог ежемесячных напоминаний"
+
+msgid "Oylik eslatma loglari"
+msgstr "Логи ежемесячных напоминаний"
+
+msgid "Oyning qaysi kuni (1-28)"
+msgstr "В какой день месяца (1-28)"
+
+msgid "QR skanlash urinishi"
+msgstr "Попытка сканирования QR"
+
+msgid "QR skanlash urinishlari"
+msgstr "Попытки сканирования QR"
+
+msgid "Promo-kod urinishi"
+msgstr "Попытка ввода промокода"
+
+msgid "Promo-kod urinishlari"
+msgstr "Попытки ввода промокодов"
+
+msgid "Rassilka log"
+msgstr "Лог рассылки"
+
+msgid "Rassilka loglari"
+msgstr "Логи рассылок"

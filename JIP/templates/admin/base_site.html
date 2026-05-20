@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | JIP Admin{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+    <a href="{% url 'admin:index' %}" style="color: #fff;">
+        <strong>JIP</strong> — Sodiqlik Dasturi
+    </a>
+</div>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --primary: #1976D2;
+        --secondary: #0d47a1;
+        --accent: #42a5f5;
+    }
+    #header { background: var(--primary); }
+    #branding h1 { color: #fff; }
+    .module h2, .module caption, .inline-group h2 { background: var(--primary); }
+    a:link, a:visited { color: var(--primary); }
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        background: var(--primary);
+    }
+    .button:hover, input[type=submit]:hover, input[type=button]:hover {
+        background: var(--secondary);
+    }
+</style>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
