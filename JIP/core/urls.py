@@ -8,6 +8,15 @@ def health(_request):
     return JsonResponse({'status': 'ok'})
 
 
+def index(_request):
+    return JsonResponse({
+        'service': 'JIP Loyalty Platform',
+        'status': 'running',
+        'phase': 'Faza 1 — setup complete',
+    })
+
+
 urlpatterns = [
+    path('', index, name='index'),
     path('health/', health, name='health'),
 ]

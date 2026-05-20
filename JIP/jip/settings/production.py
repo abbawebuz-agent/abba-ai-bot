@@ -9,6 +9,12 @@ from .base import env
 
 DEBUG = False
 
+# Railway uchun: hostname'ni avtomatik aniqlash
+_railway_host = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
+if _railway_host:
+    ALLOWED_HOSTS = list(set(ALLOWED_HOSTS + [_railway_host, '.railway.app']))
+    CSRF_TRUSTED_ORIGINS = [f'https://{_railway_host}', 'https://*.railway.app']
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
