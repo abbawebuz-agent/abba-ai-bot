@@ -74,17 +74,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mona.wsgi.application'
 ASGI_APPLICATION = 'mona.asgi.application'
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME', default='mona_db'),
-        'USER': env('DB_USER', default='mona_user'),
-        'PASSWORD': env('DB_PASSWORD', default='mona_password'),
-        'HOST': env('DB_HOST', default='db'),
-        'PORT': env('DB_PORT', default='5432'),
+# Database — Railway DATABASE_URL yoki alohida DB_* qiymatlarni qo'llab-quvvatlash
+_db_url = env('DATABASE_URL', default='')
+if _db_url:
+    import dj_database_url
+    DATABASES = {'default': dj_database_url.parse(_db_url, conn_max_age=600)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME', default='mona_db'),
+            'USER': env('DB_USER', default='mona_user'),
+            'PASSWORD': env('DB_PASSWORD', default='mona_password'),
+            'HOST': env('DB_HOST', default='db'),
+            'PORT': env('DB_PORT', default='5432'),
+        }
     }
-}
 
 # MongoDB Configuration
 MONGODB_SETTINGS = {
@@ -93,13 +98,18 @@ MONGODB_SETTINGS = {
     'db': env('MONGODB_DB', default='mona_mongodb'),
 }
 
-# Redis Configuration
-REDIS_HOST = env('REDIS_HOST', default='redis')
-REDIS_PORT = int(env('REDIS_PORT', default='6379'))
-
-# Celery Configuration (будет настроено после определения TIME_ZONE)
-CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
-CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+# Redis — Railway REDIS_URL yoki alohida REDIS_HOST/PORT
+_redis_url = env('REDIS_URL', default='')
+if _redis_url:
+    REDIS_HOST = _redis_url
+    REDIS_PORT = 6379
+    CELERY_BROKER_URL = _redis_url
+    CELERY_RESULT_BACKEND = _redis_url
+else:
+    REDIS_HOST = env('REDIS_HOST', default='redis')
+    REDIS_PORT = int(env('REDIS_PORT', default='6379'))
+    CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

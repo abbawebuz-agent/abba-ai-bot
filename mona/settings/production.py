@@ -7,7 +7,22 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+_allowed = env.list('ALLOWED_HOSTS', default=[])
+
+# Railway avtomatik RAILWAY_PUBLIC_DOMAIN beradi
+_railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
+if _railway_domain and _railway_domain not in _allowed:
+    _allowed.append(_railway_domain)
+
+# WEBHOOK_URL domenini ham qo'shamiz
+_webhook = os.environ.get('WEBHOOK_URL', '')
+if _webhook:
+    import urllib.parse
+    _wh_host = urllib.parse.urlparse(_webhook).hostname
+    if _wh_host and _wh_host not in _allowed:
+        _allowed.append(_wh_host)
+
+ALLOWED_HOSTS = _allowed or ['*']
 
 # Security settings для production
 if not DEBUG:
@@ -73,11 +88,17 @@ LOGGING = {
     },
 }
 
-# Создаем директорию для логов если её нет
-os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+_log_dir = os.path.join(BASE_DIR, 'logs')
+try:
+    os.makedirs(_log_dir, exist_ok=True)
+except OSError:
+    # Railway read-only filesystem — faqat console logga yozamiz
+    LOGGING['root']['handlers'] = ['console']
+    for _l in LOGGING.get('loggers', {}).values():
+        _l['handlers'] = ['console']
 
-# Статические файлы в production отдаются через nginx контейнер, а не через Django/WhiteNoise
-# Это более эффективно с точки зрения производительности
-# WhiteNoise middleware отключен в production - статика обрабатывается nginx контейнером
-MIDDLEWARE = [m for m in MIDDLEWARE if m != 'whitenoise.middleware.WhiteNoiseMiddleware']
+# Railway da nginx yo'q — WhiteNoise orqali statik fayllar beriladi.
+# Nginx bilan deploy qilganda DISABLE_WHITENOISE=True qo'ying.
+if env.bool('DISABLE_WHITENOISE', default=False):
+    MIDDLEWARE = [m for m in MIDDLEWARE if m != 'whitenoise.middleware.WhiteNoiseMiddleware']
 
