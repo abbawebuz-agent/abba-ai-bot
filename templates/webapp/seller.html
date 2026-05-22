@@ -1,0 +1,222 @@
+{% load webapp_i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ user_language }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>JIP — Do'kon paneli</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--tg-theme-bg-color, #f5f5f5); color: var(--tg-theme-text-color, #222);
+           min-height: 100vh; }
+
+    .header { background: #1976D2; color: #fff; padding: 16px; }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header .store-name { font-size: 14px; opacity: .85; margin-top: 4px; }
+
+    .tabs { display: flex; background: #fff; border-bottom: 2px solid #e5e7eb; overflow-x: auto; }
+    .tab { flex: 1; min-width: 80px; padding: 12px 8px; text-align: center; font-size: 13px;
+           font-weight: 500; cursor: pointer; color: #6b7280; white-space: nowrap; border: none;
+           background: none; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab.active { color: #1976D2; border-bottom-color: #1976D2; font-weight: 700; }
+
+    .page { display: none; padding: 16px; }
+    .page.active { display: block; }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 16px; text-align: center;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .stat-val { font-size: 26px; font-weight: 700; color: #1976D2; }
+    .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .balance-card { background: linear-gradient(135deg, #1976D2, #42a5f5); color: #fff;
+                    border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .balance-val { font-size: 36px; font-weight: 800; }
+    .balance-label { font-size: 14px; opacity: .85; margin-top: 4px; }
+    .balance-note { font-size: 12px; opacity: .7; margin-top: 8px; }
+
+    .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .card-row { display: flex; justify-content: space-between; align-items: center;
+                padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+    .card-row:last-child { border-bottom: none; }
+    .tx-plus { color: #16a34a; font-weight: 700; }
+    .tx-minus { color: #dc2626; font-weight: 700; }
+
+    .progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; background: #1976D2; border-radius: 4px; transition: width .3s; }
+
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-gray { background: #f3f4f6; color: #6b7280; }
+
+    .empty { text-align: center; color: #aaa; padding: 40px 16px; font-size: 14px; }
+    .loading { text-align: center; color: #888; padding: 30px; font-size: 14px; }
+
+    .section-title { font-size: 15px; font-weight: 700; color: #374151; margin: 16px 0 8px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>JIP — Do'kon paneli</h1>
+  <div class="store-name" id="store-name">Yuklanmoqda...</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('dashboard')">🏠 Bosh sahifa</button>
+  <button class="tab" onclick="showTab('transactions')">💰 Tranzaksiyalar</button>
+  <button class="tab" onclick="showTab('batches')">📦 Batch'lar</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div id="dash-content"><div class="loading">Yuklanmoqda...</div></div>
+</div>
+
+<!-- TRANSACTIONS -->
+<div id="page-transactions" class="page">
+  <div id="tx-content"><div class="loading">Yuklanmoqda...</div></div>
+</div>
+
+<!-- BATCHES -->
+<div id="page-batches" class="page">
+  <div id="batch-content"><div class="loading">Yuklanmoqda...</div></div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const BASE = '';  // same origin
+const INIT_DATA = tg?.initData || '';
+const LANG = '{{ user_language|default:"uz_latin" }}';
+
+function api(path) {
+  return fetch(BASE + path, {
+    headers: { 'X-Telegram-Init-Data': INIT_DATA, 'Content-Type': 'application/json' }
+  }).then(r => r.json());
+}
+
+function fmt(n) { return Number(n || 0).toLocaleString(); }
+
+// ---- TAB switching ----
+let loaded = {};
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+  if (!loaded[name]) { loadTab(name); loaded[name] = true; }
+}
+
+function loadTab(name) {
+  if (name === 'dashboard') loadDashboard();
+  else if (name === 'transactions') loadTransactions();
+  else if (name === 'batches') loadBatches();
+}
+
+// ---- DASHBOARD ----
+function loadDashboard() {
+  api('/api/webapp/seller/dashboard/').then(d => {
+    if (d.error) { document.getElementById('dash-content').innerHTML = '<div class="empty">❌ ' + d.error + '</div>'; return; }
+    document.getElementById('store-name').textContent = d.store_name || '—';
+    const rate = d.qr_scanned && d.qr_total ? Math.round(d.qr_scanned / d.qr_total * 100) : 0;
+    document.getElementById('dash-content').innerHTML = `
+      <div class="balance-card">
+        <div class="balance-label">💰 Joriy balans</div>
+        <div class="balance-val">${fmt(d.points)} ball</div>
+        <div class="balance-note">Ballar faqat admin tomonidan qo'shiladi</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-val">${fmt(d.qr_total)}</div>
+          <div class="stat-label">📦 Jami kartalar</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${fmt(d.qr_scanned)}</div>
+          <div class="stat-label">✅ Skanlangan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${rate}%</div>
+          <div class="stat-label">📊 Aktivatsiya</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${d.commission}%</div>
+          <div class="stat-label">💳 Komissiya</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🏪 Do'kon</div>
+        <div class="card-row"><span>Nomi</span><span>${d.store_name || '—'}</span></div>
+        <div class="card-row"><span>Viloyat</span><span>${d.region || '—'}</span></div>
+        <div class="card-row"><span>Manzil</span><span style="max-width:180px;text-align:right;">${d.address || '—'}</span></div>
+      </div>
+    `;
+  }).catch(() => { document.getElementById('dash-content').innerHTML = '<div class="empty">Yuklashda xatolik</div>'; });
+}
+
+// ---- TRANSACTIONS ----
+function loadTransactions() {
+  api('/api/webapp/seller/transactions/').then(data => {
+    const list = data.results || data;
+    if (!list.length) { document.getElementById('tx-content').innerHTML = '<div class="empty">Tranzaksiyalar yo\'q</div>'; return; }
+    const rows = list.map(tx => `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">${tx.transaction_type_display}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">${tx.created_at}</div>
+            ${tx.note ? `<div style="font-size:12px;color:#555;margin-top:4px;">${tx.note}</div>` : ''}
+          </div>
+          <div class="${tx.points >= 0 ? 'tx-plus' : 'tx-minus'}" style="font-size:18px;">
+            ${tx.points >= 0 ? '+' : ''}${fmt(tx.points)}
+          </div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('tx-content').innerHTML = rows;
+  }).catch(() => { document.getElementById('tx-content').innerHTML = '<div class="empty">Yuklashda xatolik</div>'; });
+}
+
+// ---- BATCHES ----
+function loadBatches() {
+  api('/api/webapp/seller/batches/').then(data => {
+    const list = data.results || data;
+    if (!list.length) { document.getElementById('batch-content').innerHTML = '<div class="empty">Batch\'lar yo\'q</div>'; return; }
+    const rows = list.map(b => {
+      const rate = b.quantity ? Math.round(b.scanned / b.quantity * 100) : 0;
+      return `
+        <div class="card">
+          <div class="card-title">${b.name}</div>
+          <div class="card-row"><span>Jami</span><span>${fmt(b.quantity)} ta</span></div>
+          <div class="card-row"><span>Skanlangan</span><span>${fmt(b.scanned)} ta</span></div>
+          <div class="card-row">
+            <span>Aktivatsiya</span>
+            <span style="font-weight:700;color:${rate>=50?'#16a34a':rate>=20?'#d97706':'#dc2626'}">${rate}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${rate}%"></div></div>
+          <div style="margin-top:8px;">
+            <span class="badge ${b.delivery_status==='delivered'?'badge-green':b.delivery_status==='shipped'?'badge-blue':'badge-gray'}">
+              ${b.delivery_status_display}
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('batch-content').innerHTML = rows;
+  }).catch(() => { document.getElementById('batch-content').innerHTML = '<div class="empty">Yuklashda xatolik</div>'; });
+}
+
+// Bosh sahifani darhol yuklash
+loadDashboard();
+loaded['dashboard'] = true;
+</script>
+</body>
+</html>

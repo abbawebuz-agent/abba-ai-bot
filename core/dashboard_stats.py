@@ -83,17 +83,16 @@ def compute_general_stats(date_from: date | None, date_to: date | None) -> dict[
         unselected=Count('id', filter=Q(user_type__isnull=True) | Q(user_type=''))
     )
     qr_life = QRCode.objects.filter(is_deleted=False).aggregate(
-        # Electrician
-        qr_e_total=Count('id', filter=Q(code_type='electrician')),
-        qr_e_scanned=Count('id', filter=Q(code_type='santenik', is_scanned=True)),
-        qr_e_unscanned=Count('id', filter=Q(code_type='santenik', is_scanned=False)),
-        pool_e_scanned=Sum('points', filter=Q(code_type='santenik', is_scanned=True)),
-        
-        # Seller
-        qr_s_total=Count('id', filter=Q(code_type='seller')),
-        qr_s_scanned=Count('id', filter=Q(code_type='seller', is_scanned=True)),
-        qr_s_unscanned=Count('id', filter=Q(code_type='seller', is_scanned=False)),
-        pool_s_scanned=Sum('points', filter=Q(code_type='seller', is_scanned=True)),
+        # JIP: barcha QR-lar santenik uchun (store/batch asosida)
+        qr_e_total=Count('id'),
+        qr_e_scanned=Count('id', filter=Q(is_scanned=True)),
+        qr_e_unscanned=Count('id', filter=Q(is_scanned=False)),
+        pool_e_scanned=Sum('points', filter=Q(is_scanned=True)),
+        # Seller QR yoq JIP da
+        qr_s_total=Count('id', filter=Q(pk__isnull=True)),
+        qr_s_scanned=Count('id', filter=Q(pk__isnull=True)),
+        qr_s_unscanned=Count('id', filter=Q(pk__isnull=True)),
+        pool_s_scanned=Sum('points', filter=Q(pk__isnull=True)),
     )
     
     life_gifts = GiftRedemption.objects.aggregate(
@@ -126,25 +125,21 @@ def compute_general_stats(date_from: date | None, date_to: date | None) -> dict[
         if dt: q_scanned_period &= Q(scanned_at__date__lte=dt)
 
         qr_stats = QRCode.objects.filter(qr_q).aggregate(
-            # Electrician Counts
-            qr_e_total=Count('id', filter=Q(code_type='electrician')),
-            qr_e_scanned_life=Count('id', filter=Q(code_type='santenik', is_scanned=True)),
-            qr_e_scanned_period=Count('id', filter=Q(code_type='electrician') & q_scanned_period),
-            qr_e_unscanned=Count('id', filter=Q(code_type='santenik', is_scanned=False)),
-            
-            # Store Counts
-            qr_s_total=Count('id', filter=Q(code_type='seller')),
-            qr_s_scanned_life=Count('id', filter=Q(code_type='seller', is_scanned=True)),
-            qr_s_scanned_period=Count('id', filter=Q(code_type='seller') & q_scanned_period),
-            qr_s_unscanned=Count('id', filter=Q(code_type='seller', is_scanned=False)),
-            
-            # Points (Pool) - Scanned in period
-            pool_e_scanned=Sum('points', filter=Q(code_type='electrician') & q_scanned_period),
-            pool_s_scanned=Sum('points', filter=Q(code_type='seller') & q_scanned_period),
-            
-            # Lifetime Totals (for pool context if needed)
-            pool_e_total=Sum('points', filter=Q(code_type='electrician')),
-            pool_s_total=Sum('points', filter=Q(code_type='seller')),
+            # JIP: barcha QR-lar santenik uchun
+            qr_e_total=Count('id'),
+            qr_e_scanned_life=Count('id', filter=Q(is_scanned=True)),
+            qr_e_scanned_period=Count('id', filter=q_scanned_period),
+            qr_e_unscanned=Count('id', filter=Q(is_scanned=False)),
+            # Seller QR yoq
+            qr_s_total=Count('id', filter=Q(pk__isnull=True)),
+            qr_s_scanned_life=Count('id', filter=Q(pk__isnull=True)),
+            qr_s_scanned_period=Count('id', filter=Q(pk__isnull=True)),
+            qr_s_unscanned=Count('id', filter=Q(pk__isnull=True)),
+            # Points
+            pool_e_scanned=Sum('points', filter=q_scanned_period),
+            pool_s_scanned=Sum('points', filter=Q(pk__isnull=True)),
+            pool_e_total=Sum('points'),
+            pool_s_total=Sum('points', filter=Q(pk__isnull=True)),
         )
 
         # 3. Gift Redemption Statistics (Filtered by period)
@@ -207,12 +202,12 @@ def compute_general_stats(date_from: date | None, date_to: date | None) -> dict[
             'pool_e_total': qr_stats['pool_e_total'] or 0,
             'pool_e_scanned': qr_stats['pool_e_scanned'] or 0,
             'pool_e_spent': r_stats['pool_e_spent'] or 0,
-            'pool_e_unscanned': (qr_stats['pool_e_total'] or 0) - (QRCode.objects.filter(code_type='santenik', is_scanned=True, is_deleted=False).aggregate(s=Sum('points'))['s'] or 0),
-            
-            'pool_s_total': qr_stats['pool_s_total'] or 0,
-            'pool_s_scanned': qr_stats['pool_s_scanned'] or 0,
+            'pool_e_unscanned': (qr_stats['pool_e_total'] or 0) - (QRCode.objects.filter(is_scanned=True, is_deleted=False).aggregate(s=Sum('points'))['s'] or 0),
+
+            'pool_s_total': 0,
+            'pool_s_scanned': 0,
             'pool_s_spent': r_stats['pool_s_spent'] or 0,
-            'pool_s_unscanned': (qr_stats['pool_s_total'] or 0) - (QRCode.objects.filter(code_type='seller', is_scanned=True, is_deleted=False).aggregate(s=Sum('points'))['s'] or 0),
+            'pool_s_unscanned': 0,
             
             'gifts_total': (r_stats['gifts_e_total'] or 0) + (r_stats['gifts_s_total'] or 0),
             'gifts_electrician': r_stats['gifts_e_total'] or 0,
@@ -337,10 +332,9 @@ def _promo_metrics_for_scope(
     if date_to: uq_period = uq_period.filter(created_at__date__lte=date_to)
     users_period = uq_period.count()
 
-    # 2. QR Codes / Points
-    code_type = user_type  # 'electrician' or 'seller'
+    # 2. QR Codes / Points — JIP: code_type yo'q, barcha QR santenik uchun
     qr_base = QRCode.objects.filter(
-        is_scanned=True, code_type=code_type, is_deleted=False,
+        is_scanned=True, is_deleted=False,
     )
     
     if region_id == 'isnull':
@@ -1112,7 +1106,6 @@ def get_user_crm_details(user_id: int) -> dict[str, Any] | None:
         'is_blocked': is_blocked,
         'block_type': block_type,
         'blocked_until': blocked_until.strftime('%d.%m.%Y %H:%M') if blocked_until else None,
-        'smartup_id': user.smartup_id or '-',
         'last_message_sent_at': user.last_message_sent_at.strftime('%d.%m.%Y %H:%M') if user.last_message_sent_at else None,
         'blocked_bot_at': user.blocked_bot_at.strftime('%d.%m.%Y %H:%M') if user.blocked_bot_at else None,
         'privacy_accepted': user.privacy_accepted,

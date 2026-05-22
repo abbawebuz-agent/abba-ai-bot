@@ -1,6 +1,8 @@
 """
 Celery tasks for core app.
 """
+import csv
+import io
 import os
 import zipfile
 import asyncio
@@ -9,289 +11,167 @@ from celery import shared_task, chain
 from django.conf import settings
 from django.utils import timezone
 from aiogram import Bot
-from .models import QRCode, QRCodeGeneration, BroadcastMessage, TelegramUser
+from .models import QRCode, QRCodeBatch, BroadcastMessage, TelegramUser
 from .utils import generate_qr_code_image, generate_qr_codes_batch, generate_qr_code_images_batch
 from .messaging import send_message_to_user, TELEGRAM_MESSAGE_DELAY
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True)
-def generate_qr_codes_batch_task(self, prev_result=None, **kwargs):
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def generate_batch_zip(self, batch_id: int):
     """
-    Генерирует один батч QR-кодов.
-    
-    Args:
-        prev_result: Результат предыдущей задачи в цепочке (если есть)
-        **kwargs: Может содержать generation_id, batch_start, batch_size
-    """
-    try:
-        # Если есть результат предыдущей задачи, извлекаем параметры из него
-        if prev_result and isinstance(prev_result, dict):
-            generation_id = prev_result.get('generation_id') or kwargs.get('generation_id')
-            batch_start = prev_result.get('batch_start') or kwargs.get('batch_start')
-            batch_size = prev_result.get('batch_size') or kwargs.get('batch_size')
-        else:
-            # Иначе используем параметры из kwargs
-            generation_id = kwargs.get('generation_id')
-            batch_start = kwargs.get('batch_start')
-            batch_size = kwargs.get('batch_size')
+    QRCodeBatch uchun QR kartalar yaratib ZIP arxiv tayyorlaydi.
 
-        # Проверяем, что все необходимые параметры есть
-        if generation_id is None:
-            raise ValueError("generation_id должен быть передан")
-        if batch_start is None:
-            raise ValueError("batch_start должен быть передан")
-        if batch_size is None:
-            raise ValueError("batch_size должен быть передан")
+    1. Batch'ni 'processing' ga o'tkazadi
+    2. quantity ta QRCode.create_code(batch) chaqiradi
+    3. Har QR uchun PNG rasm generatsiya qiladi (qrcode + Pillow)
+    4. Barcha rasmlarni + CSV ro'yxatni ZIP ga soladi
+    5. Batch'ni 'completed' ga o'tkazadi va zip_file saqlanadi
 
-        generation = QRCodeGeneration.objects.get(id=generation_id)
-
-        # Генерируем QR-коды для этого батча
-        qr_codes = []
-        batch_end = min(batch_start + batch_size, generation.quantity)
-
-        # Сначала создаем все QR-коды в БД
-        for i in range(batch_start, batch_end):
-            qr_code = QRCode.create_code(
-                code_type=generation.code_type,
-                points=generation.points
-            )
-            qr_codes.append(qr_code)
-
-        # Затем генерируем изображения батчем (переиспользуя один браузер)
-        # Это значительно эффективнее, чем создавать браузер для каждого QR-кода
-        # ВРЕМЕННО ЗАКОММЕНТИРОВАНО
-        # try:
-        #     generate_qr_code_images_batch(qr_codes)
-        # except Exception as e:
-        #     logger.error(f"Ошибка при генерации изображений для батча {batch_start}-{batch_end}: {e}")
-        #     # Если батчевая генерация не удалась, пробуем по одному
-        #     logger.info(f"Пробуем генерировать изображения по одному...")
-        #     for qr_code in qr_codes:
-        #         try:
-        #             generate_qr_code_image(qr_code)
-        #         except Exception as img_error:
-        #             logger.error(f"Ошибка при генерации изображения для QR-кода {qr_code.code}: {img_error}")
-        #             # Продолжаем с другими QR-кодами даже если один не удался
-
-        # Добавляем QR-коды к генерации
-        generation.qr_codes.add(*qr_codes)
-
-        logger.info(
-            f"Батч QR-кодов для генерации {generation_id}: "
-            f"сгенерировано {len(qr_codes)} кодов (индексы {batch_start}-{batch_end - 1})"
-        )
-
-        return {
-            'generation_id': generation_id,
-            'batch_start': batch_start,
-            'batch_end': batch_end,
-            'generated': len(qr_codes)
-        }
-
-    except QRCodeGeneration.DoesNotExist:
-        logger.error(f"Генерация {generation_id} не найдена")
-        return {'error': f'Generation {generation_id} not found'}
-    except Exception as e:
-        logger.error(f"Ошибка при генерации батча QR-кодов: {e}")
-        raise
-
-
-@shared_task(bind=True)
-def finalize_qr_generation_task(self, prev_result=None, **kwargs):
-    """
-    Завершает генерацию QR-кодов и создает ZIP архив.
-    
-    Args:
-        prev_result: Результат предыдущей задачи в цепочке (если есть)
-        **kwargs: Может содержать generation_id
+    Rasm formati: JIP_{serial}.png (600×600 px, aqlli dizayn)
+    ZIP ichi: images/ papka + codes.csv
     """
     try:
-        # Если есть результат предыдущей задачи, извлекаем generation_id из него
-        if prev_result and isinstance(prev_result, dict):
-            generation_id = prev_result.get('generation_id') or kwargs.get('generation_id')
-        else:
-            generation_id = kwargs.get('generation_id')
+        batch = QRCodeBatch.objects.select_related('store').get(id=batch_id)
+    except QRCodeBatch.DoesNotExist:
+        logger.error(f"generate_batch_zip: batch {batch_id} topilmadi")
+        return
 
-        # Проверяем, что generation_id есть
-        if generation_id is None:
-            raise ValueError("generation_id должен быть передан")
+    if batch.status not in ('pending', 'failed'):
+        logger.warning(f"generate_batch_zip: batch {batch_id} holati {batch.status!r} — o'tkazildi")
+        return
 
-        generation = QRCodeGeneration.objects.get(id=generation_id)
+    batch.status = 'processing'
+    batch.save(update_fields=['status'])
+    logger.info(f"generate_batch_zip: batch {batch_id} ({batch.name}) boshlandi, {batch.quantity} ta")
 
-        # Получаем все QR-коды для этой генерации
-        qr_codes = list(generation.qr_codes.all())
-
-        if not qr_codes:
-            generation.status = 'failed'
-            generation.error_message = 'Не было сгенерировано ни одного QR-кода'
-            generation.save(update_fields=['status', 'error_message'])
-            return {'error': 'No QR codes generated'}
-
-        # Создаем ZIP архив
-        qr_dir = os.path.join(settings.MEDIA_ROOT, 'qrcodes')
-        zip_filename = f"qrcodes_{generation.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.zip"
-        zip_path = os.path.join(settings.MEDIA_ROOT, 'qrcodes', 'generations', zip_filename)
-
-        # Создаем директорию, если её нет
-        os.makedirs(os.path.dirname(zip_path), exist_ok=True)
-
-        logger.info(f"Создание ZIP архива для генерации {generation_id}: {len(qr_codes)} QR-кодов")
-
-        with zipfile.ZipFile(zip_path, 'w') as zip_file:
-            for qr_code in qr_codes:
-                if qr_code.image_path and os.path.exists(qr_code.image_path):
-                    zip_file.write(
-                        qr_code.image_path,
-                        os.path.basename(qr_code.image_path)
-                    )
-
-        # Сохраняем путь к ZIP файлу
-        generation.zip_file.name = f"qrcodes/generations/{zip_filename}"
-        generation.status = 'completed'
-        generation.completed_at = timezone.now()
-        generation.save(update_fields=['zip_file', 'status', 'completed_at'])
-
-        logger.info(
-            f"Генерация QR-кодов {generation_id} завершена: "
-            f"сгенерировано {len(qr_codes)} кодов, ZIP архив создан"
-        )
-
-        return {
-            'generation_id': generation_id,
-            'total_generated': len(qr_codes),
-            'zip_file': zip_filename
-        }
-
-    except QRCodeGeneration.DoesNotExist:
-        logger.error(f"Генерация {generation_id} не найдена")
-        return {'error': f'Generation {generation_id} not found'}
-    except Exception as e:
-        logger.error(f"Ошибка при завершении генерации QR-кодов: {e}")
-        try:
-            generation = QRCodeGeneration.objects.get(id=generation_id)
-            generation.status = 'failed'
-            generation.error_message = str(e)
-            generation.save(update_fields=['status', 'error_message'])
-        except:
-            pass
-        raise
-
-
-@shared_task(bind=True)
-def generate_qr_codes_task(self, generation_id):
-    """
-    Асинхронная задача для генерации QR-кодов.
-    Разбивает большую генерацию на батчи для избежания таймаутов.
-    
-    Args:
-        generation_id: ID объекта QRCodeGeneration
-    """
     try:
-        generation = QRCodeGeneration.objects.get(id=generation_id)
-        generation.status = 'processing'
-        generation.save(update_fields=['status'])
+        _do_generate_batch_zip(batch)
+    except Exception as exc:
+        logger.error(f"generate_batch_zip: batch {batch_id} xatolik: {exc}", exc_info=True)
+        batch.status = 'failed'
+        batch.error_message = str(exc)[:2000]
+        batch.save(update_fields=['status', 'error_message'])
+        raise self.retry(exc=exc)
 
-        # Размер батча (можно настроить через settings)
-        BATCH_SIZE = getattr(settings, 'QR_CODE_BATCH_SIZE', 1000)
 
-        # Если количество меньше или равно размеру батча, генерируем сразу
-        if generation.quantity <= BATCH_SIZE:
-            logger.info(f"Генерация {generation_id}: небольшое количество ({generation.quantity}), генерируем сразу")
+def _do_generate_batch_zip(batch: QRCodeBatch):
+    """Asosiy generatsiya logikasi (sinxron, Celery worker'da ishlaydi)."""
+    import qrcode as qrcode_lib
+    from PIL import Image, ImageDraw, ImageFont
 
-            # Генерируем QR-коды
-            qr_codes = []
-            for _ in range(generation.quantity):
-                qr_code = QRCode.create_code(
-                    code_type=generation.code_type,
-                    points=generation.points
-                )
-                # ВРЕМЕННО ЗАКОММЕНТИРОВАНО
-                # generate_qr_code_image(qr_code)
-                qr_codes.append(qr_code)
+    # 1. QR kartalarni DB ga yozamiz
+    qr_list = []
+    for _ in range(batch.quantity):
+        qr = QRCode.create_code(batch)
+        qr_list.append(qr)
 
-            # Сохраняем QR-коды в генерацию
-            generation.qr_codes.set(qr_codes)
+    logger.info(f"  {len(qr_list)} ta QRCode yaratildi, rasm generatsiya boshlanadi...")
 
-            # Создаем ZIP архив
-            qr_dir = os.path.join(settings.MEDIA_ROOT, 'qrcodes')
-            zip_filename = f"qrcodes_{generation.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.zip"
-            zip_path = os.path.join(settings.MEDIA_ROOT, 'qrcodes', 'generations', zip_filename)
+    # 2. ZIP arxiv tayyorlash
+    zip_dir = os.path.join(settings.MEDIA_ROOT, 'batches')
+    os.makedirs(zip_dir, exist_ok=True)
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    zip_filename = f"batch_{batch.id}_{timestamp}.zip"
+    zip_path = os.path.join(zip_dir, zip_filename)
 
-            # Создаем директорию, если её нет
-            os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+    bot_username = getattr(settings, 'TELEGRAM_BOT_USERNAME', '')
+    instruction = f"@{bot_username} ga kiring va kodni kiriting" if bot_username else "Botga o'ting va kodni kiriting"
 
-            with zipfile.ZipFile(zip_path, 'w') as zip_file:
-                for qr_code in qr_codes:
-                    if qr_code.image_path and os.path.exists(qr_code.image_path):
-                        zip_file.write(
-                            qr_code.image_path,
-                            os.path.basename(qr_code.image_path)
-                        )
+    with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+        # CSV ro'yxat
+        csv_buf = io.StringIO()
+        writer = csv.writer(csv_buf)
+        writer.writerow(['serial_number', 'code', 'hash_code', 'points', 'store'])
+        for qr in qr_list:
+            writer.writerow([qr.serial_number, qr.code, qr.hash_code, qr.points, batch.store.name])
+        zf.writestr('codes.csv', csv_buf.getvalue())
 
-            # Сохраняем путь к ZIP файлу
-            generation.zip_file.name = f"qrcodes/generations/{zip_filename}"
-            generation.status = 'completed'
-            generation.completed_at = timezone.now()
-            generation.save(update_fields=['zip_file', 'status', 'completed_at'])
+        # PNG rasmlar
+        for qr in qr_list:
+            try:
+                img_bytes = _render_scratch_card(qr, batch, instruction)
+                zf.writestr(f"images/{qr.serial_number}.png", img_bytes)
+            except Exception as e:
+                logger.warning(f"  Rasm xatolik ({qr.serial_number}): {e}")
 
-            logger.info(f"Генерация {generation_id} завершена: {generation.quantity} QR-кодов")
-            return f"Successfully generated {generation.quantity} QR codes"
-        else:
-            # Большое количество - разбиваем на батчи
-            total_batches = (generation.quantity + BATCH_SIZE - 1) // BATCH_SIZE
+    # 3. Batch'ni yangilaymiz
+    batch.zip_file.name = f"batches/{zip_filename}"
+    batch.status = 'completed'
+    batch.completed_at = timezone.now()
+    batch.save(update_fields=['zip_file', 'status', 'completed_at', 'error_message'])
+    logger.info(f"  Batch {batch.id} tayyor: {zip_path}")
 
-            logger.info(
-                f"Генерация {generation_id}: большое количество ({generation.quantity}), "
-                f"разбиваем на {total_batches} батчей по {BATCH_SIZE} кодов"
-            )
 
-            # Создаем цепочку задач для батчей
-            tasks = []
-            for batch_num in range(total_batches):
-                batch_start = batch_num * BATCH_SIZE
-                # Передаем параметры как именованные аргументы
-                # При использовании chain() результат предыдущей задачи будет передан как prev_result
-                task = generate_qr_codes_batch_task.s(
-                    generation_id=generation_id,
-                    batch_start=batch_start,
-                    batch_size=BATCH_SIZE
-                )
-                tasks.append(task)
+def _render_scratch_card(qr, batch, instruction: str) -> bytes:
+    """
+    Bitta skretch-karta PNG rasmi (600×600 px).
 
-            # Добавляем задачу завершения в конец цепочки
-            # Она получит generation_id из результата последней задачи батча
-            tasks.append(finalize_qr_generation_task.s(generation_id=generation_id))
+    Tuzilma:
+    - Yuqori chiziq: JIP brendi
+    - Markazda: katta kod matni
+    - Pastda: seriya raqami va ko'rsatma
+    Pillow bilan chiziladi — Playwright talab qilinmaydi.
+    """
+    import qrcode as qrcode_lib
+    from PIL import Image, ImageDraw, ImageFont
 
-            # Запускаем цепочку задач последовательно
-            chain(*tasks).apply_async()
+    W, H = 600, 600
+    BG = (255, 255, 255)
+    BLUE = (25, 118, 210)
+    DARK = (30, 30, 30)
+    GRAY = (120, 120, 120)
 
-            logger.info(
-                f"Запущена цепочка из {total_batches + 1} задач для генерации {generation_id}"
-            )
+    img = Image.new('RGB', (W, H), BG)
+    draw = ImageDraw.Draw(img)
 
-            return {
-                'generation_id': generation_id,
-                'total_quantity': generation.quantity,
-                'total_batches': total_batches,
-                'batch_size': BATCH_SIZE
-            }
+    # Header
+    draw.rectangle([(0, 0), (W, 70)], fill=BLUE)
+    try:
+        font_h = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+        font_code = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 52)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        font_serial = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+    except Exception:
+        font_h = font_code = font_small = font_serial = ImageFont.load_default()
 
-    except QRCodeGeneration.DoesNotExist:
-        logger.error(f"Генерация {generation_id} не найдена")
-        return f"Generation {generation_id} not found"
-    except Exception as e:
-        logger.error(f"Ошибка при запуске генерации QR-кодов: {e}")
-        # Сохраняем ошибку
-        try:
-            generation = QRCodeGeneration.objects.get(id=generation_id)
-            generation.status = 'failed'
-            generation.error_message = str(e)
-            generation.save(update_fields=['status', 'error_message'])
-        except:
-            pass
-        raise
+    # JIP nomi
+    draw.text((W // 2, 35), "JIP", fill=(255, 255, 255), font=font_h, anchor="mm")
+
+    # QR mini rasm (optional, agar qrcode lib ishlasa)
+    try:
+        qr_img = qrcode_lib.make(qr.code)
+        qr_img = qr_img.resize((150, 150))
+        img.paste(qr_img, ((W - 150) // 2, 90))
+    except Exception:
+        pass
+
+    # Kod matni (katta, markazda)
+    draw.text((W // 2, 310), qr.code, fill=DARK, font=font_code, anchor="mm")
+
+    # Separator chiziq
+    draw.rectangle([(40, 380), (W - 40, 382)], fill=GRAY)
+
+    # Ball miqdori
+    draw.text((W // 2, 410), f"+{qr.points} ball", fill=BLUE, font=font_small, anchor="mm")
+
+    # Do'kon nomi
+    draw.text((W // 2, 450), batch.store.name[:40], fill=GRAY, font=font_serial, anchor="mm")
+
+    # Ko'rsatma
+    draw.text((W // 2, 490), instruction[:60], fill=GRAY, font=font_serial, anchor="mm")
+
+    # Seriya raqami
+    draw.text((W // 2, 560), f"SN: {qr.serial_number}", fill=GRAY, font=font_serial, anchor="mm")
+
+    # Chegara
+    draw.rectangle([(2, 2), (W - 3, H - 3)], outline=BLUE, width=3)
+
+    buf = io.BytesIO()
+    img.save(buf, format='PNG', optimize=True)
+    return buf.getvalue()
+
 
 
 @shared_task(bind=True)
@@ -724,8 +604,7 @@ def dispatch_monthly_role_reminder(self):
         Q(user_type__isnull=True) | Q(user_type='') |
         Q(privacy_accepted=False) |
         Q(phone_number__isnull=True) | Q(phone_number='') |
-        Q(latitude__isnull=True) | Q(longitude__isnull=True) |
-        Q(user_type='sotuvchi', smartup_id__isnull=True)
+        Q(latitude__isnull=True) | Q(longitude__isnull=True)
     )
     targets = list(
         TelegramUser.objects.filter(is_active=True).filter(incomplete)

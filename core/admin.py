@@ -21,6 +21,7 @@ class NoDeleteAdminMixin:
 
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import path, reverse
 from django.shortcuts import render, redirect
@@ -31,7 +32,7 @@ from django.db import models
 from simple_history.admin import SimpleHistoryAdmin
 from .models import (
     TelegramUser, QRCode, QRCodeScanAttempt, PromoCodeAttempt,
-    Gift, GiftRedemption, BroadcastMessage, RegionMessageLog, Promotion, QRCodeGeneration, PrivacyPolicy,
+    Gift, GiftRedemption, BroadcastMessage, RegionMessageLog, Promotion, PrivacyPolicy,
     AdminContactSettings, VideoInstruction, MonthlyPromoTicket,
     MonthlyReminderSettings, MonthlyReminderLog,
     LiveStream, LiveStreamWinner,
@@ -2110,6 +2111,10 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             'fields': ('title', 'message_text', 'image', 'user_type_filter'),
             'description': 'Текст поддерживает HTML: <b>жирный</b>, <i>курсив</i>, <a href="url">ссылка</a>. Эмодзи и стикеры можно вставлять в текст. Фото — опционально.'
         }),
+        ("Do'kon bo'yicha filtr", {
+            'fields': ('store_filter',),
+            'description': "Tanlangan do'kon egasi va uning santeniklariga yuborish. Bo'sh qolsa — filtr qo'llanmaydi.",
+        }),
         ('Фильтрация по региону', {
             'fields': ('region_filter',),
             'description': 'Выберите область для фильтрации пользователей. Если не выбрано, сообщение будет отправлено всем пользователям.'
@@ -2334,231 +2339,6 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     status_badge.short_description = 'Holat'
 
-
-@admin.register(QRCodeGeneration)
-class QRCodeGenerationAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
-    """Админка для истории генерации QR-кодов."""
-    list_display = [
-        'generation_display', 'code_type_badge', 'quantity_display',
-        'points_display', 'status_badge', 'created_by_display',
-        'created_at', 'completed_at_display', 'download_button'
-    ]
-    list_filter = [
-        'status', 'code_type',
-        ('created_at', DateTimeRangeFilterBuilder(title='Дата создания (диапазон)')),
-    ]
-    search_fields = ['id']
-    readonly_fields = [
-        'code_type', 'quantity', 'points', 'status', 'zip_file',
-        'qr_codes', 'error_message', 'created_by', 'created_at', 'completed_at'
-    ]
-    ordering = ['-created_at']
-    list_per_page = 50
-    date_hierarchy = 'created_at'
-
-
-    def generation_display(self, obj):
-        """Отображает информацию о генерации."""
-        return format_html(
-            '<div style="line-height: 1.6;">'
-            '<strong style="font-size: 16px;">#{}</strong><br>'
-            '<span style="color: #718096; font-size: 12px;">{} шт.</span>',
-            obj.id,
-            obj.quantity
-        )
-
-    generation_display.short_description = 'Генерация'
-    generation_display.admin_order_field = 'id'
-
-    def store_badge(self, obj):
-        """JIP: Do'kon nomi badge."""
-        if obj.store_id:
-            return format_html(
-                '<span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 12px; '
-                'font-size: 12px; font-weight: 600;">🏪 {}</span>',
-                obj.store.name,
-            )
-        return format_html('<span style="color: #999;">—</span>')
-
-    store_badge.short_description = "Do'kon"
-    store_badge.admin_order_field = 'store__name'
-
-    def batch_display(self, obj):
-        """JIP: Batch nomi."""
-        if obj.batch_id:
-            return format_html('<small>{}</small>', obj.batch.name)
-        return '—'
-
-    batch_display.short_description = 'Batch'
-    batch_display.admin_order_field = 'batch__name'
-
-    def quantity_display(self, obj):
-        """Отображает количество."""
-        return format_html(
-            '<span style="font-weight: 600;">{}</span>',
-            obj.quantity
-        )
-
-    quantity_display.short_description = 'Количество'
-    quantity_display.admin_order_field = 'quantity'
-
-    def points_display(self, obj):
-        """Отображает баллы."""
-        return format_html(
-            '<span style="color: #667eea; font-weight: 700;">{} баллов</span>',
-            obj.points
-        )
-
-    points_display.short_description = 'Баллы'
-    points_display.admin_order_field = 'points'
-
-    def status_badge(self, obj):
-        """Отображает статус генерации."""
-        colors = {
-            'pending': ('#fff3cd', '#856404', '⏳'),
-            'processing': ('#dbeafe', '#1e40af', '🔄'),
-            'completed': ('#d4edda', '#155724', '✅'),
-            'failed': ('#f8d7da', '#721c24', '❌'),
-        }
-        bg, text, icon = colors.get(obj.status, ('#f3f4f6', '#374151', '📋'))
-        label = dict(obj._meta.get_field('status').choices).get(obj.status, obj.status)
-        return format_html(
-            '<span style="background: {}; color: {}; padding: 4px 12px; border-radius: 12px; '
-            'font-size: 12px; font-weight: 600;">{} {}</span>',
-            bg, text, icon, label
-        )
-
-    status_badge.short_description = 'Статус'
-    status_badge.admin_order_field = 'status'
-
-    def created_by_display(self, obj):
-        """Отображает создателя."""
-        if obj.created_by:
-            return obj.created_by.username or str(obj.created_by)
-        return '-'
-
-    created_by_display.short_description = 'Создал'
-
-    def completed_at_display(self, obj):
-        """Отображает время завершения."""
-        if obj.completed_at:
-            return obj.completed_at.strftime('%d.%m.%Y %H:%M')
-        return '-'
-
-    completed_at_display.short_description = 'Завершено'
-    completed_at_display.admin_order_field = 'completed_at'
-
-    def download_button(self, obj):
-        """Кнопки для скачивания ZIP файла и Excel."""
-        if obj.status == 'completed':
-            buttons = []
-            if obj.zip_file:
-                buttons.append(
-                    '<a href="{}" style="background: #417690; color: white; padding: 6px 12px; '
-                    'border-radius: 4px; text-decoration: none; display: inline-block; margin-right: 5px;">📥 .zip</a>'.format(
-                        obj.zip_file.url
-                    )
-                )
-            buttons.append(
-                '<a href="{}" style="background: #28a745; color: white; padding: 6px 12px; '
-                'border-radius: 4px; text-decoration: none; display: inline-block;">📊 .xlsx</a>'.format(
-                    f'/admin/core/qrcodegeneration/{obj.id}/export_excel/'
-                )
-            )
-            return format_html(''.join(buttons))
-        elif obj.status == 'failed':
-            return format_html(
-                '<span style="color: #dc3545; font-size: 11px;">{}</span>',
-                obj.error_message[:50] + '...' if obj.error_message and len(
-                    obj.error_message) > 50 else obj.error_message or 'Ошибка'
-            )
-        return '-'
-
-    download_button.short_description = 'Действие'
-
-    fieldsets = (
-        ('Основная информация', {
-            'fields': ('code_type', 'quantity', 'points', 'status')
-        }),
-        ('Результаты', {
-            'fields': ('zip_file', 'qr_codes', 'error_message')
-        }),
-        ('Системная информация', {
-            'fields': ('created_by', 'created_at', 'completed_at')
-        }),
-    )
-
-    def has_module_permission(self, request):
-        """Только superuser может видеть этот модуль в меню."""
-        return request.user.is_superuser
-
-    def has_add_permission(self, request):
-        """Отключаем добавление через админку."""
-        return False
-
-    def get_urls(self):
-        """Добавляет кастомные URL для экспорта Excel."""
-        urls = super().get_urls()
-        custom_urls = [
-            path('<path:object_id>/export_excel/', self.admin_site.admin_view(self.export_excel_view),
-                 name='core_qrcodegeneration_export_excel'),
-        ]
-        return custom_urls + urls
-
-    def export_excel_view(self, request, object_id):
-        """Экспорт QR-кодов в Excel формат."""
-        from openpyxl import Workbook
-        from openpyxl.styles import Font, Alignment
-        from django.utils import timezone
-
-        try:
-            generation = QRCodeGeneration.objects.get(id=object_id)
-        except QRCodeGeneration.DoesNotExist:
-            from django.http import Http404
-            raise Http404("Генерация не найдена")
-
-        # Получаем все QR-коды для этой генерации
-        qr_codes = generation.qr_codes.all().order_by('generated_at')
-
-        # Создаем Excel файл
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "QR Codes"
-
-        # Заголовки
-        headers = ['Дата создания QR кода', 'Серийный номер', 'Сканирован ли', 'Промо код']
-        ws.append(headers)
-
-        # Стили для заголовков
-        header_font = Font(bold=True)
-        header_alignment = Alignment(horizontal='center', vertical='center')
-        for cell in ws[1]:
-            cell.font = header_font
-            cell.alignment = header_alignment
-
-        # Данные
-        for qr_code in qr_codes:
-            generated_at = qr_code.generated_at.strftime('%d.%m.%Y %H:%M:%S') if qr_code.generated_at else ''
-            serial_number = qr_code.serial_number
-            is_scanned = 'Да' if qr_code.is_scanned else 'Нет'
-            promo_code = qr_code.code
-            ws.append([generated_at, serial_number, is_scanned, promo_code])
-
-        # Автоподбор ширины колонок
-        from openpyxl.utils import get_column_letter
-        column_widths = [25, 20, 15, 20]
-        for idx, width in enumerate(column_widths, 1):
-            ws.column_dimensions[get_column_letter(idx)].width = width
-
-        # Создаем HttpResponse с Excel файлом
-        filename = f"qrcodes_{generation.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        response = HttpResponse(
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
-        wb.save(response)
-        return response
 
 
 @admin.register(MonthlyPromoTicket)
@@ -2849,14 +2629,52 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         )
     activation_display.short_description = 'Aktivatsiya'
 
+    actions = ['action_generate_zip', 'action_mark_shipped', 'action_mark_delivered']
+
+    @admin.action(description="📦 ZIP generatsiya qilish (Celery)")
+    def action_generate_zip(self, request, queryset):
+        from .tasks import generate_batch_zip
+        triggered, skipped = 0, 0
+        for batch in queryset:
+            if batch.status in ('pending', 'failed'):
+                generate_batch_zip.delay(batch.id)
+                triggered += 1
+            else:
+                skipped += 1
+        if triggered:
+            self.message_user(request, f"✅ {triggered} ta batch uchun ZIP generatsiya boshlandi.")
+        if skipped:
+            self.message_user(request, f"⚠️ {skipped} ta batch o'tkazildi (holati pending/failed emas).", level='warning')
+
+    @admin.action(description="🚚 Jo'natildi deb belgilash")
+    def action_mark_shipped(self, request, queryset):
+        now = timezone.now()
+        count = queryset.filter(delivery_status='not_shipped').update(
+            delivery_status='shipped', shipped_at=now
+        )
+        self.message_user(request, f"✅ {count} ta batch 'jo'natildi' deb belgilandi.")
+
+    @admin.action(description="✅ Yetkazib berildi deb belgilash")
+    def action_mark_delivered(self, request, queryset):
+        now = timezone.now()
+        count = queryset.filter(delivery_status='shipped').update(
+            delivery_status='delivered', delivered_at=now
+        )
+        self.message_user(request, f"✅ {count} ta batch 'yetkazib berildi' deb belgilandi.")
+
     def save_model(self, request, obj, form, change):
+        from .tasks import generate_batch_zip
         is_new = not obj.pk
         if not obj.created_by_id:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
-        if is_new and not obj.name:
-            obj.name = QRCodeBatch.generate_name(obj.store)
-            obj.save(update_fields=['name'])
+        if is_new:
+            if not obj.name:
+                obj.name = QRCodeBatch.generate_name(obj.store)
+                obj.save(update_fields=['name'])
+            # Yangi batch yaratilganda avtomatik ZIP generatsiya
+            generate_batch_zip.delay(obj.id)
+            self.message_user(request, f"✅ '{obj.name}' batch yaratildi. ZIP generatsiya navbatga qo'shildi.")
 
 
 @admin.register(SellerPointsTransaction)

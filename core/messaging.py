@@ -183,6 +183,23 @@ async def send_broadcast_message(
         if filter_user_type:
             users_query = users_query.filter(user_type=filter_user_type)
         
+        # Filtr do'kon bo'yicha: do'kon egasi + shu do'kondan QR skan qilgan santenik
+        if broadcast.store_filter_id:
+            from django.db.models import Q as _Q
+            store_owner_ids = list(
+                broadcast.store_filter.owner_id and [broadcast.store_filter.owner_id] or []
+            )
+            santenik_ids = list(
+                users_query.filter(
+                    user_type='santenik',
+                    scanned_qrcodes__store_id=broadcast.store_filter_id,
+                    scanned_qrcodes__is_scanned=True,
+                    scanned_qrcodes__is_deleted=False,
+                ).values_list('id', flat=True).distinct()
+            )
+            allowed_ids = set(store_owner_ids) | set(santenik_ids)
+            users_query = users_query.filter(id__in=allowed_ids)
+
         # Фильтр по языку
         if broadcast.language_filter:
             users_query = users_query.filter(language=broadcast.language_filter)

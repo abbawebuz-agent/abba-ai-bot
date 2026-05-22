@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import translation
 from django.db import models
 from functools import wraps
-from .models import TelegramUser, Gift, GiftRedemption, QRCode, Promotion, PrivacyPolicy, AdminContactSettings, LiveStream
+from .models import TelegramUser, Gift, GiftRedemption, QRCode, Promotion, PrivacyPolicy, AdminContactSettings, LiveStream, Store, QRCodeBatch, SellerPointsTransaction
 from .serializers import GiftSerializer, GiftRedemptionSerializer
 from django.utils import timezone
 
@@ -106,10 +106,7 @@ def get_user_data(request):
             user.latitude is not None and
             user.longitude is not None
         )
-        if user.user_type == 'sotuvchi':
-            is_registered = base_registered and (user.smartup_id is not None)
-        else:
-            is_registered = base_registered
+        is_registered = base_registered
 
         serializer = {
             'id': user.id,
@@ -447,7 +444,7 @@ def get_qr_history(request):
                 'code': qr.code,
                 'points': qr.points,
                 'scanned_at': qr.scanned_at.strftime('%d.%m.%Y') if qr.scanned_at else None,
-                'code_type': qr.get_code_type_display(),
+                'store_name': qr.store.name if qr.store_id else None,
                 'monthly_order': ticket.order if ticket else None,
             })
 
@@ -712,26 +709,16 @@ def register_qr_code(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Валидация типа кода - проверяем соответствие типу пользователя
-            if user.user_type and user.user_type != qr_code.code_type:
-                # Создаем запись о неудачной попытке (несоответствие типа)
-                QRCodeScanAttempt.objects.create(
-                    user=user,
-                    qr_code=qr_code,
-                    is_successful=False
-                )
+            # JIP: Faqat santenik QR kodni skanlashi mumkin
+            if user.user_type != 'santenik':
+                QRCodeScanAttempt.objects.create(user=user, qr_code=qr_code, is_successful=False)
                 user.register_invalid_promo_attempt(source='webapp', raw_code=qr_code_str)
                 error_message = get_text(user, 'QR_WRONG_TYPE')
                 return Response(
                     {'error': error_message, 'error_code': 'wrong_type'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            # Определяем тип пользователя на основе типа QR-кода (если еще не установлен)
-            if not user.user_type:
-                user.user_type = qr_code.code_type
-                user.save(update_fields=['user_type'])
-            
+
             # Отмечаем QR-код как отсканированный
             qr_code.is_scanned = True
             qr_code.scanned_at = timezone.now()
@@ -955,16 +942,7 @@ def _resend_step_for_user(user: TelegramUser) -> str:
         })
         return 'location'
 
-    # ── Step 7: SmartUp ID (seller only) ────────────────────────────────────
-    if user.user_type == 'sotuvchi' and user.smartup_id is None:
-        _tg_api('sendMessage', {
-            'chat_id': chat_id,
-            'text': get_text(user, 'ASK_SMARTUP_ID'),
-            'reply_markup': {'remove_keyboard': True},
-        })
-        return 'smartup_id'
-
-    # ── Step 8: Promo code ──────────────────────────────────────────────────
+    # ── Step 7: Promo code ──────────────────────────────────────────────────
     _tg_api('sendMessage', {
         'chat_id': chat_id,
         'text': get_text(user, 'SEND_PROMO_CODE'),
@@ -1269,3 +1247,161 @@ def get_top_users(request):
         'items': items,
         'me': me,
     })
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Seller Web App views (HMAC initData auth)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _get_seller_user(request):
+    """Validate X-Telegram-Init-Data and return the sotuvchi TelegramUser.
+
+    Returns (user, None) on success or (None, Response) on failure.
+    """
+    import hashlib
+    import hmac as _hmac
+    import json
+    import urllib.parse
+
+    init_data = request.headers.get('X-Telegram-Init-Data', '')
+    if not init_data:
+        return None, Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        return None, Response({'error': 'Server misconfigured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    params = dict(urllib.parse.parse_qsl(init_data, keep_blank_values=True))
+    hash_val = params.pop('hash', None)
+    if not hash_val:
+        return None, Response({'error': 'Invalid init data'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    data_check = '\n'.join(f"{k}={v}" for k, v in sorted(params.items()))
+    secret_key = _hmac.new(b'WebAppData', token.encode(), hashlib.sha256).digest()
+    expected_hash = _hmac.new(secret_key, data_check.encode(), hashlib.sha256).hexdigest()
+
+    if not _hmac.compare_digest(expected_hash, hash_val):
+        return None, Response({'error': 'Invalid signature'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        tg_user_data = json.loads(params.get('user', '{}'))
+        tg_id = int(tg_user_data.get('id', 0))
+    except (ValueError, TypeError):
+        return None, Response({'error': 'Invalid user data'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        user = TelegramUser.objects.get(telegram_id=tg_id)
+    except TelegramUser.DoesNotExist:
+        return None, Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.user_type != 'sotuvchi':
+        return None, Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    return user, None
+
+
+def seller_webapp_view(request):
+    """Sotuvchi uchun Telegram Mini App sahifasi."""
+    import time
+    context = {
+        'user_language': 'uz_latin',
+        'app_version': str(int(time.time())),
+    }
+    response = render(request, 'webapp/seller.html', context)
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_dashboard(request):
+    """Sotuvchi dashboard: balans, statistika, do'kon ma'lumotlari."""
+    from django.db.models import Sum
+
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    store = user.owned_stores.select_related('region').first()
+    if not store:
+        return Response({'error': "Do'kon topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+
+    points_total = SellerPointsTransaction.objects.filter(
+        seller=user, store=store
+    ).aggregate(total=Sum('points'))['total'] or 0
+
+    return Response({
+        'store_name': store.name,
+        'region': store.region.name if store.region_id else None,
+        'address': store.address,
+        'points': int(points_total),
+        'commission': float(store.commission_percent),
+        'qr_total': store.total_qr_codes(),
+        'qr_scanned': store.scanned_qr_codes(),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_transactions(request):
+    """Sotuvchi ball tranzaksiyalari ro'yxati (oxirgi 50 ta)."""
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    store = user.owned_stores.first()
+    if not store:
+        return Response({'results': []})
+
+    txs = SellerPointsTransaction.objects.filter(
+        seller=user, store=store
+    ).order_by('-created_at')[:50]
+
+    results = [
+        {
+            'id': tx.id,
+            'transaction_type': tx.transaction_type,
+            'transaction_type_display': tx.get_transaction_type_display(),
+            'points': tx.points,
+            'note': tx.note or '',
+            'created_at': tx.created_at.strftime('%d.%m.%Y %H:%M'),
+        }
+        for tx in txs
+    ]
+    return Response({'results': results})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_batches(request):
+    """Sotuvchi do'koniga tegishli batch'lar ro'yxati (oxirgi 20 ta)."""
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    store = user.owned_stores.first()
+    if not store:
+        return Response({'results': []})
+
+    batches = QRCodeBatch.objects.filter(store=store).order_by('-created_at')[:20]
+
+    results = [
+        {
+            'id': b.id,
+            'name': b.name,
+            'quantity': b.quantity,
+            'scanned': b.qr_codes.filter(is_scanned=True, is_deleted=False).count(),
+            'status': b.status,
+            'status_display': b.get_status_display(),
+            'delivery_status': b.delivery_status,
+            'delivery_status_display': b.get_delivery_status_display(),
+            'created_at': b.created_at.strftime('%d.%m.%Y'),
+        }
+        for b in batches
+    ]
+    return Response({'results': results})

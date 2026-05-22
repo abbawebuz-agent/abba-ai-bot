@@ -255,7 +255,7 @@ def dashboard_export_view(request):
             
         headers = [
             ('serial_number', 'col_serial'), ('code', 'col_promo_code'), ('points', 'col_points_val'),
-            ('code_type', 'col_category'), ('scanned_at', 'col_scanned_at'),
+            (lambda x: x.store.name if x.store_id else '-', 'col_store'), ('scanned_at', 'col_scanned_at'),
             (lambda x: f"{x.scanned_by.first_name} (@{x.scanned_by.username})", 'col_scanned_by'),
             (lambda x: x.scanned_by.phone_number, 'col_phone'),
             (lambda x: x.scanned_by.region.name_uz if x.scanned_by.region else "N/A", 'col_region')
@@ -600,8 +600,6 @@ def dashboard_view(request):
                 & Q(latitude__isnull=False)
                 & Q(longitude__isnull=False)
             )
-            if user_type == 'seller':
-                registered_q &= Q(smartup_id__isnull=False)
             if selected_activity == 'active':
                 # Заполнил все данные И отсканировал хотя бы один промокод.
                 user_qs = user_qs.filter(registered_q).filter(scanned_cards__gt=0)

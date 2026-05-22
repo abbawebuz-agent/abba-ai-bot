@@ -268,18 +268,18 @@ TRANSLATIONS = {
 
         # Dashboard UI (Exact from ui_translations_exact_uz.json)
         'DASHBOARD_USER_OVERVIEW': "Foydalanuvchilar soni",
-        'DASHBOARD_ELECTRICIAN_CODES': "Elektrik kodlari soni",
+        'DASHBOARD_ELECTRICIAN_CODES': "Santenik kodlari soni",
         'DASHBOARD_STORE_CODES': "Do'kon kodlari",
         'DASHBOARD_TOTAL_POINTS': "Ballar miqdori",
-        'DASHBOARD_ELECTRICIAN_POOL': "Elektrik ballari miqdori",
+        'DASHBOARD_ELECTRICIAN_POOL': "Santenik ballari miqdori",
         'DASHBOARD_STORE_POOL': "Do'kon ballari miqdori",
         'DASHBOARD_GIFT_REQUESTS': "Sovg'alar soni",
-        'DASHBOARD_GIFTS_ELECTRICIANS': "Sovg'alar — Elektriklar",
+        'DASHBOARD_GIFTS_ELECTRICIANS': "Sovg'alar — Santenik",
         'DASHBOARD_GIFTS_STORES': "Sovg'alar — Do'konlar",
 
         'DASHBOARD_TAB_GENERAL': "Umumiy",
         'DASHBOARD_TAB_STORES': "Aksiyada ishtirok etayotgan do'konlar",
-        'DASHBOARD_TAB_ELECTRICIANS': "Aksiyada ishtirok etayotgan elektriklar",
+        'DASHBOARD_TAB_ELECTRICIANS': "Aksiyada ishtirok etayotgan santenik",
 
         'DASHBOARD_FILTER_PERIOD': "Davr:",
         'DASHBOARD_FILTER_FROM': "Dan",
@@ -288,7 +288,7 @@ TRANSLATIONS = {
         'DASHBOARD_FILTER_RESET': "Tozalash",
         'DASHBOARD_FILTER_ALL_TIME': "Butun davr",
 
-        'DASHBOARD_LABEL_ELECTRICIANS': "Elektriklar",
+        'DASHBOARD_LABEL_ELECTRICIANS': "Santenik",
         'DASHBOARD_LABEL_STORES': "Do'konlar",
         'DASHBOARD_LABEL_UNSELECTED': "Tanlanmagan",
         'DASHBOARD_LABEL_SCANNED': "Skanerlangan",
@@ -321,8 +321,20 @@ TRANSLATIONS = {
         'DASHBOARD_CHART_REQUEST_STATUSES': "So'rovlar holati",
         'DASHBOARD_CHART_DISTRICT_DISTRIBUTION': "Tuman kesimidagi statistika",
         'DASHBOARD_CHART_REGIONAL_DISTRIBUTION': "Viloyatlar kesimidagi statistika",
+
+        # Sotuvchi asosiy menyusi
+        'SELLER_MAIN_MENU': "👋 Assalomu alaykum, {name}!\n\n🏪 Do'kon: {store}\n💰 Balansingiz: {points} ball\n\nHarakatni tanlang:",
+        'SELLER_MY_BALANCE': "💰 Mening balansim",
+        'SELLER_SALES_HISTORY': "📊 Sotuv tarixi",
+        'SELLER_MY_STORE': "🏪 Mening do'konim",
+        'SELLER_OPEN_WEBAPP': "🌐 Web ilovani ochish",
+        'SELLER_CONTACT_ADMIN': "📞 Admin bilan bog'lanish",
+        'SELLER_BALANCE_INFO': "💰 Sizning balansingiz: {points} ball\n\nBallar faqat admin tomonidan qo'shiladi.",
+        'SELLER_STORE_INFO': "🏪 <b>{name}</b>\n\n📍 Manzil: {address}\n📊 Viloyat: {region}\n\n📦 Kartalar: {total} ta (skanlangan: {scanned})\n💳 Komissiya: {commission}%",
+        'SELLER_NO_STORE': "❗ Sizning do'koningiz topilmadi. Admin bilan bog'laning.",
+        'SELLER_WEBAPP_BUTTON': "📊 Do'kon paneli",
     },
-    
+
     'ru': {
         **HELP_TEXTS['ru'],
         # Основные сообщения
@@ -579,18 +591,18 @@ TRANSLATIONS = {
 
         # Dashboard UI (Russian equivalents)
         'DASHBOARD_USER_OVERVIEW': "Количество пользователей",
-        'DASHBOARD_ELECTRICIAN_CODES': "Количество кодов электриков",
+        'DASHBOARD_ELECTRICIAN_CODES': "Количество кодов сантеников",
         'DASHBOARD_STORE_CODES': "Коды магазинов",
         'DASHBOARD_TOTAL_POINTS': "Количество баллов",
-        'DASHBOARD_ELECTRICIAN_POOL': "Пул баллов электриков",
+        'DASHBOARD_ELECTRICIAN_POOL': "Пул баллов сантеников",
         'DASHBOARD_STORE_POOL': "Пул баллов магазинов",
         'DASHBOARD_GIFT_REQUESTS': "Количество подарков",
-        'DASHBOARD_GIFTS_ELECTRICIANS': "Подарки — Электрики",
+        'DASHBOARD_GIFTS_ELECTRICIANS': "Подарки — Сантеники",
         'DASHBOARD_GIFTS_STORES': "Подарки — Магазины",
 
         'DASHBOARD_TAB_GENERAL': "Общий",
         'DASHBOARD_TAB_STORES': "Магазины в акции",
-        'DASHBOARD_TAB_ELECTRICIANS': "Электрики в акции",
+        'DASHBOARD_TAB_ELECTRICIANS': "Сантеники в акции",
 
         'DASHBOARD_FILTER_PERIOD': "Период:",
         'DASHBOARD_FILTER_FROM': "От",
@@ -599,7 +611,7 @@ TRANSLATIONS = {
         'DASHBOARD_FILTER_RESET': "Сбросить",
         'DASHBOARD_FILTER_ALL_TIME': "Весь период",
 
-        'DASHBOARD_LABEL_ELECTRICIANS': "Электрики",
+        'DASHBOARD_LABEL_ELECTRICIANS': "Сантеники",
         'DASHBOARD_LABEL_STORES': "Магазины",
         'DASHBOARD_LABEL_UNSELECTED': "Не выбрано",
         'DASHBOARD_LABEL_SCANNED': "Сканировано",
@@ -633,6 +645,18 @@ TRANSLATIONS = {
         'DASHBOARD_CHART_REQUEST_STATUSES': "Статусы запросов",
         'DASHBOARD_CHART_DISTRICT_DISTRIBUTION': "Статистика по районам",
         'DASHBOARD_CHART_REGIONAL_DISTRIBUTION': "Статистика по областям",
+
+        # Sotuvchi asosiy menyusi (RU)
+        'SELLER_MAIN_MENU': "👋 Здравствуйте, {name}!\n\n🏪 Магазин: {store}\n💰 Ваш баланс: {points} баллов\n\nВыберите действие:",
+        'SELLER_MY_BALANCE': "💰 Мой баланс",
+        'SELLER_SALES_HISTORY': "📊 История продаж",
+        'SELLER_MY_STORE': "🏪 Мой магазин",
+        'SELLER_OPEN_WEBAPP': "🌐 Открыть веб-приложение",
+        'SELLER_CONTACT_ADMIN': "📞 Связаться с администратором",
+        'SELLER_BALANCE_INFO': "💰 Ваш баланс: {points} баллов\n\nБаллы начисляются только администратором.",
+        'SELLER_STORE_INFO': "🏪 <b>{name}</b>\n\n📍 Адрес: {address}\n📊 Регион: {region}\n\n📦 Карт: {total} шт (отсканировано: {scanned})\n💳 Комиссия: {commission}%",
+        'SELLER_NO_STORE': "❗ Ваш магазин не найден. Свяжитесь с администратором.",
+        'SELLER_WEBAPP_BUTTON': "📊 Панель магазина",
     },
 }
 

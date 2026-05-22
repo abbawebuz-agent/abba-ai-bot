@@ -1280,65 +1280,6 @@ class PrivacyPolicy(models.Model):
         return f"Maxfiylik siyosati (Yangilangan: {self.updated_at.strftime('%d.%m.%Y %H:%M')})"
 
 
-class QRCodeGeneration(models.Model):
-    """Модель для истории генерации QR-кодов."""
-    STATUS_CHOICES = [
-        ('pending', _('Pending')),
-        ('processing', _('Processing')),
-        ('completed', _('Completed')),
-        ('failed', _('Failed')),
-    ]
-    
-    code_type = models.CharField(
-        max_length=20,
-        choices=QRCode.CODE_TYPE_CHOICES,
-        verbose_name='QR-kod turi'
-    )
-    quantity = models.IntegerField(validators=[MinValueValidator(1)], verbose_name='Miqdori')
-    points = models.IntegerField(validators=[MinValueValidator(0)], verbose_name='Ballar')
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending',
-        verbose_name='Holat'
-    )
-    zip_file = models.FileField(
-        upload_to='qrcodes/generations/',
-        null=True,
-        blank=True,
-        verbose_name='ZIP fayl'
-    )
-    qr_codes = models.ManyToManyField(
-        QRCode,
-        related_name='generations',
-        blank=True,
-        verbose_name='QR-kodlar'
-    )
-    error_message = models.TextField(blank=True, verbose_name='Xatolik xabari')
-    created_by = models.ForeignKey(
-        'auth.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='qr_generations',
-        verbose_name='Yaratgan foydalanuvchi'
-    )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')
-    completed_at = models.DateTimeField(null=True, blank=True, verbose_name='Yakunlangan')
-    
-    history = HistoricalRecords()
-    
-    class Meta:
-        verbose_name = _('Promo-kod yaratilish tarixi')
-        verbose_name_plural = _('Promo-kodlar yaratish tarixi')
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['status', '-created_at']),
-        ]
-    
-    def __str__(self):
-        return f"{self.get_code_type_display()} - {self.quantity} ta ({self.get_status_display()})"
-
 
 class PromoCodeAttempt(models.Model):
     """
@@ -1549,22 +1490,6 @@ class VideoInstruction(models.Model):
         """Возвращает активную видео инструкцию."""
         return cls.objects.filter(is_active=True).first()
 
-
-class SmartUPId(models.Model):
-    """Модель для хранения ID SmartUP."""
-    id_value = models.IntegerField(unique=True, db_index=True, verbose_name='SmartUP ID')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')
-    
-    class Meta:
-        verbose_name = _('SmartUP ID')
-        verbose_name_plural = _('SmartUP IDlar')
-        ordering = ['id_value']
-        indexes = [
-            models.Index(fields=['id_value']),
-        ]
-    
-    def __str__(self):
-        return f"SmartUP ID: {self.id_value}"
 
 
 class MonthlyReminderSettings(models.Model):

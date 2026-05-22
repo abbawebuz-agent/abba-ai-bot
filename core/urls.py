@@ -10,6 +10,7 @@ from .webapp_views import (
     get_promotions, register_qr_code, get_promotion_detail, get_privacy_policy, update_user_language,
     get_admin_contact, resend_registration_step,
     get_live_streams, get_live_stream_detail, get_top_users,
+    seller_webapp_view, seller_dashboard, seller_transactions, seller_batches,
 )
 
 router = DefaultRouter()
@@ -39,5 +40,10 @@ urlpatterns = [
     path('webapp/live-streams/', get_live_streams, name='webapp_live_streams'),
     path('webapp/live-streams/<int:stream_id>/', get_live_stream_detail, name='webapp_live_stream_detail'),
     path('webapp/top-users/', get_top_users, name='webapp_top_users'),
+    # Seller Web App
+    path('webapp/seller/', seller_webapp_view, name='webapp_seller'),
+    path('webapp/seller/dashboard/', seller_dashboard, name='webapp_seller_dashboard'),
+    path('webapp/seller/transactions/', seller_transactions, name='webapp_seller_transactions'),
+    path('webapp/seller/batches/', seller_batches, name='webapp_seller_batches'),
 ]
 

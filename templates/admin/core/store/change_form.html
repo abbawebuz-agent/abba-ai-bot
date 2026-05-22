@@ -1,0 +1,140 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block after_field_sets %}
+{{ block.super }}
+
+{% if original %}
+<div id="store-dashboard" style="margin-top: 24px;">
+
+  <!-- Stat kartalar -->
+  <h2 style="font-size:18px; font-weight:700; margin-bottom:16px; color:#1976D2;">
+    📊 Do'kon statistikasi
+  </h2>
+
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;">
+    {% with total=original.total_qr_codes scanned=original.scanned_qr_codes rate=original.activation_rate %}
+    <div style="background:#e3f2fd; border-radius:8px; padding:16px; text-align:center;">
+      <div style="font-size:28px; font-weight:700; color:#1976D2;">{{ total }}</div>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Jami kartalar</div>
+    </div>
+    <div style="background:#e8f5e9; border-radius:8px; padding:16px; text-align:center;">
+      <div style="font-size:28px; font-weight:700; color:#388E3C;">{{ scanned }}</div>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Skanlangan</div>
+    </div>
+    <div style="background:#fff3e0; border-radius:8px; padding:16px; text-align:center;">
+      <div style="font-size:28px; font-weight:700; color:#F57C00;">{{ rate }}%</div>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Aktivatsiya darajasi</div>
+    </div>
+    <div style="background:#f3e5f5; border-radius:8px; padding:16px; text-align:center;">
+      <div style="font-size:28px; font-weight:700; color:#7B1FA2;">{{ original.batches.count }}</div>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Batch'lar</div>
+    </div>
+    {% endwith %}
+  </div>
+
+  <!-- Batch'lar jadvali -->
+  <h3 style="font-size:16px; font-weight:600; margin-bottom:12px; color:#333;">
+    📦 Batch'lar
+  </h3>
+  <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.1);">
+    <thead>
+      <tr style="background:#1976D2; color:#fff;">
+        <th style="padding:10px 14px; text-align:left; font-size:13px;">Nom</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Miqdor</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Skanlangan</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Aktivatsiya</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Holat</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Yetkazish</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Sana</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">ZIP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for batch in original.batches.all %}
+      <tr style="border-bottom:1px solid #eee; {% if forloop.even %}background:#f9f9f9;{% endif %}">
+        <td style="padding:10px 14px; font-size:13px; font-weight:600;">{{ batch.name }}</td>
+        <td style="padding:10px 14px; font-size:13px; text-align:center;">{{ batch.quantity }}</td>
+        <td style="padding:10px 14px; font-size:13px; text-align:center;">
+          {{ batch.qr_codes.filter.is_scanned }}
+          {% with sc=batch.qr_codes.count %}{{ sc }}{% endwith %}
+        </td>
+        <td style="padding:10px 14px; text-align:center;">
+          {% with rate=batch.activation_rate %}
+          <span style="font-weight:600; color:{% if rate >= 50 %}#388E3C{% elif rate >= 20 %}#F57C00{% else %}#D32F2F{% endif %};">
+            {{ rate }}%
+          </span>
+          {% endwith %}
+        </td>
+        <td style="padding:10px 14px; text-align:center; font-size:12px;">
+          {% if batch.status == 'completed' %}
+            <span style="background:#d4edda;color:#155724;padding:3px 8px;border-radius:12px;">✅ Tayyor</span>
+          {% elif batch.status == 'processing' %}
+            <span style="background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:12px;">🔄 Jarayonda</span>
+          {% elif batch.status == 'failed' %}
+            <span style="background:#f8d7da;color:#721c24;padding:3px 8px;border-radius:12px;">❌ Xatolik</span>
+          {% else %}
+            <span style="background:#fff3cd;color:#856404;padding:3px 8px;border-radius:12px;">⏳ Kutilmoqda</span>
+          {% endif %}
+        </td>
+        <td style="padding:10px 14px; text-align:center; font-size:12px;">
+          {% if batch.delivery_status == 'delivered' %}
+            <span style="background:#d4edda;color:#155724;padding:3px 8px;border-radius:12px;">✅ Yetkazildi</span>
+          {% elif batch.delivery_status == 'shipped' %}
+            <span style="background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:12px;">🚚 Jo'natildi</span>
+          {% else %}
+            <span style="background:#f3f4f6;color:#374151;padding:3px 8px;border-radius:12px;">—</span>
+          {% endif %}
+        </td>
+        <td style="padding:10px 14px; font-size:12px; color:#666; text-align:center;">
+          {{ batch.created_at|date:"d.m.Y" }}
+        </td>
+        <td style="padding:10px 14px; text-align:center;">
+          {% if batch.zip_file %}
+            <a href="{{ batch.zip_file.url }}" style="background:#1976D2;color:#fff;padding:4px 10px;border-radius:4px;text-decoration:none;font-size:12px;">⬇ ZIP</a>
+          {% else %}
+            <span style="color:#aaa; font-size:12px;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="padding:20px; text-align:center; color:#999;">Batch'lar yo'q</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Sotuvchi tranzaksiyalari -->
+  <h3 style="font-size:16px; font-weight:600; margin:24px 0 12px; color:#333;">
+    💰 Sotuvchi ball tranzaksiyalari
+  </h3>
+  <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.1);">
+    <thead>
+      <tr style="background:#7B1FA2; color:#fff;">
+        <th style="padding:10px 14px; text-align:left; font-size:13px;">Sana</th>
+        <th style="padding:10px 14px; text-align:left; font-size:13px;">Sotuvchi</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Tur</th>
+        <th style="padding:10px 14px; text-align:center; font-size:13px;">Ball</th>
+        <th style="padding:10px 14px; text-align:left; font-size:13px;">Izoh</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tx in original.seller_transactions.all|slice:":20" %}
+      <tr style="border-bottom:1px solid #eee; {% if forloop.even %}background:#f9f9f9;{% endif %}">
+        <td style="padding:8px 14px; font-size:12px; color:#666;">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
+        <td style="padding:8px 14px; font-size:13px;">{{ tx.seller.first_name|default:"—" }}</td>
+        <td style="padding:8px 14px; font-size:12px; text-align:center;">{{ tx.get_transaction_type_display }}</td>
+        <td style="padding:8px 14px; font-size:13px; font-weight:700; text-align:center;
+            color:{% if tx.points > 0 %}#388E3C{% else %}#D32F2F{% endif %};">
+          {% if tx.points > 0 %}+{% endif %}{{ tx.points }}
+        </td>
+        <td style="padding:8px 14px; font-size:12px; color:#555;">{{ tx.note|default:"—"|truncatechars:50 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="padding:20px; text-align:center; color:#999;">Tranzaksiyalar yo'q</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+{% endif %}
+{% endblock %}

@@ -25,7 +25,7 @@ class QRCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = QRCode
         fields = [
-            'id', 'code', 'code_type', 'points',
+            'id', 'code', 'points',
             'generated_at', 'scanned_at', 'scanned_by', 'is_scanned'
         ]
         read_only_fields = ['id', 'generated_at', 'scanned_at', 'is_scanned']

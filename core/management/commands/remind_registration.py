@@ -23,9 +23,8 @@ def _incomplete_registration_q() -> Q:
 
     См. bot/bot.py::is_registration_complete:
       language, first_name, user_type, privacy_accepted, phone_number, latitude, longitude
-      + для seller требуется smartup_id
     """
-    missing_base = (
+    return (
         Q(language__isnull=True) | Q(language="") |
         Q(first_name__isnull=True) | Q(first_name="") |
         Q(user_type__isnull=True) | Q(user_type="") |
@@ -34,10 +33,6 @@ def _incomplete_registration_q() -> Q:
         Q(latitude__isnull=True) |
         Q(longitude__isnull=True)
     )
-
-    missing_seller_smartup = Q(user_type="sotuvchi") & (Q(smartup_id__isnull=True) | Q(smartup_id=0))
-
-    return missing_base | missing_seller_smartup
 
 
 class Command(BaseCommand):

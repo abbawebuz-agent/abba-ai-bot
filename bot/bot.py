@@ -1276,22 +1276,12 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                     user.register_invalid_promo_attempt(source='bot', raw_code=qr_code_str)
                     return {'error': 'already_scanned'}
                 
-                # Валидация типа кода - проверяем соответствие типу пользователя
-                if user.user_type and user.user_type != qr_code.code_type:
-                    # Создаем запись о неудачной попытке (несоответствие типа)
-                    QRCodeScanAttempt.objects.create(
-                        user=user,
-                        qr_code=qr_code,
-                        is_successful=False
-                    )
+                # JIP: Faqat santenik QR kodni skanlashi mumkin
+                if user.user_type != 'santenik':
+                    QRCodeScanAttempt.objects.create(user=user, qr_code=qr_code, is_successful=False)
                     user.register_invalid_promo_attempt(source='bot', raw_code=qr_code_str)
                     return {'error': 'wrong_type'}
-                
-                # Определяем тип пользователя на основе типа QR-кода (если еще не установлен)
-                if not user.user_type:
-                    user.user_type = qr_code.code_type
-                    user.save(update_fields=['user_type'])
-                
+
                 # Отмечаем QR-код как отсканированный
                 qr_code.is_scanned = True
                 qr_code.scanned_at = timezone.now()
@@ -1390,62 +1380,99 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
 
 
 async def show_main_menu(message: Message, user: TelegramUser):
-    """Показывает главное меню бота."""
+    """Показывает главное меню — разное для santenik и sotuvchi."""
+    if user.user_type == 'sotuvchi':
+        await show_seller_menu(message, user)
+    else:
+        await show_santenik_menu(message, user)
+
+
+async def show_santenik_menu(message: Message, user: TelegramUser):
+    """Santenik asosiy menyusi."""
     @sync_to_async
-    def get_user_points():
-        user_obj = TelegramUser.objects.get(telegram_id=message.from_user.id)
-        return user_obj.points
-    
-    points = await get_user_points()
-    
-    # Создаем reply keyboard кнопки
-    keyboard_buttons = []
-    
-    # Определяем URL для Web App
+    def get_points():
+        return TelegramUser.objects.get(telegram_id=message.from_user.id).points
+
+    points = await get_points()
     web_app_url = get_web_app_url()
-    
-    # Добавляем остальные кнопки (без Web App кнопки в reply keyboard)
-    keyboard_buttons.extend([
-        [types.KeyboardButton(text=get_text(user, 'GIFTS'))],
-        [
-            types.KeyboardButton(text=get_text(user, 'MY_BALANCE')),
-            types.KeyboardButton(text=get_text(user, 'TOP_LEADERS')),
-            types.KeyboardButton(text=get_text(user, 'TOP_LEADERS_MONTH')),
-        ],
-        [types.KeyboardButton(text=get_text(user, 'ENTER_PROMO_CODE'))],
-        [types.KeyboardButton(text=get_text(user, 'LANGUAGE'))],
-    ])
-    
+
     keyboard = types.ReplyKeyboardMarkup(
-        keyboard=keyboard_buttons,
-        resize_keyboard=True
+        keyboard=[
+            [types.KeyboardButton(text=get_text(user, 'GIFTS'))],
+            [
+                types.KeyboardButton(text=get_text(user, 'MY_BALANCE')),
+                types.KeyboardButton(text=get_text(user, 'TOP_LEADERS')),
+                types.KeyboardButton(text=get_text(user, 'TOP_LEADERS_MONTH')),
+            ],
+            [types.KeyboardButton(text=get_text(user, 'ENTER_PROMO_CODE'))],
+            [types.KeyboardButton(text=get_text(user, 'LANGUAGE'))],
+        ],
+        resize_keyboard=True,
     )
-    
-    # Создаем inline кнопку для Web App
-    inline_keyboard = None
-    if web_app_url:
-        try:
-            web_app_button = types.InlineKeyboardButton(
-                text=get_text(user, 'MY_GIFTS'),
-                web_app=types.WebAppInfo(url=web_app_url)
-            )
-            inline_keyboard = types.InlineKeyboardMarkup(
-                inline_keyboard=[[web_app_button]]
-            )
-        except Exception as e:
-            logger.warning(f"Не удалось создать Web App inline кнопку: {e}")
-    
+
     await message.answer(
         get_text(user, 'MAIN_MENU', points=format_number(points)),
-        reply_markup=keyboard
+        reply_markup=keyboard,
     )
-    
-    # Отправляем отдельное сообщение с inline кнопкой для Web App
-    if inline_keyboard:
-        await message.answer(
-            get_text(user, 'OPEN_WEB_APP'),
-            reply_markup=inline_keyboard
+
+    if web_app_url:
+        try:
+            inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text=get_text(user, 'MY_GIFTS'),
+                    web_app=types.WebAppInfo(url=web_app_url),
+                )
+            ]])
+            await message.answer(get_text(user, 'OPEN_WEB_APP'), reply_markup=inline_kb)
+        except Exception as e:
+            logger.warning(f"Web App inline button error: {e}")
+
+
+async def show_seller_menu(message: Message, user: TelegramUser):
+    """Sotuvchi asosiy menyusi."""
+    @sync_to_async
+    def get_seller_data():
+        u = TelegramUser.objects.select_related('owned_stores__region').get(
+            telegram_id=message.from_user.id
         )
+        store = u.owned_stores.filter(is_active=True).select_related('region').first()
+        return u.points, store
+
+    points, store = await get_seller_data()
+    web_app_url = get_web_app_url()
+
+    store_name = store.name if store else '—'
+    menu_text = get_text(
+        user, 'SELLER_MAIN_MENU',
+        name=user.first_name or '',
+        store=store_name,
+        points=format_number(points),
+    )
+
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=[
+            [types.KeyboardButton(text=get_text(user, 'SELLER_MY_BALANCE'))],
+            [types.KeyboardButton(text=get_text(user, 'SELLER_MY_STORE'))],
+            [types.KeyboardButton(text=get_text(user, 'SELLER_CONTACT_ADMIN'))],
+            [types.KeyboardButton(text=get_text(user, 'LANGUAGE'))],
+        ],
+        resize_keyboard=True,
+    )
+
+    await message.answer(menu_text, reply_markup=keyboard, parse_mode='HTML')
+
+    if web_app_url:
+        try:
+            seller_url = f"{web_app_url.rstrip('/')}/seller/"
+            inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text=get_text(user, 'SELLER_WEBAPP_BUTTON'),
+                    web_app=types.WebAppInfo(url=seller_url),
+                )
+            ]])
+            await message.answer(get_text(user, 'SELLER_OPEN_WEBAPP'), reply_markup=inline_kb)
+        except Exception as e:
+            logger.warning(f"Seller Web App inline button error: {e}")
 
 
 @dp.message()
@@ -1552,62 +1579,38 @@ async def handle_message(message: Message, state: FSMContext = None):
                     await state.set_state(RegistrationStates.waiting_for_promo_code)
             return
 
-    # Получаем все возможные варианты текстов кнопок
-    all_balance_texts = [
-        TRANSLATIONS['uz_latin']['MY_BALANCE'],
-        TRANSLATIONS['ru']['MY_BALANCE'],
-    ]
-    
-    all_gifts_texts = [
-        TRANSLATIONS['uz_latin']['GIFTS'],
-        TRANSLATIONS['ru']['GIFTS'],
-    ]
-    
-    all_leaders_texts = [
-        TRANSLATIONS['uz_latin']['TOP_LEADERS'],
-        TRANSLATIONS['ru']['TOP_LEADERS'],
-    ]
+    # Tugma tekstlari to'plamlari
+    all_balance_texts = [TRANSLATIONS['uz_latin']['MY_BALANCE'], TRANSLATIONS['ru']['MY_BALANCE']]
+    all_gifts_texts = [TRANSLATIONS['uz_latin']['GIFTS'], TRANSLATIONS['ru']['GIFTS']]
+    all_leaders_texts = [TRANSLATIONS['uz_latin']['TOP_LEADERS'], TRANSLATIONS['ru']['TOP_LEADERS']]
+    all_leaders_month_texts = [TRANSLATIONS['uz_latin']['TOP_LEADERS_MONTH'], TRANSLATIONS['ru']['TOP_LEADERS_MONTH']]
+    all_language_texts = [TRANSLATIONS['uz_latin']['LANGUAGE'], TRANSLATIONS['ru']['LANGUAGE']]
+    all_promo_code_texts = [TRANSLATIONS['uz_latin']['ENTER_PROMO_CODE'], TRANSLATIONS['ru']['ENTER_PROMO_CODE']]
 
-    all_leaders_month_texts = [
-        TRANSLATIONS['uz_latin']['TOP_LEADERS_MONTH'],
-        TRANSLATIONS['ru']['TOP_LEADERS_MONTH'],
-    ]
-    
-    all_language_texts = [
-        TRANSLATIONS['uz_latin']['LANGUAGE'],
-        TRANSLATIONS['ru']['LANGUAGE'],
-    ]
-    
-    all_promo_code_texts = [
-        TRANSLATIONS['uz_latin']['ENTER_PROMO_CODE'],
-        TRANSLATIONS['ru']['ENTER_PROMO_CODE'],
-    ]
-    
-    # Обрабатываем в зависимости от текста
-    if message.text in all_balance_texts:
+    # Sotuvchi tugmalari
+    all_seller_balance_texts = [TRANSLATIONS['uz_latin']['SELLER_MY_BALANCE'], TRANSLATIONS['ru']['SELLER_MY_BALANCE']]
+    all_seller_store_texts = [TRANSLATIONS['uz_latin']['SELLER_MY_STORE'], TRANSLATIONS['ru']['SELLER_MY_STORE']]
+    all_seller_contact_texts = [TRANSLATIONS['uz_latin']['SELLER_CONTACT_ADMIN'], TRANSLATIONS['ru']['SELLER_CONTACT_ADMIN']]
+
+    if message.text in all_seller_balance_texts:
+        await show_seller_balance(message, user)
+    elif message.text in all_seller_store_texts:
+        await show_seller_store_info(message, user)
+    elif message.text in all_seller_contact_texts:
+        await show_admin_contact_for_seller(message, user)
+    elif message.text in all_balance_texts:
         await show_balance(message, user)
     elif message.text in all_gifts_texts:
-        # Определяем URL для Web App
         web_app_url = get_web_app_url()
-        
-        # Создаем inline кнопку для Web App
         inline_keyboard = None
         if web_app_url:
             try:
-                web_app_button = types.InlineKeyboardButton(
-                    text=get_text(user, 'MY_GIFTS'),
-                    web_app=types.WebAppInfo(url=web_app_url)
-                )
-                inline_keyboard = types.InlineKeyboardMarkup(
-                    inline_keyboard=[[web_app_button]]
-                )
+                inline_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
+                    types.InlineKeyboardButton(text=get_text(user, 'MY_GIFTS'), web_app=types.WebAppInfo(url=web_app_url))
+                ]])
             except Exception as e:
-                logger.warning(f"Не удалось создать Web App inline кнопку: {e}")
-        
-        await message.answer(
-            get_text(user, 'OPEN_WEB_APP'),
-            reply_markup=inline_keyboard
-        )
+                logger.warning(f"Web App inline button error: {e}")
+        await message.answer(get_text(user, 'OPEN_WEB_APP'), reply_markup=inline_keyboard)
     elif message.text in all_leaders_texts:
         await show_leaders(message)
     elif message.text in all_leaders_month_texts:
@@ -1615,15 +1618,10 @@ async def handle_message(message: Message, state: FSMContext = None):
     elif message.text in all_language_texts:
         await show_language_selection(message)
     elif message.text in all_promo_code_texts:
-        # Отправляем просьбу ввести промокод
         await message.answer(get_text(user, 'SEND_PROMO_CODE'))
         await state.set_state(RegistrationStates.waiting_for_promo_code)
     else:
-        # Если это не команда меню, пытаемся обработать как QR-код
-        # Пользователь может ввести QR-код вручную
-        # Не обрабатываем контакты и локации как QR-коды
         if message.text and len(message.text.strip()) > 0 and not message.contact and not message.location:
-            # Убираем пробелы и нормализуем регистр для поиска (case-insensitive)
             qr_code_str = message.text.strip().upper()
             await handle_qr_code_scan(message, user, qr_code_str, state)
         else:
@@ -1631,13 +1629,74 @@ async def handle_message(message: Message, state: FSMContext = None):
 
 
 async def show_balance(message: Message, user: TelegramUser):
-    """Показывает баланс пользователя."""
+    """Santenik balansini ko'rsatadi."""
     @sync_to_async
     def get_actual_points():
         return user.calculate_points()
 
     actual_points = await get_actual_points()
     await message.answer(get_text(user, 'BALANCE_INFO', points=format_number(actual_points)))
+
+
+async def show_seller_balance(message: Message, user: TelegramUser):
+    """Sotuvchi balansini ko'rsatadi."""
+    @sync_to_async
+    def get_points():
+        return TelegramUser.objects.get(telegram_id=message.from_user.id).calculate_points()
+
+    points = await get_points()
+    await message.answer(get_text(user, 'SELLER_BALANCE_INFO', points=format_number(points)))
+
+
+async def show_seller_store_info(message: Message, user: TelegramUser):
+    """Sotuvchi do'koni haqida ma'lumot ko'rsatadi."""
+    @sync_to_async
+    def get_store():
+        return (
+            TelegramUser.objects.get(telegram_id=message.from_user.id)
+            .owned_stores.filter(is_active=True)
+            .select_related('region')
+            .first()
+        )
+
+    store = await get_store()
+    if not store:
+        await message.answer(get_text(user, 'SELLER_NO_STORE'))
+        return
+
+    @sync_to_async
+    def get_store_stats():
+        return store.total_qr_codes(), store.scanned_qr_codes()
+
+    total, scanned = await get_store_stats()
+    await message.answer(
+        get_text(
+            user, 'SELLER_STORE_INFO',
+            name=store.name,
+            address=store.address or '—',
+            region=store.region.name_uz if store.region else '—',
+            total=total,
+            scanned=scanned,
+            commission=store.commission_percent,
+        ),
+        parse_mode='HTML',
+    )
+
+
+async def show_admin_contact_for_seller(message: Message, user: TelegramUser):
+    """Sotuvchi uchun admin kontaktini ko'rsatadi."""
+    @sync_to_async
+    def get_contact():
+        from core.models import AdminContactSettings
+        return AdminContactSettings.get_active_contact()
+
+    contact = await get_contact()
+    if contact:
+        contact_url = contact.get_contact_url()
+        text = f"📞 {contact_url or contact.contact_value}"
+    else:
+        text = get_text(user, 'SELLER_CONTACT_ADMIN')
+    await message.answer(text)
 
 
 
