@@ -22,6 +22,10 @@ if _webhook:
     if _wh_host and _wh_host not in _allowed:
         _allowed.append(_wh_host)
 
+# Railway healthcheck domenini qo'shamiz
+if 'healthcheck.railway.app' not in _allowed:
+    _allowed.append('healthcheck.railway.app')
+
 ALLOWED_HOSTS = _allowed or ['*']
 
 # Security settings для production
