@@ -2546,7 +2546,6 @@ class VideoInstructionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 
 # JIP — yangi modellar uchun admin
-@admin.register(Store)
 class QRCodeBatchInline(admin.TabularInline):
     """Do'kon sahifasida batch'larni inline ko'rsatish."""
     model = QRCodeBatch
