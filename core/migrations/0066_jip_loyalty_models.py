@@ -365,7 +365,7 @@ class Migration(migrations.Migration):
         # --- Indexes update on Gift (was user_type+is_active, now just is_active) ---
         migrations.RemoveIndex(
             model_name='gift',
-            name='core_gift_user_ty_d6f10b_idx',
+            name='core_gift_user_ty_d0e00a_idx',
         ),
         migrations.AddIndex(
             model_name='gift',
