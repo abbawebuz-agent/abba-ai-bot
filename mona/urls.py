@@ -701,8 +701,11 @@ def admin_logout_view(request):
     return redirect(settings.LOGIN_URL)
 
 
+from core.bot_webhook import telegram_webhook_view
+
 urlpatterns = [
     path('i18n/', include('django.conf.urls.i18n')),
+    path('webhook/<str:token>/', telegram_webhook_view, name='telegram_webhook'),
     path('admin/dashboard/export/', admin.site.admin_view(dashboard_export_view), name='dashboard_export'),
     path('admin/dashboard/user/<int:user_id>/', admin.site.admin_view(user_detail_view), name='user_detail_page'),
     path('admin/dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),

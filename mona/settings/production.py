@@ -14,13 +14,18 @@ _railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
 if _railway_domain and _railway_domain not in _allowed:
     _allowed.append(_railway_domain)
 
-# WEBHOOK_URL domenini ham qo'shamiz
+# WEBHOOK_URL — Railway domenidan avtomatik aniqlash
 _webhook = os.environ.get('WEBHOOK_URL', '')
+if not _webhook and _railway_domain:
+    _webhook = f'https://{_railway_domain}'
+    os.environ['WEBHOOK_URL'] = _webhook
 if _webhook:
     import urllib.parse
     _wh_host = urllib.parse.urlparse(_webhook).hostname
     if _wh_host and _wh_host not in _allowed:
         _allowed.append(_wh_host)
+
+WEBHOOK_URL = _webhook
 
 # Railway healthcheck domenini qo'shamiz
 if 'healthcheck.railway.app' not in _allowed:

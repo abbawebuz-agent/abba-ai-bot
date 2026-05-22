@@ -2617,7 +2617,6 @@ class StoreAdmin(SimpleHistoryAdmin):
     def store_statistics(self, obj):
         if not obj.pk:
             return '—'
-        from django.db.models import Count, Q as DQ
         total_qr = obj.total_qr_codes()
         scanned_qr = obj.scanned_qr_codes()
         rate = obj.activation_rate()
@@ -2783,7 +2782,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         self.message_user(request, f"✅ {count} ta batch 'yetkazib berildi' deb belgilandi.")
 
     def save_model(self, request, obj, form, change):
-        from .tasks import generate_batch_zip
+        from .tasks import generate_batch_zip, _do_generate_batch_zip
         is_new = not obj.pk
         if not obj.created_by_id:
             obj.created_by = request.user
@@ -2792,9 +2791,14 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
             if not obj.name:
                 obj.name = QRCodeBatch.generate_name(obj.store)
                 obj.save(update_fields=['name'])
-            # Yangi batch yaratilganda avtomatik ZIP generatsiya
-            generate_batch_zip.delay(obj.id)
-            self.message_user(request, f"✅ '{obj.name}' batch yaratildi. ZIP generatsiya navbatga qo'shildi.")
+            try:
+                generate_batch_zip.delay(obj.id)
+                self.message_user(request, f"✅ '{obj.name}' batch yaratildi. ZIP Celery orqali generatsiya boshlanadi.")
+            except Exception:
+                import threading
+                t = threading.Thread(target=_do_generate_batch_zip, args=(obj,), daemon=True)
+                t.start()
+                self.message_user(request, f"✅ '{obj.name}' batch yaratildi. ZIP fon rejimida generatsiya boshlanadi.")
 
 
 @admin.register(SellerPointsTransaction)
