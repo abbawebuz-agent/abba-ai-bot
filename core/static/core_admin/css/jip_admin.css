@@ -416,100 +416,219 @@ fieldset.module h2 {
   border-radius: 10px 0 0 10px !important;
 }
 
-/* --- Filters sidebar --- */
+/* ============================================================
+   FILTER PANEL — Zamonaviy JIP dizayni
+   ============================================================ */
+
+/* Tashqi konteyner */
 #changelist-filter {
-  border-radius: var(--jip-radius) !important;
-  border: 1px solid var(--jip-border) !important;
+  min-width: 240px !important;
+  width: 240px !important;
+  flex: 0 0 240px !important;
+  box-sizing: border-box !important;
   overflow: visible !important;
-  box-shadow: var(--jip-shadow) !important;
-  min-width: 220px !important;
+}
+
+/* Bootstrap .card override */
+#changelist-filter .card {
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 32px rgba(37,99,235,0.11), 0 1px 4px rgba(0,0,0,0.06) !important;
+  overflow: visible !important;
+  background: #fff !important;
+}
+
+/* Header: dark gradient, "Filter" sarlavhasi */
+#changelist-filter .card-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1d4ed8 100%) !important;
+  color: #fff !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  padding: 14px 18px !important;
+  border-radius: 14px 14px 0 0 !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* "Clear all" linki header ichida */
+#changelist-filter .card-header a {
+  color: rgba(255,255,255,0.55) !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  text-decoration: none !important;
+  margin-left: auto !important;
+  transition: var(--jip-transition) !important;
+}
+#changelist-filter .card-header a:hover {
+  color: #fff !important;
+}
+
+/* Card body */
+#changelist-filter .card-body {
+  padding: 14px 14px 16px !important;
+  background: #fff !important;
+  border-radius: 0 0 14px 14px !important;
+}
+
+/* Har bir filter guruh */
+#changelist-filter .form-group {
+  margin-bottom: 12px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+#changelist-filter .form-group:last-of-type {
+  border-bottom: none !important;
+  margin-bottom: 8px !important;
+}
+
+/* Label: uppercase, accent chiziq bilan */
+#changelist-filter .form-group label,
+#changelist-filter .small.text-muted {
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  margin-bottom: 6px !important;
+  padding-left: 8px !important;
+  border-left: 3px solid var(--jip-accent) !important;
+  line-height: 1.4 !important;
+}
+
+/* Select dropdown — chiroyli custom */
+#changelist-filter select,
+#changelist-filter .form-control,
+#changelist-filter .search-filter {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-color: #f8fafc !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  padding: 8px 32px 8px 10px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  color: #1e293b !important;
+  cursor: pointer !important;
+  transition: var(--jip-transition) !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+}
+
+#changelist-filter select:focus,
+#changelist-filter .form-control:focus,
+#changelist-filter .search-filter:focus {
+  outline: none !important;
+  border-color: var(--jip-primary) !important;
+  background-color: #fff !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important;
+}
+
+#changelist-filter select:hover,
+#changelist-filter .search-filter:hover {
+  border-color: #94a3b8 !important;
+  background-color: #fff !important;
+}
+
+/* Tugmalar qatori */
+#changelist-filter .card-body > div[style*="display:flex"],
+#changelist-filter .card-body > div[style*="display: flex"] {
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+/* Search tugmasi */
+#changelist-filter .btn-primary,
+#changelist-filter button.btn-primary {
+  background: linear-gradient(135deg, var(--jip-primary), var(--jip-accent)) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.5px !important;
+  padding: 9px 14px !important;
+  box-shadow: 0 3px 12px rgba(37,99,235,0.30) !important;
+  transition: var(--jip-transition) !important;
+  cursor: pointer !important;
   width: auto !important;
+  white-space: nowrap !important;
   box-sizing: border-box !important;
 }
-
-#changelist-filter h2 {
-  background: var(--jip-sidebar-bg) !important;
-  color: #e2e8f0 !important;
-  font-size: 11px !important;
-  letter-spacing: 1.2px !important;
-  padding: 12px 16px !important;
-  text-transform: uppercase !important;
-  font-weight: 700 !important;
-  border-radius: var(--jip-radius) var(--jip-radius) 0 0 !important;
+#changelist-filter .btn-primary:hover,
+#changelist-filter button.btn-primary:hover {
+  box-shadow: 0 5px 20px rgba(37,99,235,0.45) !important;
+  transform: translateY(-1px) !important;
 }
 
-#changelist-filter h3 {
-  font-size: 12px !important;
+/* Tiklash (reset) tugmasi */
+#changelist-filter .btn-secondary,
+#changelist-filter a.btn-secondary {
+  background: #fff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  color: #64748b !important;
   font-weight: 600 !important;
-  color: var(--jip-text-muted) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.8px !important;
-  padding: 10px 14px 6px !important;
-  border-bottom: 1px solid var(--jip-border) !important;
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  transition: var(--jip-transition) !important;
+  cursor: pointer !important;
+  width: auto !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+#changelist-filter .btn-secondary:hover,
+#changelist-filter a.btn-secondary:hover {
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
+  background: #f8fafc !important;
 }
 
+/* Eski Django standart filter li/ul stillar (agar mavjud bo'lsa) */
+#changelist-filter h3 {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding: 10px 0 6px 8px !important;
+  border-left: 3px solid var(--jip-accent) !important;
+  border-bottom: none !important;
+  margin-bottom: 6px !important;
+}
 #changelist-filter li a {
   color: var(--jip-text) !important;
   font-size: 13px !important;
-  padding: 6px 14px !important;
+  padding: 5px 10px !important;
   display: block !important;
   transition: var(--jip-transition) !important;
   border-radius: 6px !important;
-  margin: 2px 8px !important;
+  margin: 2px 0 !important;
 }
-
 #changelist-filter li a:hover {
   background: rgba(37,99,235,0.08) !important;
   color: var(--jip-primary) !important;
 }
-
 #changelist-filter li.selected a {
   background: rgba(37,99,235,0.12) !important;
   color: var(--jip-primary) !important;
   font-weight: 600 !important;
 }
-
-/* Filter select va button elementlari to'liq ko'rinsin */
-#changelist-filter select,
-#changelist-filter input,
-#changelist-filter .form-control {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-#changelist-filter .btn,
-#changelist-filter button {
-  width: 100% !important;
-  box-sizing: border-box !important;
-  white-space: nowrap !important;
-}
-
-/* Filter UL listlari to'g'ri bo'lsin */
 #changelist-filter ul {
   padding: 4px 0 !important;
   margin: 0 !important;
-}
-
-/* Changelist asosiy kontenti filter bilan bir qatorda */
-#changelist-form {
-  display: flex !important;
-  gap: 16px !important;
-  align-items: flex-start !important;
-}
-
-#changelist-form .results,
-#changelist-form .paginator,
-#changelist-form p.paginator,
-#changelist-form #toolbar,
-#changelist-form #search-form,
-#changelist-form #changelist-search {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-}
-
-#changelist-filter {
-  flex: 0 0 auto !important;
+  list-style: none !important;
 }
 
 /* --- Select2 --- */

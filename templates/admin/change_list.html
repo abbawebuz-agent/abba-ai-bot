@@ -103,16 +103,19 @@
         <div class="col-12 col-lg-3" id="changelist-filter">
             <div class="card">
                 <div class="card-header">
-                    Filter
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.8;flex-shrink:0;"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                    {% translate "Filter" %}
                     {% if cl.has_active_filters %}
                         <a href="?" class="float-right small">&#10006; {% translate "Clear all filters" %}</a>
                     {% endif %}
                 </div>
                 <div class="card-body">
                     {% for spec in cl.filter_specs %}{% jazzmin_list_filter cl spec %}{% endfor %}
-                    <div style="margin-top:12px; display:flex; gap:6px;">
-                        <button type="button" class="btn btn-primary btn-sm" style="flex:1;" onclick="applyAllFilters()">Search</button>
-                        <a href="?{% if cl.query %}q={{ cl.query }}{% endif %}" class="btn btn-secondary btn-sm" style="flex:1; text-align:center;">Tiklash</a>
+                    <div style="margin-top:14px; display:flex; gap:8px;">
+                        <button type="button" class="btn btn-primary btn-sm" style="flex:1;" onclick="applyAllFilters()">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>{% translate "Search" %}
+                        </button>
+                        <a href="?{% if cl.query %}q={{ cl.query }}{% endif %}" class="btn btn-secondary btn-sm" style="flex:1; text-align:center;">{% translate "Reset" %}</a>
                     </div>
                 </div>
             </div>
