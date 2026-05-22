@@ -623,3 +623,242 @@ fieldset.module h2 {
   color: #06b6d4;
   font-size: 14px;
 }
+
+/* ============================================================
+   Admin index — app list kartalar va tugmalar
+   ============================================================ */
+
+/* Karta sarlavhasi (app nomi: Core, Auth ...) */
+.app-list-section > caption,
+#content-main .app-core > caption,
+.module caption,
+.app-list caption {
+  background: linear-gradient(90deg, var(--jip-sidebar-bg), #1e293b) !important;
+  color: #e2e8f0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase !important;
+  padding: 12px 16px !important;
+  border-radius: var(--jip-radius) var(--jip-radius) 0 0 !important;
+}
+
+/* Jazzmin app kartasi */
+.app-list .card-header,
+.app-list .card-title,
+#content-main .card .card-header {
+  background: linear-gradient(90deg, var(--jip-sidebar-bg), #1e293b) !important;
+  color: #e2e8f0 !important;
+  border-radius: var(--jip-radius) var(--jip-radius) 0 0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase !important;
+}
+
+.app-list .card-header a,
+.app-list .card-title a,
+#content-main .card .card-header a {
+  color: #cbd5e1 !important;
+}
+
+/* Model qator hover */
+.app-list .model-name,
+#content-main table.content-column tr:hover,
+.app-list tbody tr:hover {
+  background: rgba(37,99,235,0.04) !important;
+}
+
+/* --- "Добавить" (addlink) tugma → JIP Primary ko'k --- */
+.addlink,
+a.addlink,
+td .addlink,
+.object-tools .addlink,
+.app-list .addlink {
+  background: var(--jip-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: var(--jip-transition) !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.25) !important;
+}
+.addlink:hover, a.addlink:hover {
+  background: var(--jip-primary-dark) !important;
+  color: #fff !important;
+}
+
+/* --- "Изменить" (changelink) → Teal --- */
+.changelink,
+a.changelink,
+td .changelink {
+  background: var(--jip-accent) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: var(--jip-transition) !important;
+  box-shadow: 0 2px 8px rgba(6,182,212,0.25) !important;
+}
+.changelink:hover, a.changelink:hover {
+  background: #0891b2 !important;
+  color: #fff !important;
+}
+
+/* --- "Просмотр" (viewlink) → Slate --- */
+.viewlink,
+a.viewlink,
+td .viewlink {
+  background: #475569 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: var(--jip-transition) !important;
+}
+.viewlink:hover, a.viewlink:hover {
+  background: #334155 !important;
+  color: #fff !important;
+}
+
+/* --- btn-success → JIP primary (AdminLTE default override) --- */
+.btn-success {
+  background: var(--jip-primary) !important;
+  border-color: var(--jip-primary) !important;
+  color: #fff !important;
+}
+.btn-success:hover {
+  background: var(--jip-primary-dark) !important;
+  border-color: var(--jip-primary-dark) !important;
+}
+
+/* --- btn-info → Teal --- */
+.btn-info {
+  background: var(--jip-accent) !important;
+  border-color: var(--jip-accent) !important;
+  color: #fff !important;
+}
+.btn-info:hover {
+  background: #0891b2 !important;
+  border-color: #0891b2 !important;
+}
+
+/* --- Object tools (yuqori o'ng tugmalar) --- */
+.object-tools > li > a,
+.object-tools li a {
+  background: var(--jip-primary) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  padding: 6px 14px !important;
+  text-decoration: none !important;
+  transition: var(--jip-transition) !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.25) !important;
+}
+.object-tools > li > a:hover,
+.object-tools li a:hover {
+  background: var(--jip-primary-dark) !important;
+  color: #fff !important;
+}
+
+/* --- Submit row (Saqlash tugmalar paneli) --- */
+.submit-row {
+  background: #f8fafc !important;
+  border-top: 1px solid var(--jip-border) !important;
+  border-radius: 0 0 var(--jip-radius) var(--jip-radius) !important;
+  padding: 12px 20px !important;
+}
+
+.submit-row input[type="submit"],
+.submit-row .btn {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 8px 20px !important;
+  transition: var(--jip-transition) !important;
+}
+
+/* --- Actions dropdown --- */
+.actions select {
+  border-radius: 8px !important;
+  border-color: var(--jip-border) !important;
+  font-size: 13px !important;
+}
+
+/* --- Breadcrumb --- */
+.breadcrumb {
+  background: transparent !important;
+  font-size: 13px !important;
+}
+.breadcrumb-item a {
+  color: var(--jip-primary) !important;
+}
+
+/* --- Messages (xabarlar) --- */
+.messagelist .success {
+  background: rgba(16,185,129,0.1) !important;
+  border-left: 4px solid var(--jip-success) !important;
+  color: #065f46 !important;
+  border-radius: 8px !important;
+}
+.messagelist .warning {
+  background: rgba(245,158,11,0.1) !important;
+  border-left: 4px solid var(--jip-warning) !important;
+  border-radius: 8px !important;
+}
+.messagelist .error {
+  background: rgba(239,68,68,0.1) !important;
+  border-left: 4px solid var(--jip-danger) !important;
+  border-radius: 8px !important;
+}
+
+/* --- Navbar brand logo o'lchami --- */
+.brand-image {
+  max-height: 40px !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+/* --- Dark navbar yaxshilash --- */
+.main-header {
+  background: var(--jip-navbar-bg) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+.main-header .nav-link,
+.main-header .navbar-text {
+  color: #94a3b8 !important;
+}
+.main-header .nav-link:hover {
+  color: #fff !important;
+}
+
+/* --- Dashboard (admin index) header wrapper --- */
+#content > h1 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--jip-text) !important;
+  margin-bottom: 20px !important;
+}
+
+/* --- Recent actions sidebar --- */
+#recent-actions-module .actionlist li {
+  border-bottom: 1px solid var(--jip-border) !important;
+  padding: 6px 0 !important;
+  font-size: 13px !important;
+}
+#recent-actions-module .actionlist a {
+  color: var(--jip-primary) !important;
+}
+#recent-actions-module .actionlist .viewlink::before {
+  content: none !important;
+}
