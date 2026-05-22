@@ -77,8 +77,21 @@ ASGI_APPLICATION = 'mona.asgi.application'
 # Database — Railway DATABASE_URL yoki alohida DB_* qiymatlarni qo'llab-quvvatlash
 _db_url = env('DATABASE_URL', default='')
 if _db_url:
-    import dj_database_url
-    DATABASES = {'default': dj_database_url.parse(_db_url, conn_max_age=600)}
+    try:
+        import dj_database_url
+        DATABASES = {'default': dj_database_url.parse(_db_url, conn_max_age=600)}
+    except ImportError:
+        import urllib.parse as _urlparse
+        _u = _urlparse.urlparse(_db_url)
+        DATABASES = {'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _u.path.lstrip('/'),
+            'USER': _u.username or '',
+            'PASSWORD': _u.password or '',
+            'HOST': _u.hostname or 'localhost',
+            'PORT': str(_u.port or 5432),
+            'CONN_MAX_AGE': 600,
+        }}
 else:
     DATABASES = {
         'default': {
