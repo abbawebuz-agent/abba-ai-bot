@@ -6,7 +6,10 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', os.environ.get('DJANGO_SETTINGS_MODULE', 'mona.settings.local'))
+    _dsm = os.environ.get('DJANGO_SETTINGS_MODULE', 'mona.settings.local')
+    if _dsm.startswith('jip.'):
+        _dsm = _dsm.replace('jip.', 'mona.', 1)
+    os.environ['DJANGO_SETTINGS_MODULE'] = _dsm
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

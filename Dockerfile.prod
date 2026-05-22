@@ -53,6 +53,6 @@ RUN mkdir -p /app/media /app/staticfiles
 # Открываем порты
 EXPOSE 8000 8443
 
-# Команда по умолчанию (переопределяется в docker-compose)
-CMD ["python", "-m", "gunicorn", "mona.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
+# Команда по умолчанию — Railway $PORT ni ishlatadi, docker-compose override qiladi
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn mona.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]
 
