@@ -2547,19 +2547,56 @@ class VideoInstructionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 # JIP — yangi modellar uchun admin
 @admin.register(Store)
+class QRCodeBatchInline(admin.TabularInline):
+    """Do'kon sahifasida batch'larni inline ko'rsatish."""
+    model = QRCodeBatch
+    extra = 0
+    fields = ['name', 'quantity', 'points_per_code', 'status', 'delivery_status', 'activation_rate_display', 'zip_download']
+    readonly_fields = ['name', 'status', 'activation_rate_display', 'zip_download']
+    show_change_link = True
+    ordering = ['-created_at']
+    max_num = 20
+
+    def activation_rate_display(self, obj):
+        rate = obj.activation_rate()
+        color = '#16a34a' if rate >= 50 else ('#ca8a04' if rate >= 20 else '#dc2626')
+        scanned = obj.qr_codes.filter(is_scanned=True).count()
+        return format_html(
+            '<b style="color:{};">{}%</b> <small>({}/{})</small>',
+            color, rate, scanned, obj.quantity
+        )
+    activation_rate_display.short_description = 'Aktivatsiya'
+
+    def zip_download(self, obj):
+        if obj.zip_file:
+            return format_html('<a href="{}" target="_blank">⬇ ZIP</a>', obj.zip_file.url)
+        if obj.status == 'pending':
+            return '⏳ Generatsiya...'
+        return '—'
+    zip_download.short_description = 'ZIP'
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Store)
 class StoreAdmin(SimpleHistoryAdmin):
-    """JIP: Do'kon admin (yangi model)."""
+    """JIP: Do'kon admin."""
     list_display = [
         'name', 'region', 'district', 'owner_display', 'phone',
-        'qr_codes_stats', 'commission_percent', 'is_active', 'created_at',
+        'batches_count', 'qr_codes_stats', 'commission_percent', 'is_active', 'created_at',
     ]
     list_filter = ['is_active', 'region', 'district']
     search_fields = ['name', 'legal_name', 'phone', 'owner__first_name', 'owner__phone_number']
     autocomplete_fields = ['region', 'district', 'owner']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'store_statistics']
     list_per_page = 50
+    inlines = [QRCodeBatchInline]
 
     fieldsets = (
+        ('📊 Statistika', {
+            'fields': ('store_statistics',),
+        }),
         ("Asosiy ma'lumotlar", {
             'fields': ('name', 'legal_name', 'phone', 'address', 'logo'),
         }),
@@ -2578,37 +2615,89 @@ class StoreAdmin(SimpleHistoryAdmin):
         }),
     )
 
+    def store_statistics(self, obj):
+        if not obj.pk:
+            return '—'
+        from django.db.models import Count, Q as DQ
+        total_qr = obj.total_qr_codes()
+        scanned_qr = obj.scanned_qr_codes()
+        rate = obj.activation_rate()
+        batches = obj.batches.count()
+        santeniks = obj.qr_codes.filter(
+            is_scanned=True, scanned_by__isnull=False
+        ).values('scanned_by').distinct().count()
+        return format_html(
+            '''<table style="border-collapse:collapse;min-width:400px;">
+            <tr>
+              <td style="padding:8px 16px 8px 0;"><b>Jami QR kodlar:</b></td>
+              <td style="padding:8px 0;font-size:16px;font-weight:700;">{}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 16px 8px 0;"><b>Skanlanganlar:</b></td>
+              <td style="padding:8px 0;font-size:16px;font-weight:700;color:#16a34a;">{}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 16px 8px 0;"><b>Aktivatsiya darajasi:</b></td>
+              <td style="padding:8px 0;font-size:16px;font-weight:700;color:#2563eb;">{}%</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 16px 8px 0;"><b>Batch'lar soni:</b></td>
+              <td style="padding:8px 0;">{}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 16px 8px 0;"><b>Santeniklarlar soni:</b></td>
+              <td style="padding:8px 0;">{}</td>
+            </tr>
+            </table>''',
+            total_qr, scanned_qr, rate, batches, santeniks
+        )
+    store_statistics.short_description = "Do'kon statistikasi"
+
     def owner_display(self, obj):
         if obj.owner_id:
             return f"{obj.owner.first_name or ''} ({obj.owner.phone_number or '-'})"
         return format_html('<span style="color:#c00;">— biriktirilmagan —</span>')
     owner_display.short_description = 'Egasi'
 
+    def batches_count(self, obj):
+        count = obj.batches.count()
+        url = reverse('admin:core_qrcodebatch_changelist') + f'?store__id__exact={obj.pk}'
+        return format_html('<a href="{}">{} batch</a>', url, count)
+    batches_count.short_description = "Batch'lar"
+
     def qr_codes_stats(self, obj):
         total = obj.total_qr_codes()
         scanned = obj.scanned_qr_codes()
+        rate = obj.activation_rate()
+        color = '#16a34a' if rate >= 50 else ('#ca8a04' if rate >= 20 else '#dc2626')
         return format_html(
-            '<small>{} / {} ({}%)</small>', scanned, total, obj.activation_rate(),
+            '<span style="color:{};font-weight:600;">{}%</span> <small>({}/{})</small>',
+            color, rate, scanned, total
         )
-    qr_codes_stats.short_description = 'Skan / Jami'
+    qr_codes_stats.short_description = 'Aktivatsiya'
 
 
 @admin.register(QRCodeBatch)
 class QRCodeBatchAdmin(SimpleHistoryAdmin):
     """JIP: Skretch-karta batch admin."""
     list_display = [
-        'name', 'store', 'quantity', 'points_per_code',
-        'activation_display', 'status', 'delivery_status', 'created_at',
+        'name', 'store_link', 'quantity', 'points_per_code',
+        'activation_display', 'scanned_count', 'status', 'delivery_status',
+        'zip_link', 'created_at',
     ]
-    list_filter = ['status', 'delivery_status', 'store']
+    list_filter = ['status', 'delivery_status', 'store', 'store__region']
     search_fields = ['name', 'store__name']
     autocomplete_fields = ['store']
-    readonly_fields = ['name', 'created_at', 'completed_at', 'zip_file', 'error_message']
+    readonly_fields = ['name', 'created_at', 'completed_at', 'zip_file', 'error_message', 'batch_qr_history_link']
     list_per_page = 50
 
     fieldsets = (
-        ('Batch', {
+        ("Batch ma'lumotlari", {
             'fields': ('name', 'store', 'quantity', 'points_per_code'),
+            'description': "Batch saqlanganda avtomatik nom va ZIP generatsiya boshlanadi.",
+        }),
+        ('📊 QR tarixi', {
+            'fields': ('batch_qr_history_link',),
         }),
         ('Generatsiya', {
             'fields': ('status', 'zip_file', 'error_message', 'created_at', 'completed_at'),
@@ -2620,6 +2709,38 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
             'fields': ('created_by',),
         }),
     )
+
+    def store_link(self, obj):
+        url = reverse('admin:core_store_change', args=[obj.store_id])
+        return format_html('<a href="{}">{}</a>', url, obj.store.name)
+    store_link.short_description = "Do'kon"
+    store_link.admin_order_field = 'store__name'
+
+    def scanned_count(self, obj):
+        scanned = obj.qr_codes.filter(is_scanned=True).count()
+        url = reverse('admin:core_qrcode_changelist') + f'?batch__id__exact={obj.pk}&is_scanned__exact=1'
+        return format_html('<a href="{}">{} ta</a>', url, scanned)
+    scanned_count.short_description = 'Skanlanganlar'
+
+    def zip_link(self, obj):
+        if obj.zip_file:
+            return format_html('<a href="{}" target="_blank">⬇ ZIP</a>', obj.zip_file.url)
+        return format_html('<span style="color:#999;">—</span>')
+    zip_link.short_description = 'ZIP'
+
+    def batch_qr_history_link(self, obj):
+        if not obj.pk:
+            return '—'
+        url = reverse('admin:core_qrcode_changelist') + f'?batch__id__exact={obj.pk}'
+        scanned_url = url + '&is_scanned__exact=1'
+        total = obj.quantity
+        scanned = obj.qr_codes.filter(is_scanned=True).count()
+        return format_html(
+            '<a href="{}" class="button">📋 Barcha {} ta QR kodni ko\'rish</a> &nbsp; '
+            '<a href="{}" class="button" style="background:#16a34a;">✅ {} ta skanlanganlarni ko\'rish</a>',
+            url, total, scanned_url, scanned
+        )
+    batch_qr_history_link.short_description = 'QR kodlar tarixi'
 
     def activation_display(self, obj):
         rate = obj.activation_rate()
