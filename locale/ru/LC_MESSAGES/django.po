@@ -1,0 +1,1406 @@
+# Russian (Русский) translations for admin — названия моделей.
+# Run: python manage.py compilemessages -l ru
+msgid ""
+msgstr ""
+"Project-Id-Version: mono-bot\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-09 00:18+0500\n"
+"PO-Revision-Date: 2026-03-11 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: ru\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
+"(n%100>=11 && n%100<=14) ? 2 : 3);\n"
+
+#: core/dashboard_stats.py:339 mona/urls.py:357
+msgid "Tuman tanlanmagan"
+msgstr "Район не выбран"
+
+#: core/dashboard_stats.py:369 templates/admin/dashboard.html:1070
+#: templates/admin/dashboard.html:1215
+msgid "TOTAL"
+msgstr "ИТОГО"
+
+#: core/models.py:23
+msgid "Viloyat"
+msgstr "Область"
+
+#: core/models.py:24
+msgid "Viloyatlar"
+msgstr "Области"
+
+#: core/models.py:44
+msgid "Tuman"
+msgstr "Район"
+
+#: core/models.py:45
+msgid "Tumanlar"
+msgstr "Районы"
+
+# Названия моделей
+#: core/models.py:125
+msgid "Telegram foydalanuvchisi"
+msgstr "Пользователь Telegram"
+
+#: core/models.py:126
+msgid "Telegram foydalanuvchilari"
+msgstr "Пользователи Telegram"
+
+#: core/models.py:477
+msgid "Oʻchirilgan (yumshoq)"
+msgstr "Удалено (мягко)"
+
+#: core/models.py:482
+msgid "Promo-kod tarixi"
+msgstr "История промо-кода"
+
+#: core/models.py:483
+msgid "Promo-kodlar tarixi"
+msgstr "История промо-кодов"
+
+#: core/models.py:618
+msgid "Skanerlash urinishi"
+msgstr "Попытка сканирования"
+
+#: core/models.py:619
+msgid "Skanerlash urinishlari"
+msgstr "Попытки сканирования"
+
+#: core/models.py:662
+msgid "Sovg‘a"
+msgstr "Подарок"
+
+#: core/models.py:663
+msgid "Sovg‘alar ro‘yxati"
+msgstr "Список подарков"
+
+#: core/models.py:690 core/models.py:743 core/models.py:912
+#: templates/admin/dashboard.html:1248 templates/admin/dashboard.html:1286
+#: templates/admin/dashboard.html:1887 templates/admin/dashboard.html:1976
+msgid "Pending"
+msgstr "В ожидании"
+
+#: core/models.py:691 templates/admin/dashboard.html:1891
+#: templates/admin/dashboard.html:1977
+msgid "Approved"
+msgstr "Одобрено"
+
+#: core/models.py:692 templates/admin/dashboard.html:1895
+#: templates/admin/dashboard.html:1978
+msgid "Sent"
+msgstr "Отправлено"
+
+#: core/models.py:693 templates/admin/dashboard.html:1899
+msgid "Issued"
+msgstr "Выдано"
+
+#: core/models.py:694 templates/admin/dashboard.html:1253
+#: templates/admin/dashboard.html:1292 templates/admin/dashboard.html:1566
+#: templates/admin/dashboard.html:1592 templates/admin/dashboard.html:1903
+#: templates/admin/dashboard.html:1980
+msgid "Rejected"
+msgstr "Отказ"
+
+#: core/models.py:695 templates/admin/dashboard.html:1911
+msgid "Not Received"
+msgstr "Не получено"
+
+#: core/models.py:696 templates/admin/dashboard.html:1907
+#: templates/admin/dashboard_rows.html:114
+msgid "Cancelled"
+msgstr "Отменено"
+
+#: core/models.py:703 templates/admin/dashboard.html:1663
+#: templates/admin/dashboard.html:1850 templates/admin/user_detail.html:4
+msgid "Member"
+msgstr "Участник"
+
+#: core/models.py:727 core/models.py:728
+msgid "Sovg‘a olish uchun arizalar"
+msgstr "Заявки на получение подарка"
+
+#: core/models.py:744
+#, fuzzy
+#| msgid "Pending"
+msgid "Sending"
+msgstr "В ожидании"
+
+#: core/models.py:745 core/models.py:831 core/models.py:914
+#: templates/admin/dashboard.html:1979 templates/admin/dashboard_rows.html:112
+msgid "Completed"
+msgstr "Выдано"
+
+#: core/models.py:746 core/models.py:832 core/models.py:915
+#: templates/admin/dashboard.html:2195
+msgid "Failed"
+msgstr "Отказ"
+
+#: core/models.py:819 core/models.py:820
+msgid "Xabarlar yuborish"
+msgstr "Рассылка сообщений"
+
+#: core/models.py:830
+msgid "Running"
+msgstr ""
+
+#: core/models.py:853
+msgid "Лог рассылки по области"
+msgstr "Лог рассылки по области"
+
+#: core/models.py:854
+msgid "Логи рассылок по областям"
+msgstr "Логи рассылок по областям"
+
+#: core/models.py:874
+msgid "Aksiya"
+msgstr "Акция"
+
+#: core/models.py:875
+msgid "Aksiyalar"
+msgstr "Акции"
+
+#: core/models.py:901 core/models.py:902
+msgid "Maxfiylik siyosati"
+msgstr "Политика конфиденциальности"
+
+#: core/models.py:913
+msgid "Processing"
+msgstr ""
+
+#: core/models.py:958
+msgid "Promo-kod yaratilish tarixi"
+msgstr "История создания промо-кода"
+
+#: core/models.py:959
+msgid "Promo-kodlar yaratish tarixi"
+msgstr "История создания промо-кодов"
+
+#: core/models.py:1006 core/models.py:1007
+msgid "Promokod urinishlari"
+msgstr "Попытки ввода промокода"
+
+#: core/models.py:1048 core/models.py:1049
+msgid "Admin kontakt sozlamalari"
+msgstr "Настройки контакта администратора"
+
+#: core/models.py:1140
+msgid "Video ko'rsatma"
+msgstr "Видеоинструкция"
+
+#: core/models.py:1141
+msgid "Video ko'rsatmalar"
+msgstr "Видеоинструкции"
+
+#: core/models.py:1180 templates/admin/user_detail.html:163
+msgid "SmartUP ID"
+msgstr "SmartUP ID"
+
+#: core/models.py:1181
+msgid "SmartUP IDlar"
+msgstr "SmartUP ID"
+
+#: mona/urls.py:197
+msgid "Butun davr"
+msgstr "Весь период"
+
+#: mona/urls.py:201
+#, python-brace-format
+msgid "{date_from} dan"
+msgstr "с {date_from}"
+
+#: mona/urls.py:203
+#, python-brace-format
+msgid "{date_to} gacha"
+msgstr "по {date_to}"
+
+#: templates/admin/change_list.html:28
+#: templates/admin/core/qrcode/clear_scans_confirm.html:8
+#: templates/admin/core/qrcode/no_access.html:8
+msgid "Home"
+msgstr "Главная"
+
+#: templates/admin/change_list.html:62
+msgid "Please correct the error below."
+msgstr "Пожалуйста, исправьте ошибку ниже."
+
+#: templates/admin/change_list.html:64
+msgid "Please correct the errors below."
+msgstr "Пожалуйста, исправьте ошибки ниже."
+
+#: templates/admin/change_list.html:108
+msgid "Clear all filters"
+msgstr "Очистить фильтры"
+
+msgid "Location Analytics"
+msgstr "Аналитика местоположения"
+
+msgid "Copy Coordinates"
+msgstr "Копировать координаты"
+
+msgid "Copy"
+msgstr "Копировать"
+
+msgid "Open Yandex"
+msgstr "Открыть в Яндекс"
+
+msgid "Build Route"
+msgstr "Построить маршрут"
+
+#: templates/admin/components/location_card.html:36
+#: templates/admin/dashboard.html:1820
+msgid "Region"
+msgstr "Регион"
+
+msgid "District"
+msgstr "Район"
+
+msgid "Coordinates"
+msgstr "Координаты"
+
+msgid "Last updated"
+msgstr "Последнее обновление"
+
+msgid "User location not available"
+msgstr "Местоположение пользователя недоступно"
+
+msgid "Geolocation data hasn't been shared via the bot"
+msgstr "Данные о геолокации не были переданы через бот"
+
+#: templates/admin/core/qrcode/change_form.html:8
+msgid "Cancel Scans"
+msgstr "Всего активаций"
+
+#: templates/admin/core/qrcode/clear_scans_confirm.html:4
+#: templates/admin/core/qrcode/no_access.html:4
+msgid "Django site admin"
+msgstr "Админка"
+
+#: templates/admin/core/qrcode/clear_scans_confirm.html:12
+msgid "Отменить сканирования"
+msgstr "Отменить сканирования"
+
+#: templates/admin/core/qrcode/no_access.html:10
+msgid "QR Codes"
+msgstr "Код"
+
+#: templates/admin/core/qrcode/no_access.html:11
+#: templates/admin/dashboard.html:1643
+msgid "View"
+msgstr "Просмотр"
+
+#: templates/admin/core/qrcode/no_access.html:20
+msgid "Access to view QR code is limited"
+msgstr "Доступ к просмотру QR-кода ограничен"
+
+#: templates/admin/core/qrcode/no_access.html:23
+msgid "Current user role does not allow viewing detailed QR code information."
+msgstr ""
+"Текущая роль пользователя не дает возможности просмотра детальной информации "
+"QR-кода."
+
+#: templates/admin/core/qrcode/no_access.html:28
+msgid "Access Requirements:"
+msgstr "Требования для доступа:"
+
+#: templates/admin/core/qrcode/no_access.html:30
+msgid "Superuser:"
+msgstr "Суперпользователь:"
+
+#: templates/admin/core/qrcode/no_access.html:30
+msgid "Full access to all QR codes"
+msgstr "Полный доступ ко всем QR-кодам"
+
+#: templates/admin/core/qrcode/no_access.html:31
+msgid "Permission 'Can view QR code details':"
+msgstr "Разрешение 'Can view QR code details':"
+
+#: templates/admin/core/qrcode/no_access.html:31
+msgid "Access to view detailed QR code information"
+msgstr "Доступ к просмотру детальной информации QR-кодов"
+
+#: templates/admin/core/qrcode/no_access.html:35
+msgid "Your current status:"
+msgstr "Ваш текущий статус:"
+
+#: templates/admin/core/qrcode/no_access.html:38
+msgid "You are a superuser"
+msgstr "Вы являетесь суперпользователем"
+
+#: templates/admin/core/qrcode/no_access.html:40
+msgid "You are not a superuser"
+msgstr "Вы не являетесь суперпользователем"
+
+#: templates/admin/core/qrcode/no_access.html:44
+msgid "You have permission 'Can view QR code details'"
+msgstr "У вас есть разрешение 'Can view QR code details'"
+
+#: templates/admin/core/qrcode/no_access.html:46
+msgid "You do not have permission 'Can view QR code details'"
+msgstr "У вас нет разрешения 'Can view QR code details'"
+
+#: templates/admin/core/qrcode/no_access.html:53
+msgid "To gain access, contact the system administrator."
+msgstr "Для получения доступа обратитесь к администратору системы."
+
+#: templates/admin/core/qrcode/no_access.html:56
+msgid "← Back to QR code list"
+msgstr "← Вернуться к списку QR-кодов"
+
+#: templates/admin/dashboard.html:7
+msgid "Operational Analytics"
+msgstr "Операционная аналитика"
+
+#: templates/admin/dashboard.html:981 templates/admin/dashboard_base.html:422
+msgid "Dashboard"
+msgstr "Дашборд"
+
+#: templates/admin/dashboard.html:982 templates/admin/dashboard.html:1414
+msgid "Users"
+msgstr "Пользователи"
+
+#: templates/admin/dashboard.html:983
+msgid "Gifts"
+msgstr "Подарки"
+
+#: templates/admin/dashboard.html:984 templates/admin/dashboard.html:2295
+msgid "Redemptions"
+msgstr "Заявки"
+
+msgid "Noma'lum"
+msgstr "Неизвестно"
+
+#: templates/admin/dashboard.html:985 templates/admin/dashboard.html:1625
+msgid "Promo Codes"
+msgstr "Промокоды"
+
+#: templates/admin/dashboard.html:986 templates/admin/dashboard.html:1075
+#: templates/admin/dashboard.html:1795 templates/admin/dashboard.html:1815
+#: templates/admin/dashboard.html:1988 templates/admin/dashboard.html:2190
+msgid "Stores"
+msgstr "Магазины"
+
+#: templates/admin/dashboard.html:987 templates/admin/dashboard.html:1074
+#: templates/admin/dashboard.html:1791 templates/admin/dashboard.html:1814
+#: templates/admin/dashboard.html:1987 templates/admin/dashboard.html:2189
+msgid "Electricians"
+msgstr "Электрики"
+
+#: templates/admin/dashboard.html:1008
+msgid "This Month"
+msgstr "Этот месяц"
+
+#: templates/admin/dashboard.html:1011
+msgid "Last 7 Days"
+msgstr "Последние 7 дней"
+
+#: templates/admin/dashboard.html:1014
+msgid "Lifetime"
+msgstr "Все время"
+
+#: templates/admin/dashboard.html:1014 templates/admin/dashboard.html:1986
+msgid "All"
+msgstr "Все"
+
+#: templates/admin/dashboard.html:1020
+msgid "Global Search..."
+msgstr "Глобальный поиск..."
+
+#: templates/admin/dashboard.html:1032 templates/admin/dashboard.html:1720
+#: templates/admin/dashboard.html:1838 templates/admin/dashboard.html:1992
+msgid "Reset"
+msgstr "Сбросить"
+
+#: templates/admin/dashboard.html:1066
+msgid "USER OVERVIEW"
+msgstr "ОБЗОР ПОЛЬЗОВАТЕЛЕЙ"
+
+#: templates/admin/dashboard.html:1076
+msgid "Unselected"
+msgstr "Не определено"
+
+#: templates/admin/dashboard.html:1092
+msgid "ELECTRICIAN CODES"
+msgstr "КОДЫ ЭЛЕКТРИКОВ"
+
+#: templates/admin/dashboard.html:1097 templates/admin/dashboard.html:1121
+#: templates/admin/dashboard.html:2192
+msgid "Scanned"
+msgstr "Отсканировано"
+
+#: templates/admin/dashboard.html:1099 templates/admin/dashboard.html:1123
+msgid "Remaining (in field)"
+msgstr "В поле (остаток)"
+
+#: templates/admin/dashboard.html:1116
+msgid "STORE CODES"
+msgstr "КОДЫ МАГАЗИНОВ"
+
+#: templates/admin/dashboard.html:1141
+msgid "TOTAL POINTS"
+msgstr "ОБЩИЕ БАЛЛЫ"
+
+#: templates/admin/dashboard.html:1146 templates/admin/dashboard.html:1219
+msgid "from electricians"
+msgstr "от электриков"
+
+#: templates/admin/dashboard.html:1147 templates/admin/dashboard.html:1220
+msgid "from stores"
+msgstr "от магазинов"
+
+#: templates/admin/dashboard.html:1163
+msgid "ELECTRICIAN POOL"
+msgstr "ПУЛ ЭЛЕКТРИКОВ"
+
+#: templates/admin/dashboard.html:1167 templates/admin/dashboard.html:1191
+msgid "Collected (period)"
+msgstr "Собрано (период)"
+
+#: templates/admin/dashboard.html:1169 templates/admin/dashboard.html:1193
+#: templates/admin/dashboard.html:2193
+msgid "Spent"
+msgstr "Потрачено"
+
+#: templates/admin/dashboard.html:1171 templates/admin/dashboard.html:1195
+msgid "Total Potential"
+msgstr "Общий потенциал"
+
+#: templates/admin/dashboard.html:1187
+msgid "STORE POOL"
+msgstr "ПУЛ МАГАЗИНОВ"
+
+#: templates/admin/dashboard.html:1211
+msgid "GIFT REQUESTS"
+msgstr "ЗАЯВКИ НА ПОДАРКИ"
+
+#: templates/admin/dashboard.html:1229
+msgid "GIFTS: ELECTRICIANS"
+msgstr "ПОДАРКИ: ЭЛЕКТРИКИ"
+
+#: templates/admin/dashboard.html:1236 templates/admin/dashboard.html:1274
+#: templates/admin/dashboard.html:1854 templates/admin/dashboard.html:1973
+#: templates/admin/dashboard.html:2008 templates/admin/user_detail.html:288
+msgid "Status"
+msgstr "Статус"
+
+#: templates/admin/dashboard.html:1237 templates/admin/dashboard.html:1275
+#: templates/admin/dashboard.html:2188
+msgid "Count"
+msgstr "Количество"
+
+#: templates/admin/dashboard.html:1238 templates/admin/dashboard.html:1276
+#: templates/admin/dashboard.html:1666 templates/admin/dashboard.html:1853
+#: templates/admin/user_detail.html:264
+msgid "Points"
+msgstr "Баллы"
+
+#: templates/admin/dashboard.html:1243 templates/admin/dashboard.html:1281
+#: templates/admin/dashboard.html:2194
+msgid "Success"
+msgstr "Успех"
+
+#: templates/admin/dashboard.html:1267
+msgid "GIFTS: STORES"
+msgstr "ПОДАРКИ: МАГАЗИНЫ"
+
+#: templates/admin/dashboard.html:1307
+msgid "Security Audit: Brute-Force Monitoring"
+msgstr "Аудит безопасности: Мониторинг брутфорса"
+
+#: templates/admin/dashboard.html:1329
+msgid "AVG DAILY FAILURES"
+msgstr "СРЕДНЕСУТОЧНО НЕУДАЧ"
+
+#: templates/admin/dashboard.html:1345
+#, python-format
+msgid "%% CLEAN USERS"
+msgstr "%% ЧИСТЫХ ПОЛЬЗОВАТЕЛЕЙ"
+
+#: templates/admin/dashboard.html:1356
+msgid "Suspicious Leaderboard (Anti-Fraud)"
+msgstr "Лидерборд подозрительных (Anti-Fraud)"
+
+#: templates/admin/dashboard.html:1363
+msgid "User"
+msgstr "Пользователь"
+
+#: templates/admin/dashboard.html:1365
+msgid "Errors"
+msgstr "Ошибки"
+
+#: templates/admin/dashboard.html:1389
+msgid "No risk data available"
+msgstr "Данных о рисках нет"
+
+#: templates/admin/dashboard.html:1410
+msgid "Scanning Geography"
+msgstr "География сканирований"
+
+#: templates/admin/dashboard.html:1413
+msgid "Scans"
+msgstr "Сканирования"
+
+#: templates/admin/dashboard.html:1423
+msgid "Activity Trends"
+msgstr "Динамика активностей"
+
+#: templates/admin/dashboard.html:1448
+msgid "Account Status"
+msgstr "Статус аккаунтов"
+
+#: templates/admin/dashboard.html:1465
+msgid "Award Popularity"
+msgstr "Популярность наград"
+
+#: templates/admin/dashboard.html:1482 templates/admin/dashboard.html:1536
+msgid "Point Economy"
+msgstr "Экономика баллов"
+
+#: templates/admin/dashboard.html:1509
+msgid "Award Logistics"
+msgstr "Логистика наград"
+
+#: templates/admin/dashboard.html:1512
+msgid "Export all requests"
+msgstr "Запросов пока нет"
+
+#: templates/admin/dashboard.html:1556
+msgid "Electrician Gifts"
+msgstr "Электрики"
+
+#: templates/admin/dashboard.html:1560 templates/admin/dashboard.html:1586
+#: templates/admin/dashboard.html:1883
+msgid "Total Requests"
+msgstr "Всего заявок"
+
+#: templates/admin/dashboard.html:1562 templates/admin/dashboard.html:1588
+msgid "Fulfilled"
+msgstr "Не выполнено"
+
+#: templates/admin/dashboard.html:1564 templates/admin/dashboard.html:1590
+#: templates/admin/dashboard_rows.html:116
+msgid "In Progress"
+msgstr "В процессе"
+
+#: templates/admin/dashboard.html:1568 templates/admin/dashboard.html:1594
+msgid "Points Volume"
+msgstr "Сумма баллов"
+
+#: templates/admin/dashboard.html:1582
+msgid "Store Gifts"
+msgstr "Магазины"
+
+#: templates/admin/dashboard.html:1604
+msgid "Regional Breakdown"
+msgstr "Региональная детализация"
+
+#: templates/admin/dashboard.html:1604 templates/admin/dashboard.html:1822
+msgid "Nationwide"
+msgstr "По всей стране"
+
+#: templates/admin/dashboard.html:1606
+msgid "← Back"
+msgstr "← Назад"
+
+#: templates/admin/dashboard.html:1608
+msgid "Export table"
+msgstr ""
+
+#: templates/admin/dashboard.html:1616
+msgid "Filter..."
+msgstr "Фильтр"
+
+#: templates/admin/dashboard.html:1623
+msgid "Territory"
+msgstr "Территория"
+
+#: templates/admin/dashboard.html:1624
+msgid "Members"
+msgstr "Участники"
+
+#: templates/admin/dashboard.html:1626
+msgid "Total Points"
+msgstr "Всего активаций"
+
+#: templates/admin/dashboard.html:1627
+msgid "Actions"
+msgstr "Действия"
+
+#: templates/admin/dashboard.html:1640
+msgid "Districts"
+msgstr "Районы"
+
+#: templates/admin/dashboard.html:1655
+msgid "Users in"
+msgstr "Пользователи"
+
+#: templates/admin/dashboard.html:1657
+msgid "Search users..."
+msgstr "Поиск..."
+
+#: templates/admin/dashboard.html:1664 templates/admin/dashboard.html:1755
+#: templates/admin/dashboard.html:1851 templates/admin/dashboard.html:2005
+msgid "Phone"
+msgstr "Телефон"
+
+#: templates/admin/dashboard.html:1665 templates/admin/user_detail.html:348
+msgid "Activations"
+msgstr "Активации"
+
+#: templates/admin/dashboard.html:1697
+msgid "Global Activity Feed"
+msgstr "Конвейер активности"
+
+#: templates/admin/dashboard.html:1713 templates/admin/dashboard.html:1805
+#: templates/admin/dashboard.html:1967
+msgid "Quick Search"
+msgstr "Быстрый поиск"
+
+#: templates/admin/dashboard.html:1715
+msgid "Code or username..."
+msgstr ""
+
+#: templates/admin/dashboard.html:1733
+msgid "Total scans (period)"
+msgstr "Всего сканов (за период)"
+
+#: templates/admin/dashboard.html:1737
+msgid "Success rate"
+msgstr "Доля успеха"
+
+#: templates/admin/dashboard.html:1741
+msgid "Failed attempts"
+msgstr "Неудачные попытки"
+
+#: templates/admin/dashboard.html:1750 templates/admin/user_detail.html:264
+msgid "Code"
+msgstr "Код"
+
+#: templates/admin/dashboard.html:1751
+msgid "Value"
+msgstr "Баллы"
+
+#: templates/admin/dashboard.html:1752
+msgid "Type"
+msgstr "Тип"
+
+#: templates/admin/dashboard.html:1753
+msgid "Timestamp"
+msgstr "Время"
+
+#: templates/admin/dashboard.html:1754
+msgid "Full Name"
+msgstr ""
+
+#: templates/admin/dashboard.html:1756 templates/admin/user_detail.html:167
+msgid "Location"
+msgstr "Действия"
+
+#: templates/admin/dashboard.html:1757
+msgid "Username"
+msgstr "Пользователи"
+
+#: templates/admin/dashboard.html:1758
+msgid "Profile"
+msgstr "Профиль пользователя"
+
+#: templates/admin/dashboard.html:1764 templates/admin/dashboard.html:1863
+#: templates/admin/dashboard.html:2017
+msgid "Loading..."
+msgstr "Загрузка..."
+
+#: templates/admin/dashboard.html:1772
+msgid "Management Hub"
+msgstr ""
+
+#: templates/admin/dashboard.html:1774
+msgid "Export user list"
+msgstr "Запросов пока нет"
+
+#: templates/admin/dashboard.html:1787
+msgid "Total Members"
+msgstr "Все участники"
+
+#: templates/admin/dashboard.html:1807
+msgid "Name or phone..."
+msgstr "Имя или телефон..."
+
+#: templates/admin/dashboard.html:1811 templates/admin/dashboard.html:1852
+#: templates/admin/dashboard.html:1984
+msgid "Segment"
+msgstr "Сегмент"
+
+#: templates/admin/dashboard.html:1813
+msgid "All Members"
+msgstr "Все участники"
+
+#: templates/admin/dashboard.html:1830
+msgid "Sort By"
+msgstr "Сортировать"
+
+#: templates/admin/dashboard.html:1832
+msgid "Recently Joined"
+msgstr "Недавно присоединившиеся"
+
+#: templates/admin/dashboard.html:1833
+msgid "Points: High to Low"
+msgstr "Баллы: от большего к меньшему"
+
+#: templates/admin/dashboard.html:1834
+msgid "Oldest First"
+msgstr "Сначала старые"
+
+#: templates/admin/dashboard.html:1855
+msgid "Last Active"
+msgstr "Активно"
+
+#: templates/admin/dashboard.html:1871
+msgid "Gift Requests (CRM)"
+msgstr "Запросы подарков (CRM)"
+
+#: templates/admin/dashboard.html:1873
+msgid "Export gift requests"
+msgstr "Экспортировать запросы"
+
+#: templates/admin/dashboard.html:1915 templates/admin/dashboard.html:2042
+#: templates/admin/dashboard.html:2201 templates/admin/user_detail.html:232
+msgid "Points Spent"
+msgstr "Потрачено баллов"
+
+#: templates/admin/dashboard.html:1923
+msgid "Request Dynamics"
+msgstr "Динамика запросов"
+
+#: templates/admin/dashboard.html:1934
+msgid "Economy (Points)"
+msgstr "Экономика (Баллы)"
+
+#: templates/admin/dashboard.html:1945
+msgid "Popular Gifts"
+msgstr "Популярные подарки"
+
+#: templates/admin/dashboard.html:1954
+msgid "Request Statuses"
+msgstr "Статусы запросов"
+
+#: templates/admin/dashboard.html:1969
+msgid "Name, phone or gift..."
+msgstr "Имя, телефон или подарок..."
+
+#: templates/admin/dashboard.html:1975
+msgid "All statuses"
+msgstr "Все статусы"
+
+#: templates/admin/dashboard.html:2004
+msgid "Number / User"
+msgstr "№ / Пользователь"
+
+#: templates/admin/dashboard.html:2006 templates/admin/user_detail.html:288
+msgid "Gift"
+msgstr "Подарок"
+
+#: templates/admin/dashboard.html:2007
+msgid "Cost"
+msgstr "Стоимость"
+
+#: templates/admin/dashboard.html:2009
+msgid "Date"
+msgstr "Дата"
+
+#: templates/admin/dashboard.html:2026
+msgid "User Profile"
+msgstr "Профиль пользователя"
+
+#: templates/admin/dashboard.html:2034
+msgid "Balance"
+msgstr "Баланс"
+
+#: templates/admin/dashboard.html:2038 templates/admin/user_detail.html:236
+msgid "Total Scans"
+msgstr "Всего активаций"
+
+#: templates/admin/dashboard.html:2049
+msgid "Recent Activities"
+msgstr "Недавняя активность"
+
+#: templates/admin/dashboard.html:2053
+msgid "Gift History"
+msgstr "История подарков"
+
+#: templates/admin/dashboard.html:2065
+msgid "Generating Excel Report..."
+msgstr ""
+
+#: templates/admin/dashboard.html:2066
+msgid "Please wait, this may take a few seconds for large datasets."
+msgstr ""
+
+#: templates/admin/dashboard.html:2184
+msgid "Active Members"
+msgstr "Все участники"
+
+#: templates/admin/dashboard.html:2185
+msgid "Success Activations"
+msgstr "Активации"
+
+#: templates/admin/dashboard.html:2186
+msgid "Points Scanned"
+msgstr "Начислено баллов"
+
+#: templates/admin/dashboard.html:2187
+msgid "Points Redeemed"
+msgstr "Списано баллов"
+
+#: templates/admin/dashboard.html:2191
+msgid "Unchecked"
+msgstr "Не проверено"
+
+#: templates/admin/dashboard.html:2196
+msgid "Clean"
+msgstr "Чистый"
+
+#: templates/admin/dashboard.html:2197
+msgid "Warning"
+msgstr "Предупреждение"
+
+#: templates/admin/dashboard.html:2198
+msgid "Suspicious"
+msgstr "Подозрительный"
+
+#: templates/admin/dashboard.html:2199 templates/admin/dashboard_rows.html:31
+msgid "Blocked"
+msgstr "Блок"
+
+#: templates/admin/dashboard.html:2200
+msgid "Points Earned"
+msgstr "Начислено баллов"
+
+#: templates/admin/dashboard_base.html:9
+msgid "Analytics Hub"
+msgstr "Центр аналитики"
+
+#: templates/admin/dashboard_base.html:431
+msgid "Admin Panel"
+msgstr "Панель админа"
+
+#: templates/admin/dashboard_base.html:441
+msgid "Logout"
+msgstr "Выйти"
+
+#: templates/admin/dashboard_base.html:457
+msgid "Mono Ecosystem"
+msgstr "Экосистема Mono"
+
+#: templates/admin/dashboard_base.html:482
+msgid "AD"
+msgstr ""
+
+#: templates/admin/dashboard_rows.html:21 templates/admin/user_detail.html:137
+msgid "Electrician"
+msgstr "Электрики"
+
+#: templates/admin/dashboard_rows.html:23 templates/admin/user_detail.html:139
+msgid "Store"
+msgstr "Магазины"
+
+#: templates/admin/dashboard_rows.html:25 templates/admin/user_detail.html:141
+msgid "Guest"
+msgstr "Гость"
+
+#: templates/admin/dashboard_rows.html:33
+msgid "At Risk"
+msgstr "Высокий риск"
+
+#: templates/admin/dashboard_rows.html:35
+msgid "Active"
+msgstr "Активно"
+
+#: templates/admin/dashboard_rows.html:43 templates/admin/user_detail.html:156
+msgid "ago"
+msgstr ""
+
+#: templates/admin/dashboard_rows.html:47
+msgid "View Detailed Stats"
+msgstr "Посмотреть детали"
+
+#: templates/admin/dashboard_rows.html:83
+msgid "View Profile"
+msgstr "Профиль пользователя"
+
+#: templates/admin/dashboard_rows.html:128
+msgid "View in Admin"
+msgstr ""
+
+#: templates/admin/search_form.html:4
+#, python-format
+msgid "Search %(name)s"
+msgstr ""
+
+#: templates/admin/search_form.html:9
+msgid "Search"
+msgstr "Поиск"
+
+#: templates/admin/search_form.html:11
+#, python-format
+msgid "%(counter)s result"
+msgid_plural "%(counter)s results"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+
+#: templates/admin/search_form.html:11
+#, python-format
+msgid "%(full_result_count)s total"
+msgstr ""
+
+#: templates/admin/search_form.html:11
+msgid "Show all"
+msgstr ""
+
+#: templates/admin/user_detail.html:4
+msgid "CRM Details"
+msgstr ""
+
+#: templates/admin/user_detail.html:123
+msgid "Back to List"
+msgstr "Назад к участникам"
+
+#: templates/admin/user_detail.html:145
+msgid "Language"
+msgstr ""
+
+#: templates/admin/user_detail.html:148
+msgid "ID"
+msgstr ""
+
+#: templates/admin/user_detail.html:154 templates/admin/user_detail.html:409
+msgid "Registered"
+msgstr "Доставлено"
+
+#: templates/admin/user_detail.html:173
+msgid "Map"
+msgstr "На карте"
+
+#: templates/admin/user_detail.html:179
+msgid "Offer Agreement"
+msgstr "Договор оферты"
+
+#: templates/admin/user_detail.html:182
+msgid "Accepted"
+msgstr "Принято"
+
+#: templates/admin/user_detail.html:184
+msgid "Not Accepted"
+msgstr "Не принято"
+
+#: templates/admin/user_detail.html:189
+msgid "Outgoing Message"
+msgstr "Исходящее сообщение"
+
+#: templates/admin/user_detail.html:193
+msgid "Bot Blocking"
+msgstr "Блокировка бота"
+
+#: templates/admin/user_detail.html:197
+msgid "Updated"
+msgstr "Обновлено"
+
+msgid "Account Verified"
+msgstr "Аккаунт подтвержден"
+
+msgid "input errors"
+msgstr "ошибок ввода"
+
+msgid "Security Audit"
+msgstr "Аудит безопасности"
+
+msgid "No violations found"
+msgstr "Нарушений не обнаружено"
+
+
+#: templates/admin/user_detail.html:207
+msgid "Access Temporarily Limited"
+msgstr ""
+
+#: templates/admin/user_detail.html:209
+msgid "Until"
+msgstr ""
+
+#: templates/admin/user_detail.html:224
+
+msgid "Current Balance"
+msgstr "Текущий баланс"
+
+#: templates/admin/user_detail.html:228
+msgid "Total Earned"
+msgstr "Начислено баллов"
+
+#: templates/admin/user_detail.html:244
+msgid "Activity Dynamics (Last 14 Days)"
+msgstr "Тренды активности (За последние 14 дней)"
+
+#: templates/admin/user_detail.html:260
+msgid "Scanning History"
+msgstr "История сканирований"
+
+#: templates/admin/user_detail.html:264 templates/admin/user_detail.html:319
+msgid "Time"
+msgstr "Время"
+
+#: templates/admin/user_detail.html:273
+msgid "No scans found"
+msgstr "Сканирований не обнаружено"
+
+#: templates/admin/user_detail.html:284
+msgid "Award History"
+msgstr "История подарков"
+
+#: templates/admin/user_detail.html:288
+msgid "Price"
+msgstr "Цена"
+
+#: templates/admin/user_detail.html:304
+msgid "No gift requests"
+msgstr "Запросов пока нет"
+
+#: templates/admin/user_detail.html:319
+msgid "Attempt"
+msgstr "Неудачные попытки"
+
+#: templates/admin/user_detail.html:319
+msgid "Source"
+msgstr ""
+
+#: templates/admin/user_detail.html:377
+msgid "Coordinates copied to clipboard"
+msgstr "Координаты скопированы в буфер обмена"
+
+#: templates/rangefilter/date_filter.html:3
+#, python-format
+msgid " By %(filter_title)s "
+msgstr ""
+
+#: templates/webapp/index.html:12
+msgid "WEBAPP_MY_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:107 templates/webapp/index.html:330
+#: templates/webapp/index.html:579
+msgid "USER"
+msgstr ""
+
+#: templates/webapp/index.html:127 templates/webapp/index.html:347
+#: templates/webapp/index.html:611
+msgid "WEBAPP_TOTAL_POINTS"
+msgstr ""
+
+#: templates/webapp/index.html:204 templates/webapp/index.html:612
+msgid "WEBAPP_REGISTER"
+msgstr ""
+
+#: templates/webapp/index.html:222 templates/webapp/index.html:613
+msgid "WEBAPP_PARTNER_TEXT"
+msgstr ""
+
+#: templates/webapp/index.html:225 templates/webapp/index.html:614
+msgid "WEBAPP_VIEW_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:234
+msgid "WEBAPP_MY_ORDERS"
+msgstr ""
+
+#: templates/webapp/index.html:242 templates/webapp/index.html:615
+msgid "WEBAPP_INFO_TEXT"
+msgstr ""
+
+#: templates/webapp/index.html:248 templates/webapp/index.html:312
+#: templates/webapp/index.html:470 templates/webapp/index.html:616
+msgid "WEBAPP_CONTACT_ADMIN"
+msgstr ""
+
+#: templates/webapp/index.html:253 templates/webapp/index.html:444
+#: templates/webapp/index.html:515 templates/webapp/index.html:617
+#: templates/webapp/index.html:1543 templates/webapp/index.html:1698
+msgid "WEBAPP_PRIVACY_POLICY"
+msgstr ""
+
+#: templates/webapp/index.html:261 templates/webapp/index.html:582
+msgid "WEBAPP_GIFTS_TITLE"
+msgstr ""
+
+#: templates/webapp/index.html:264 templates/webapp/index.html:600
+msgid "WEBAPP_LOADING_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:272 templates/webapp/index.html:284
+#: templates/webapp/index.html:295 templates/webapp/index.html:583
+msgid "WEBAPP_GIFT_NAME"
+msgstr ""
+
+#: templates/webapp/index.html:309 templates/webapp/index.html:587
+msgid "WEBAPP_SUCCESS_TITLE"
+msgstr ""
+
+#: templates/webapp/index.html:310 templates/webapp/index.html:588
+msgid "WEBAPP_SUCCESS_MESSAGE"
+msgstr ""
+
+#: templates/webapp/index.html:311 templates/webapp/index.html:589
+msgid "WEBAPP_TO_HOME"
+msgstr ""
+
+#: templates/webapp/index.html:320 templates/webapp/index.html:590
+msgid "WEBAPP_PROFILE"
+msgstr ""
+
+#: templates/webapp/index.html:363 templates/webapp/index.html:526
+#: templates/webapp/index.html:591
+msgid "WEBAPP_INTERFACE_LANGUAGE"
+msgstr ""
+
+#: templates/webapp/index.html:391 templates/webapp/index.html:482
+#: templates/webapp/index.html:592
+msgid "WEBAPP_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:416 templates/webapp/index.html:493
+#: templates/webapp/index.html:593
+msgid "WEBAPP_QR_HISTORY"
+msgstr ""
+
+#: templates/webapp/index.html:485 templates/webapp/index.html:601
+msgid "WEBAPP_LOADING_ORDERS"
+msgstr ""
+
+#: templates/webapp/index.html:496 templates/webapp/index.html:598
+msgid "WEBAPP_LOADING_QR_HISTORY"
+msgstr ""
+
+#: templates/webapp/index.html:507 templates/webapp/index.html:518
+#: templates/webapp/index.html:567
+msgid "WEBAPP_LOADING"
+msgstr ""
+
+#: templates/webapp/index.html:532 templates/webapp/index.html:594
+msgid "WEBAPP_UZBEK"
+msgstr ""
+
+#: templates/webapp/index.html:537 templates/webapp/index.html:595
+msgid "WEBAPP_RUSSIAN"
+msgstr ""
+
+#: templates/webapp/index.html:547 templates/webapp/index.html:618
+msgid "WEBAPP_CONFIRM_RECEIPT"
+msgstr ""
+
+#: templates/webapp/index.html:548 templates/webapp/index.html:619
+msgid "WEBAPP_DID_YOU_RECEIVE"
+msgstr ""
+
+#: templates/webapp/index.html:549 templates/webapp/index.html:620
+msgid "WEBAPP_COMMENT_PLACEHOLDER"
+msgstr ""
+
+#: templates/webapp/index.html:551 templates/webapp/index.html:621
+msgid "WEBAPP_YES_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:552 templates/webapp/index.html:622
+msgid "WEBAPP_NO_NOT_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:553 templates/webapp/index.html:623
+msgid "WEBAPP_CANCEL"
+msgstr ""
+
+#: templates/webapp/index.html:568
+msgid "WEBAPP_NO_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:569
+msgid "WEBAPP_POINTS"
+msgstr ""
+
+#: templates/webapp/index.html:570
+msgid "WEBAPP_CONFIRM_REQUEST"
+msgstr ""
+
+#: templates/webapp/index.html:571
+msgid "WEBAPP_REQUEST_SENT"
+msgstr ""
+
+#: templates/webapp/index.html:572
+msgid "WEBAPP_ERROR_LOADING_USER"
+msgstr ""
+
+#: templates/webapp/index.html:573
+msgid "WEBAPP_ERROR_LOADING_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:574
+msgid "WEBAPP_ERROR_REQUESTING_GIFT"
+msgstr ""
+
+#: templates/webapp/index.html:575
+msgid "WEBAPP_ERROR_CONFIRMING"
+msgstr ""
+
+#: templates/webapp/index.html:576
+msgid "WEBAPP_THANKS_CONFIRMATION"
+msgstr ""
+
+#: templates/webapp/index.html:577
+msgid "WEBAPP_COMMENT_SENT"
+msgstr ""
+
+#: templates/webapp/index.html:578
+msgid "WEBAPP_COMMENT_REQUIRED"
+msgstr ""
+
+#: templates/webapp/index.html:580
+msgid "WEBAPP_QR_ERROR"
+msgstr ""
+
+#: templates/webapp/index.html:581
+msgid "WEBAPP_QR_PLACEHOLDER"
+msgstr ""
+
+#: templates/webapp/index.html:584
+msgid "WEBAPP_GET_GIFT"
+msgstr ""
+
+#: templates/webapp/index.html:585
+msgid "WEBAPP_NOT_ENOUGH_POINTS"
+msgstr ""
+
+#: templates/webapp/index.html:586
+msgid "WEBAPP_WAITING_PROCESS"
+msgstr ""
+
+#: templates/webapp/index.html:596
+msgid "WEBAPP_CLOSE"
+msgstr ""
+
+#: templates/webapp/index.html:597
+msgid "WEBAPP_BALL"
+msgstr ""
+
+#: templates/webapp/index.html:599
+msgid "WEBAPP_NO_QR_HISTORY"
+msgstr ""
+
+#: templates/webapp/index.html:602
+msgid "WEBAPP_NO_ORDERS"
+msgstr ""
+
+#: templates/webapp/index.html:603
+msgid "WEBAPP_NO_ORDERS_TEXT"
+msgstr ""
+
+#: templates/webapp/index.html:604
+msgid "WEBAPP_STATUS_PENDING"
+msgstr ""
+
+#: templates/webapp/index.html:605
+msgid "WEBAPP_STATUS_APPROVED"
+msgstr ""
+
+#: templates/webapp/index.html:606
+msgid "WEBAPP_STATUS_SENT"
+msgstr ""
+
+#: templates/webapp/index.html:607
+msgid "WEBAPP_STATUS_REJECTED"
+msgstr ""
+
+#: templates/webapp/index.html:608
+msgid "WEBAPP_STATUS_COMPLETED"
+msgstr ""
+
+#: templates/webapp/index.html:609
+msgid "WEBAPP_STATUS_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:610
+msgid "WEBAPP_STATUS_NOT_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:624
+msgid "WEBAPP_UPDATED"
+msgstr ""
+
+#: templates/webapp/index.html:625
+msgid "WEBAPP_QR_MAX_ATTEMPTS"
+msgstr ""
+
+#: templates/webapp/index.html:626
+msgid "WEBAPP_PRIVACY_PDF_DESCRIPTION"
+msgstr ""
+
+#: templates/webapp/index.html:627
+msgid "WEBAPP_OPEN_PDF"
+msgstr ""
+
+msgid "Retention: New vs Returning"
+msgstr "Удержание: Новые и вернувшиеся"
+
+msgid "Active Users"
+msgstr "Активные пользователи"
+
+msgid "New Visitors"
+msgstr "Новые посетители"
+
+msgid "Returning Visitors"
+msgstr "Вернувшиеся посетители"
+
+# GiftRedemption.STATUS_CHOICES (core/models.py)
+msgid "So'rov qabul qilindi"
+msgstr "Запрос принят к обработке"
+
+msgid "Mahsulot tayyorlash bosqichida"
+msgstr "Продукт находится в стадии подготовки"
+
+msgid "Mahsulot yetkazib berish xizmatiga topshirildi"
+msgstr "Продукт передан в службу доставки"
+
+msgid "Mahsulotni qabul qilganingizni tasdiqlang"
+msgstr "Подтверждение получения продукта"
+
+msgid "So'rov bekor qilindi (administrator bilan bog'laning)"
+msgstr "Запрос отменён (свяжитесь с администратором)"
+
+msgid "Sovg'a berilmagan (foydalanuvchi olmadi)"
+msgstr "Подарок не выдан (пользователь не получил)"
+
+msgid "Foydalanuvchi tomonidan bekor qilindi"
+msgstr "Отменён пользователем"
+
+# Redemptions export button (templates/admin/dashboard.html)
+msgid "Export detailed data"
+msgstr "Экспортировать детальные данные"
+
+#: templates/admin/dashboard_base.html
+msgid "Back to Admin"
+msgstr "Назад в админку"
+
+#: templates/admin/components/location_card.html
+msgid "Edit"
+msgstr "Редактировать"
+
+#: templates/admin/components/location_card.html
+msgid "Edit location"
+msgstr "Редактировать местоположение"
+
+#: templates/admin/dashboard.html
+msgid "Inactive"
+msgstr "Неактивно"
+
+#: templates/admin/dashboard.html
+msgid "No users match the selected filter"
+msgstr "Нет пользователей по выбранному фильтру"
+

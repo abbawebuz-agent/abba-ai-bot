@@ -1,0 +1,846 @@
+"""
+Celery tasks for core app.
+"""
+import os
+import zipfile
+import asyncio
+import logging
+from celery import shared_task, chain
+from django.conf import settings
+from django.utils import timezone
+from aiogram import Bot
+from .models import QRCode, QRCodeGeneration, BroadcastMessage, TelegramUser
+from .utils import generate_qr_code_image, generate_qr_codes_batch, generate_qr_code_images_batch
+from .messaging import send_message_to_user, TELEGRAM_MESSAGE_DELAY
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True)
+def generate_qr_codes_batch_task(self, prev_result=None, **kwargs):
+    """
+    Генерирует один батч QR-кодов.
+    
+    Args:
+        prev_result: Результат предыдущей задачи в цепочке (если есть)
+        **kwargs: Может содержать generation_id, batch_start, batch_size
+    """
+    try:
+        # Если есть результат предыдущей задачи, извлекаем параметры из него
+        if prev_result and isinstance(prev_result, dict):
+            generation_id = prev_result.get('generation_id') or kwargs.get('generation_id')
+            batch_start = prev_result.get('batch_start') or kwargs.get('batch_start')
+            batch_size = prev_result.get('batch_size') or kwargs.get('batch_size')
+        else:
+            # Иначе используем параметры из kwargs
+            generation_id = kwargs.get('generation_id')
+            batch_start = kwargs.get('batch_start')
+            batch_size = kwargs.get('batch_size')
+
+        # Проверяем, что все необходимые параметры есть
+        if generation_id is None:
+            raise ValueError("generation_id должен быть передан")
+        if batch_start is None:
+            raise ValueError("batch_start должен быть передан")
+        if batch_size is None:
+            raise ValueError("batch_size должен быть передан")
+
+        generation = QRCodeGeneration.objects.get(id=generation_id)
+
+        # Генерируем QR-коды для этого батча
+        qr_codes = []
+        batch_end = min(batch_start + batch_size, generation.quantity)
+
+        # Сначала создаем все QR-коды в БД
+        for i in range(batch_start, batch_end):
+            qr_code = QRCode.create_code(
+                code_type=generation.code_type,
+                points=generation.points
+            )
+            qr_codes.append(qr_code)
+
+        # Затем генерируем изображения батчем (переиспользуя один браузер)
+        # Это значительно эффективнее, чем создавать браузер для каждого QR-кода
+        # ВРЕМЕННО ЗАКОММЕНТИРОВАНО
+        # try:
+        #     generate_qr_code_images_batch(qr_codes)
+        # except Exception as e:
+        #     logger.error(f"Ошибка при генерации изображений для батча {batch_start}-{batch_end}: {e}")
+        #     # Если батчевая генерация не удалась, пробуем по одному
+        #     logger.info(f"Пробуем генерировать изображения по одному...")
+        #     for qr_code in qr_codes:
+        #         try:
+        #             generate_qr_code_image(qr_code)
+        #         except Exception as img_error:
+        #             logger.error(f"Ошибка при генерации изображения для QR-кода {qr_code.code}: {img_error}")
+        #             # Продолжаем с другими QR-кодами даже если один не удался
+
+        # Добавляем QR-коды к генерации
+        generation.qr_codes.add(*qr_codes)
+
+        logger.info(
+            f"Батч QR-кодов для генерации {generation_id}: "
+            f"сгенерировано {len(qr_codes)} кодов (индексы {batch_start}-{batch_end - 1})"
+        )
+
+        return {
+            'generation_id': generation_id,
+            'batch_start': batch_start,
+            'batch_end': batch_end,
+            'generated': len(qr_codes)
+        }
+
+    except QRCodeGeneration.DoesNotExist:
+        logger.error(f"Генерация {generation_id} не найдена")
+        return {'error': f'Generation {generation_id} not found'}
+    except Exception as e:
+        logger.error(f"Ошибка при генерации батча QR-кодов: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def finalize_qr_generation_task(self, prev_result=None, **kwargs):
+    """
+    Завершает генерацию QR-кодов и создает ZIP архив.
+    
+    Args:
+        prev_result: Результат предыдущей задачи в цепочке (если есть)
+        **kwargs: Может содержать generation_id
+    """
+    try:
+        # Если есть результат предыдущей задачи, извлекаем generation_id из него
+        if prev_result and isinstance(prev_result, dict):
+            generation_id = prev_result.get('generation_id') or kwargs.get('generation_id')
+        else:
+            generation_id = kwargs.get('generation_id')
+
+        # Проверяем, что generation_id есть
+        if generation_id is None:
+            raise ValueError("generation_id должен быть передан")
+
+        generation = QRCodeGeneration.objects.get(id=generation_id)
+
+        # Получаем все QR-коды для этой генерации
+        qr_codes = list(generation.qr_codes.all())
+
+        if not qr_codes:
+            generation.status = 'failed'
+            generation.error_message = 'Не было сгенерировано ни одного QR-кода'
+            generation.save(update_fields=['status', 'error_message'])
+            return {'error': 'No QR codes generated'}
+
+        # Создаем ZIP архив
+        qr_dir = os.path.join(settings.MEDIA_ROOT, 'qrcodes')
+        zip_filename = f"qrcodes_{generation.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        zip_path = os.path.join(settings.MEDIA_ROOT, 'qrcodes', 'generations', zip_filename)
+
+        # Создаем директорию, если её нет
+        os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+
+        logger.info(f"Создание ZIP архива для генерации {generation_id}: {len(qr_codes)} QR-кодов")
+
+        with zipfile.ZipFile(zip_path, 'w') as zip_file:
+            for qr_code in qr_codes:
+                if qr_code.image_path and os.path.exists(qr_code.image_path):
+                    zip_file.write(
+                        qr_code.image_path,
+                        os.path.basename(qr_code.image_path)
+                    )
+
+        # Сохраняем путь к ZIP файлу
+        generation.zip_file.name = f"qrcodes/generations/{zip_filename}"
+        generation.status = 'completed'
+        generation.completed_at = timezone.now()
+        generation.save(update_fields=['zip_file', 'status', 'completed_at'])
+
+        logger.info(
+            f"Генерация QR-кодов {generation_id} завершена: "
+            f"сгенерировано {len(qr_codes)} кодов, ZIP архив создан"
+        )
+
+        return {
+            'generation_id': generation_id,
+            'total_generated': len(qr_codes),
+            'zip_file': zip_filename
+        }
+
+    except QRCodeGeneration.DoesNotExist:
+        logger.error(f"Генерация {generation_id} не найдена")
+        return {'error': f'Generation {generation_id} not found'}
+    except Exception as e:
+        logger.error(f"Ошибка при завершении генерации QR-кодов: {e}")
+        try:
+            generation = QRCodeGeneration.objects.get(id=generation_id)
+            generation.status = 'failed'
+            generation.error_message = str(e)
+            generation.save(update_fields=['status', 'error_message'])
+        except:
+            pass
+        raise
+
+
+@shared_task(bind=True)
+def generate_qr_codes_task(self, generation_id):
+    """
+    Асинхронная задача для генерации QR-кодов.
+    Разбивает большую генерацию на батчи для избежания таймаутов.
+    
+    Args:
+        generation_id: ID объекта QRCodeGeneration
+    """
+    try:
+        generation = QRCodeGeneration.objects.get(id=generation_id)
+        generation.status = 'processing'
+        generation.save(update_fields=['status'])
+
+        # Размер батча (можно настроить через settings)
+        BATCH_SIZE = getattr(settings, 'QR_CODE_BATCH_SIZE', 1000)
+
+        # Если количество меньше или равно размеру батча, генерируем сразу
+        if generation.quantity <= BATCH_SIZE:
+            logger.info(f"Генерация {generation_id}: небольшое количество ({generation.quantity}), генерируем сразу")
+
+            # Генерируем QR-коды
+            qr_codes = []
+            for _ in range(generation.quantity):
+                qr_code = QRCode.create_code(
+                    code_type=generation.code_type,
+                    points=generation.points
+                )
+                # ВРЕМЕННО ЗАКОММЕНТИРОВАНО
+                # generate_qr_code_image(qr_code)
+                qr_codes.append(qr_code)
+
+            # Сохраняем QR-коды в генерацию
+            generation.qr_codes.set(qr_codes)
+
+            # Создаем ZIP архив
+            qr_dir = os.path.join(settings.MEDIA_ROOT, 'qrcodes')
+            zip_filename = f"qrcodes_{generation.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            zip_path = os.path.join(settings.MEDIA_ROOT, 'qrcodes', 'generations', zip_filename)
+
+            # Создаем директорию, если её нет
+            os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+
+            with zipfile.ZipFile(zip_path, 'w') as zip_file:
+                for qr_code in qr_codes:
+                    if qr_code.image_path and os.path.exists(qr_code.image_path):
+                        zip_file.write(
+                            qr_code.image_path,
+                            os.path.basename(qr_code.image_path)
+                        )
+
+            # Сохраняем путь к ZIP файлу
+            generation.zip_file.name = f"qrcodes/generations/{zip_filename}"
+            generation.status = 'completed'
+            generation.completed_at = timezone.now()
+            generation.save(update_fields=['zip_file', 'status', 'completed_at'])
+
+            logger.info(f"Генерация {generation_id} завершена: {generation.quantity} QR-кодов")
+            return f"Successfully generated {generation.quantity} QR codes"
+        else:
+            # Большое количество - разбиваем на батчи
+            total_batches = (generation.quantity + BATCH_SIZE - 1) // BATCH_SIZE
+
+            logger.info(
+                f"Генерация {generation_id}: большое количество ({generation.quantity}), "
+                f"разбиваем на {total_batches} батчей по {BATCH_SIZE} кодов"
+            )
+
+            # Создаем цепочку задач для батчей
+            tasks = []
+            for batch_num in range(total_batches):
+                batch_start = batch_num * BATCH_SIZE
+                # Передаем параметры как именованные аргументы
+                # При использовании chain() результат предыдущей задачи будет передан как prev_result
+                task = generate_qr_codes_batch_task.s(
+                    generation_id=generation_id,
+                    batch_start=batch_start,
+                    batch_size=BATCH_SIZE
+                )
+                tasks.append(task)
+
+            # Добавляем задачу завершения в конец цепочки
+            # Она получит generation_id из результата последней задачи батча
+            tasks.append(finalize_qr_generation_task.s(generation_id=generation_id))
+
+            # Запускаем цепочку задач последовательно
+            chain(*tasks).apply_async()
+
+            logger.info(
+                f"Запущена цепочка из {total_batches + 1} задач для генерации {generation_id}"
+            )
+
+            return {
+                'generation_id': generation_id,
+                'total_quantity': generation.quantity,
+                'total_batches': total_batches,
+                'batch_size': BATCH_SIZE
+            }
+
+    except QRCodeGeneration.DoesNotExist:
+        logger.error(f"Генерация {generation_id} не найдена")
+        return f"Generation {generation_id} not found"
+    except Exception as e:
+        logger.error(f"Ошибка при запуске генерации QR-кодов: {e}")
+        # Сохраняем ошибку
+        try:
+            generation = QRCodeGeneration.objects.get(id=generation_id)
+            generation.status = 'failed'
+            generation.error_message = str(e)
+            generation.save(update_fields=['status', 'error_message'])
+        except:
+            pass
+        raise
+
+
+@shared_task(bind=True)
+def send_broadcast_batch(self, broadcast_id, user_ids, batch_number, total_batches):
+    """
+    Отправляет батч сообщений пользователям.
+    
+    Args:
+        broadcast_id: ID объекта BroadcastMessage
+        user_ids: Список ID пользователей для отправки
+        batch_number: Номер текущего батча
+        total_batches: Общее количество батчей
+    """
+    try:
+        broadcast = BroadcastMessage.objects.get(id=broadcast_id)
+
+        # Получаем пользователей
+        users = list(TelegramUser.objects.filter(id__in=user_ids))
+
+        photo_path = None
+        if broadcast.image:
+            try:
+                photo_path = broadcast.image.path
+            except (ValueError, OSError):
+                pass
+
+        async def send_batch():
+            bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+            try:
+                sent = 0
+                failed = 0
+
+                for i, user in enumerate(users):
+                    try:
+                        success, error = await send_message_to_user(
+                            bot=bot,
+                            user=user,
+                            text=broadcast.message_text,
+                            parse_mode='HTML',
+                            photo_path=photo_path,
+                            disable_link_preview=True,
+                        )
+
+                        if success:
+                            sent += 1
+                        else:
+                            failed += 1
+                            logger.warning(f"Не удалось отправить пользователю {user.telegram_id}: {error}")
+
+                        # Соблюдаем лимит Telegram API
+                        if i < len(users) - 1:
+                            await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
+
+                    except Exception as e:
+                        logger.error(f"Ошибка при отправке пользователю {user.telegram_id}: {e}")
+                        failed += 1
+
+                return sent, failed
+            finally:
+                await bot.session.close()
+
+        sent, failed = asyncio.run(send_batch())
+
+        # Обновляем статистику рассылки
+        broadcast.sent_count += sent
+        broadcast.failed_count += failed
+        broadcast.save(update_fields=['sent_count', 'failed_count'])
+
+        logger.info(
+            f"Батч {batch_number}/{total_batches} рассылки '{broadcast.title}' завершен: "
+            f"отправлено {sent}, ошибок {failed}"
+        )
+
+        return {
+            'batch_number': batch_number,
+            'sent': sent,
+            'failed': failed
+        }
+
+    except BroadcastMessage.DoesNotExist:
+        logger.error(f"Рассылка {broadcast_id} не найдена")
+        return {'error': f'Broadcast {broadcast_id} not found'}
+    except Exception as e:
+        logger.error(f"Ошибка при отправке батча {batch_number}: {e}")
+        # Обновляем статистику ошибок
+        try:
+            broadcast = BroadcastMessage.objects.get(id=broadcast_id)
+            broadcast.failed_count += len(user_ids)
+            broadcast.save(update_fields=['failed_count'])
+        except:
+            pass
+        raise
+
+
+# Порог: при большем числе получателей рассылка по области идёт в фоне (Celery)
+REGION_MESSAGE_ASYNC_THRESHOLD = getattr(
+    settings, 'REGION_MESSAGE_ASYNC_THRESHOLD', 100
+)
+
+
+@shared_task(bind=True, soft_time_limit=3600)
+def send_region_message_task(
+        self,
+        log_id,
+        region_code,
+        message_text,
+        image_storage_path,
+        user_type_filter,
+        language_filter,
+):
+    """
+    Отправляет сообщение по области в фоне (лимиты Telegram, без таймаута админки).
+    Вызывается из админки при числе получателей > REGION_MESSAGE_ASYNC_THRESHOLD.
+    Обновляет RegionMessageLog по завершении.
+    """
+    from core.regions import get_user_region_code
+    from core.models import RegionMessageLog
+    from django.core.files.storage import default_storage
+    from django.utils import timezone
+
+    def update_log(sent, failed, status='completed', error_msg=''):
+        try:
+            log = RegionMessageLog.objects.get(id=log_id)
+            log.sent_count = sent
+            log.failed_count = failed
+            log.status = status
+            log.completed_at = timezone.now()
+            if error_msg:
+                log.error_message = error_msg
+            log.save()
+        except RegionMessageLog.DoesNotExist:
+            pass
+
+    # Отложенная рассылка: уважаем отмену, иначе помечаем как running.
+    try:
+        log = RegionMessageLog.objects.get(id=log_id)
+        if log.status == 'cancelled':
+            logger.info('send_region_message_task: лог %s отменён, выходим', log_id)
+            return {'sent': 0, 'failed': 0, 'total': 0, 'cancelled': True}
+        if log.status == 'pending':
+            log.status = 'running'
+            log.save(update_fields=['status'])
+    except RegionMessageLog.DoesNotExist:
+        pass
+
+    users_qs = TelegramUser.objects.filter(
+        latitude__isnull=False,
+        longitude__isnull=False,
+        is_active=True,
+    )
+    if user_type_filter:
+        users_qs = users_qs.filter(user_type=user_type_filter)
+    if language_filter:
+        users_qs = users_qs.filter(language=language_filter)
+
+    users = list(users_qs)
+    if region_code == 'all':
+        filtered = users
+    else:
+        filtered = [
+            u for u in users
+            if get_user_region_code(u) == region_code
+        ]
+    if not filtered:
+        msg = 'Нет пользователей с координатами' if region_code == 'all' else f'В области {region_code} нет пользователей'
+        logger.warning('send_region_message_task: %s', msg)
+        update_log(0, 0, status='completed', error_msg=msg)
+        return {'sent': 0, 'failed': 0, 'total': 0}
+
+    if not message_text and not image_storage_path:
+        msg = 'Рассылка отменена: не указан текст и изображение'
+        logger.error('send_region_message_task: %s', msg)
+        update_log(0, 0, status='failed', error_msg=msg)
+        return {'sent': 0, 'failed': 0, 'total': 0}
+
+    photo_path = None
+    if image_storage_path and default_storage.exists(image_storage_path):
+        import tempfile
+        with default_storage.open(image_storage_path, 'rb') as f:
+            ext = os.path.splitext(image_storage_path)[1] or '.jpg'
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(f.read())
+                photo_path = tmp.name
+    try:
+        async def _send_all():
+            bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+            sent, failed = 0, 0
+            try:
+                for i, user in enumerate(filtered):
+                    success, err = await send_message_to_user(
+                        bot=bot,
+                        user=user,
+                        text=message_text or '',
+                        parse_mode='HTML',
+                        photo_path=photo_path,
+                        disable_link_preview=True,
+                    )
+                    if success:
+                        sent += 1
+                    else:
+                        failed += 1
+                    if i < len(filtered) - 1:
+                        await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
+                return sent, failed
+            finally:
+                await bot.session.close()
+
+        sent, failed = asyncio.run(_send_all())
+        logger.info(
+            'Рассылка по области %s завершена: отправлено %s, ошибок %s (всего %s)',
+            region_code, sent, failed, len(filtered),
+        )
+        update_log(sent, failed, status='completed')
+        return {'sent': sent, 'failed': failed, 'total': len(filtered)}
+    except Exception as e:
+        logger.exception('send_region_message_task: ошибка при рассылке')
+        update_log(0, len(filtered), status='failed', error_msg=str(e))
+        raise
+    finally:
+        if photo_path and os.path.exists(photo_path):
+            try:
+                os.unlink(photo_path)
+            except OSError:
+                pass
+        if image_storage_path and default_storage.exists(image_storage_path):
+            try:
+                default_storage.delete(image_storage_path)
+            except Exception:
+                pass
+
+
+@shared_task(bind=True)
+def send_broadcast_chained(self, broadcast_id):
+    """
+    Запускает цепочку задач для отправки большой рассылки.
+    Разбивает пользователей на батчи и отправляет последовательно.
+    
+    Args:
+        broadcast_id: ID объекта BroadcastMessage
+    """
+    try:
+        broadcast = BroadcastMessage.objects.get(id=broadcast_id)
+
+        if not broadcast.message_text and not broadcast.image:
+            broadcast.status = 'failed'
+            broadcast.save(update_fields=['status'])
+            logger.error('send_broadcast_chained: рассылка %s отменена — нет текста и изображения', broadcast_id)
+            return {'error': 'empty message'}
+
+        # Получаем список пользователей с применением фильтров
+        users_query = TelegramUser.objects.filter(is_active=True)
+
+        # Фильтр по типу пользователя
+        if broadcast.user_type_filter:
+            users_query = users_query.filter(user_type=broadcast.user_type_filter)
+
+        # Фильтр по языку
+        if broadcast.language_filter:
+            users_query = users_query.filter(language=broadcast.language_filter)
+
+        # Фильтр по региону
+        if broadcast.region_filter:
+            from core.regions import get_user_region_code
+
+            users_with_location = list(users_query.filter(
+                latitude__isnull=False,
+                longitude__isnull=False
+            ))
+
+            filtered_user_ids = []
+            for user in users_with_location:
+                user_region = get_user_region_code(user)
+                if user_region == broadcast.region_filter:
+                    filtered_user_ids.append(user.id)
+
+            if filtered_user_ids:
+                users_query = users_query.filter(id__in=filtered_user_ids)
+            else:
+                users_query = users_query.none()
+
+        user_ids = list(users_query.values_list('id', flat=True))
+        total_users = len(user_ids)
+
+        # Обновляем статистику рассылки
+        broadcast.total_users = total_users
+        broadcast.status = 'sending'
+        broadcast.started_at = timezone.now()
+        broadcast.save(update_fields=['total_users', 'status', 'started_at'])
+
+        # Размер батча (можно настроить через settings)
+        BATCH_SIZE = getattr(settings, 'BROADCAST_BATCH_SIZE', 1000)
+
+        # Разбиваем на батчи
+        batches = []
+        for i in range(0, total_users, BATCH_SIZE):
+            batch_user_ids = user_ids[i:i + BATCH_SIZE]
+            batches.append(batch_user_ids)
+
+        total_batches = len(batches)
+
+        logger.info(
+            f"Начало рассылки '{broadcast.title}' для {total_users} пользователей "
+            f"({total_batches} батчей по {BATCH_SIZE} пользователей)"
+        )
+
+        # Создаем цепочку задач
+        if batches:
+            # Создаем задачи для каждого батча
+            tasks = []
+            for batch_num, batch_user_ids in enumerate(batches, 1):
+                task = send_broadcast_batch.s(
+                    broadcast_id=broadcast_id,
+                    user_ids=batch_user_ids,
+                    batch_number=batch_num,
+                    total_batches=total_batches
+                )
+                tasks.append(task)
+
+            # Добавляем задачу завершения в конец цепочки
+            tasks.append(finalize_broadcast.s(broadcast_id=broadcast_id))
+
+            # Запускаем цепочку задач последовательно
+            chain(*tasks).apply_async()
+
+            logger.info(f"Запущена цепочка из {total_batches + 1} задач для рассылки {broadcast_id}")
+        else:
+            # Если нет пользователей, завершаем рассылку
+            broadcast.status = 'completed'
+            broadcast.completed_at = timezone.now()
+            broadcast.save(update_fields=['status', 'completed_at'])
+            logger.info(f"Рассылка '{broadcast.title}' не имеет пользователей для отправки")
+
+        return {
+            'total_users': total_users,
+            'total_batches': total_batches,
+            'batch_size': BATCH_SIZE
+        }
+
+    except BroadcastMessage.DoesNotExist:
+        logger.error(f"Рассылка {broadcast_id} не найдена")
+        return {'error': f'Broadcast {broadcast_id} not found'}
+    except Exception as e:
+        logger.error(f"Ошибка при запуске рассылки {broadcast_id}: {e}")
+        try:
+            broadcast = BroadcastMessage.objects.get(id=broadcast_id)
+            broadcast.status = 'failed'
+            broadcast.save(update_fields=['status'])
+        except:
+            pass
+        raise
+
+
+@shared_task(bind=True)
+def finalize_broadcast(self, broadcast_id):
+    """
+    Завершает рассылку после отправки всех батчей.
+    
+    Args:
+        broadcast_id: ID объекта BroadcastMessage
+    """
+    try:
+        broadcast = BroadcastMessage.objects.get(id=broadcast_id)
+        broadcast.status = 'completed'
+        broadcast.completed_at = timezone.now()
+        broadcast.save(update_fields=['status', 'completed_at'])
+
+        logger.info(
+            f"Рассылка '{broadcast.title}' завершена: "
+            f"отправлено {broadcast.sent_count}, ошибок {broadcast.failed_count} из {broadcast.total_users}"
+        )
+
+        return {
+            'total': broadcast.total_users,
+            'sent': broadcast.sent_count,
+            'failed': broadcast.failed_count
+        }
+    except BroadcastMessage.DoesNotExist:
+        logger.error(f"Рассылка {broadcast_id} не найдена")
+        return {'error': f'Broadcast {broadcast_id} not found'}
+
+
+@shared_task(bind=True)
+def dispatch_monthly_role_reminder(self):
+    """
+    Beat-таск: 1-го числа каждого месяца отправляет push-уведомление
+    пользователям, которые не выбрали роль или не завершили регистрацию.
+
+    Расписание: Beat дёргает таск каждые 15 мин в течение 1-го числа.
+    Таск сам решает, нужно ли что-то делать (по time_of_day из настроек
+    и по флагу month_key — чтобы не отправить дважды).
+
+    Критерий «регистрация не завершена» — повторяет bot.bot.is_registration_complete.
+    """
+    from .models import (
+        MonthlyReminderSettings, MonthlyReminderLog, TelegramUser,
+    )
+    from django.db import IntegrityError
+    from django.db.models import Q
+    import tempfile
+
+    settings_obj = MonthlyReminderSettings.objects.first()
+    if not settings_obj or not settings_obj.is_active:
+        return {'skipped': 'disabled'}
+
+    now = timezone.now()
+    local_now = timezone.localtime(now)
+    today = local_now.date()
+    if today.day != 1:
+        return {'skipped': 'not first day of month'}
+    if local_now.time() < settings_obj.time_of_day:
+        return {'skipped': 'before time_of_day', 'time_of_day': str(settings_obj.time_of_day)}
+
+    month_key = today.strftime('%Y-%m')
+    # Атомарный захват месяца: уникальный индекс не даст создать дубль.
+    try:
+        log = MonthlyReminderLog.objects.create(
+            month_key=month_key,
+            status='running',
+            total=0,
+        )
+    except IntegrityError:
+        # Уже запущено в этом месяце — выходим.
+        return {'skipped': 'already processed', 'month_key': month_key}
+
+    # Регистрация не завершена: одно из обязательных полей пусто.
+    # (Совпадает с bot.bot.is_registration_complete.)
+    incomplete = (
+        Q(language__isnull=True) | Q(language='') |
+        Q(first_name__isnull=True) | Q(first_name='') |
+        Q(user_type__isnull=True) | Q(user_type='') |
+        Q(privacy_accepted=False) |
+        Q(phone_number__isnull=True) | Q(phone_number='') |
+        Q(latitude__isnull=True) | Q(longitude__isnull=True) |
+        Q(user_type='sotuvchi', smartup_id__isnull=True)
+    )
+    targets = list(
+        TelegramUser.objects.filter(is_active=True).filter(incomplete)
+        .only('id', 'telegram_id', 'language')
+    )
+    log.total = len(targets)
+    log.save(update_fields=['total'])
+
+    if not targets:
+        log.status = 'completed'
+        log.completed_at = timezone.now()
+        log.save(update_fields=['status', 'completed_at'])
+        return {'sent': 0, 'failed': 0, 'total': 0}
+
+    # Готовим картинку (если есть) — копируем во временный файл для aiogram.
+    photo_path = None
+    if settings_obj.image:
+        try:
+            with settings_obj.image.open('rb') as src:
+                ext = os.path.splitext(settings_obj.image.name)[1] or '.jpg'
+                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                    tmp.write(src.read())
+                    photo_path = tmp.name
+        except Exception as e:
+            logger.warning('monthly_reminder: не удалось открыть картинку: %s', e)
+
+    text_uz = settings_obj.text_uz_latin or ''
+    text_ru = settings_obj.text_ru or ''
+
+    async def _send_all():
+        bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+        sent, failed = 0, 0
+        try:
+            for i, user in enumerate(targets):
+                text = text_ru if user.language == 'ru' else text_uz
+                ok, _err = await send_message_to_user(
+                    bot=bot, user=user, text=text,
+                    parse_mode='HTML', photo_path=photo_path,
+                    disable_link_preview=True,
+                )
+                if ok:
+                    sent += 1
+                else:
+                    failed += 1
+                if i < len(targets) - 1:
+                    await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
+            return sent, failed
+        finally:
+            await bot.session.close()
+
+    try:
+        sent, failed = asyncio.run(_send_all())
+        log.sent_count = sent
+        log.failed_count = failed
+        log.status = 'completed'
+        log.completed_at = timezone.now()
+        log.save(update_fields=['sent_count', 'failed_count', 'status', 'completed_at'])
+        logger.info(
+            'monthly_reminder %s: отправлено %s, ошибок %s из %s',
+            month_key, sent, failed, len(targets),
+        )
+        return {'sent': sent, 'failed': failed, 'total': len(targets)}
+    except Exception as e:
+        log.status = 'failed'
+        log.error_message = str(e)
+        log.completed_at = timezone.now()
+        log.save(update_fields=['status', 'error_message', 'completed_at'])
+        logger.exception('monthly_reminder: ошибка при отправке')
+        raise
+    finally:
+        if photo_path and os.path.exists(photo_path):
+            try:
+                os.unlink(photo_path)
+            except OSError:
+                pass
+
+
+@shared_task(bind=True)
+def dispatch_scheduled_region_messages(self):
+    """
+    Beat-сканер: ищет отложенные региональные рассылки, у которых наступило время,
+    и переводит их в очередь Celery. Источник правды — БД, поэтому переживает
+    перезапуск Redis/воркеров.
+
+    Атомарный переход pending → running через UPDATE ... WHERE status='pending'
+    исключает двойную постановку при одновременной работе нескольких beat'ов.
+    """
+    from .models import RegionMessageLog
+
+    now = timezone.now()
+    pending = RegionMessageLog.objects.filter(
+        status='pending',
+        scheduled_at__lte=now,
+    ).order_by('scheduled_at').values(
+        'id', 'region_code', 'message_text', 'image_storage_path',
+        'user_type_filter', 'language_filter',
+    )
+
+    dispatched = 0
+    for row in pending:
+        # Атомарный захват: побеждает первый, у кого UPDATE затронул строку.
+        claimed = RegionMessageLog.objects.filter(
+            id=row['id'], status='pending'
+        ).update(status='running')
+        if not claimed:
+            continue
+        send_region_message_task.delay(
+            log_id=row['id'],
+            region_code=row['region_code'],
+            message_text=row['message_text'] or '',
+            image_storage_path=row['image_storage_path'] or '',
+            user_type_filter=row['user_type_filter'] or None,
+            language_filter=row['language_filter'] or None,
+        )
+        dispatched += 1
+        logger.info('Запущена отложенная региональная рассылка id=%s', row['id'])
+
+    return {'dispatched': dispatched, 'checked_at': now.isoformat()}

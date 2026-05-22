@@ -1,0 +1,439 @@
+{% extends "admin/dashboard_base.html" %}
+{% load static i18n webapp_i18n l10n %}
+
+{% block title %}{{ member.first_name|default:_("Member") }} | {% translate "CRM Details" %}{% endblock %}
+
+{% block extrahead %}
+<style>
+    .user-detail-v { display: flex; flex-direction: column; gap: 32px; width: 100%; box-sizing: border-box; }
+    
+    .profile-banner {
+        background: white;
+        border: 1px solid var(--slate-200);
+        border-radius: 16px;
+        padding: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        box-shadow: var(--shadow-minimal);
+    }
+    
+    .profile-main { display: flex; align-items: center; gap: 24px; }
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        background: var(--slate-900);
+        color: white;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: 800;
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.2);
+    }
+    
+    .profile-info h1 { margin: 0 0 4px 0; font-size: 24px; font-weight: 800; color: var(--slate-900); letter-spacing: -0.02em; }
+    .profile-info p { margin: 0; color: var(--slate-500); font-weight: 500; font-size: 14px; }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-top: 12px;
+    }
+    
+    .stat-row-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .stat-card-premium {
+        background: white;
+        border: 1px solid var(--slate-200);
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .stat-card-label { font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card-value { font-size: 24px; font-weight: 800; color: var(--slate-900); }
+    
+    .risk-indicator {
+        padding: 16px 20px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+    .risk-indicator.safe { background: #ecfdf5; border: 1px solid #10b98120; color: #065f46; }
+    .risk-indicator.blocked { background: #fef2f2; border: 1px solid #ef444420; color: #991b1b; }
+    
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .log-widget { 
+        background: white; border: 1px solid var(--slate-200); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; 
+        box-shadow: var(--shadow-minimal);
+    }
+    .log-header { 
+        padding: 16px 20px; border-bottom: 1px solid var(--slate-100); background: var(--slate-50); 
+        display: flex; align-items: center; gap: 10px;
+    }
+    .log-header h3 { font-size: 12px; font-weight: 700; color: var(--slate-900); text-transform: uppercase; margin: 0; }
+    
+    .log-table { width: 100%; border-collapse: collapse; }
+    .log-table th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; border-bottom: 1px solid var(--slate-100); }
+    .log-table td { padding: 12px 16px; font-size: 12px; border-bottom: 1px solid var(--slate-50); color: var(--slate-700); }
+    .log-table tr:last-child td { border-bottom: none; }
+    
+    .pill { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .pill-success { background: #ecfdf5; color: #059669; }
+    .pill-fail { background: #fef2f2; color: #dc2626; }
+    .pill-warn { background: #fffbeb; color: #d97706; }
+    
+    .back-btn { 
+        display: inline-flex; align-items: center; gap: 8px; color: var(--slate-500); 
+        text-decoration: none; font-size: 13px; font-weight: 600; margin-bottom: 16px; 
+        transition: 0.2s;
+    }
+    .back-btn:hover { color: var(--slate-900); }
+
+    .meta-box {
+        background: #f8fafc;
+        border: 1px solid var(--slate-200);
+        border-radius: 12px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    .meta-item { display: flex; flex-direction: column; gap: 4px; }
+    .meta-label { font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; }
+    .meta-val { font-size: 13px; font-weight: 600; color: var(--slate-700); }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="user-detail-v">
+    <a href="{% url 'dashboard' %}?tab=users" class="back-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+        {% translate "Back to List" %}
+    </a>
+
+    <!-- Profile Summary Banner -->
+    <div class="profile-banner">
+        <div class="profile-main">
+            <div class="profile-avatar">
+                {{ member.first_name|default:"?"|slice:":1" }}
+            </div>
+            <div class="profile-info">
+                <h1>{{ member.first_name|default:"" }} {{ member.last_name|default:"" }}</h1>
+                <p>@{{ member.username|default:"no_username" }} • {{ member.phone_number|default:"-" }}</p>
+                <div style="display:flex; gap:8px;">
+                    {% if member.user_type == 'electrician' %}
+                        <span class="status-badge" style="background:#e0e7ff; color:#3730a3;">{% translate "Electrician" %}</span>
+                    {% elif member.user_type == 'seller' %}
+                        <span class="status-badge" style="background:#ffedd5; color:#9a3412;">{% translate "Store" %}</span>
+                    {% else %}
+                        <span class="status-badge" style="background:var(--slate-100); color:var(--slate-500);">{% translate "Guest" %}</span>
+                    {% endif %}
+                    
+                    <span class="status-badge" style="background:var(--slate-100); color:var(--slate-600);">
+                        {% translate "Language" %}: {{ member.get_language_display }}
+                    </span>
+                    <span class="status-badge" style="background:var(--slate-100); color:var(--slate-600);">
+                        {% translate "ID" %}: {{ member.telegram_id }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <div class="stat-card-label">{% translate "Registered" %}</div>
+            <div style="font-size:18px; font-weight:700; color:var(--slate-900);">{{ member.created_at|date:"d M Y" }}</div>
+            <div style="font-size:11px; color:var(--slate-400); margin-top:4px;">{{ member.created_at|timesince }} {% translate "ago" %}</div>
+        </div>
+    </div>
+
+    <!-- Technical & Profile Meta -->
+    <div class="meta-box">
+        <div class="meta-item">
+            <div class="meta-label">{% translate "SmartUP ID" %}</div>
+            <div class="meta-val">{{ crm.smartup_id }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">{% translate "Location" %}</div>
+            <div class="meta-val">
+                {{ crm.region|default:"-" }} / {{ crm.district|default:"-" }}
+                {% if crm.latitude and crm.longitude %}
+                <a href="https://www.google.com/maps?q={{ crm.latitude }},{{ crm.longitude }}" target="_blank" style="margin-left:8px; color:var(--primary-accent); text-decoration:none;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    {% translate "Map" %}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">{% translate "Offer Agreement" %}</div>
+            <div class="meta-val">
+                {% if crm.privacy_accepted %}
+                <span style="color:#10b981; font-weight:700;">{% translate "Accepted" %}</span>
+                {% else %}
+                <span style="color:var(--slate-400);">{% translate "Not Accepted" %}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">{% translate "Outgoing Message" %}</div>
+            <div class="meta-val">{{ crm.last_message_sent_at|default:"-" }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">{% translate "Bot Blocking" %}</div>
+            <div class="meta-val">{{ crm.blocked_bot_at|default:"-" }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">{% translate "Updated" %}</div>
+            <div class="meta-val">{{ crm.updated_at }}</div>
+        </div>
+    </div>
+
+    <!-- Security & Risk -->
+    {% if crm.is_blocked %}
+    <div class="risk-indicator blocked">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <div style="font-weight:700;">{% translate "Access Temporarily Limited" %}</div>
+        </div>
+        <div style="font-weight:700; font-size:13px;">{% translate "Until" %}: {{ crm.blocked_until }} ({{ crm.block_type }})</div>
+    </div>
+    {% else %}
+    <div class="risk-indicator safe">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div style="font-weight:700;">{% translate "Account Verified" %}</div>
+        </div>
+        <div style="font-weight:700; font-size:13px;">{{ crm.failed_attempts_count }} {% translate "input errors" %}</div>
+    </div>
+    {% endif %}
+
+    <!-- Key Metrics Grid -->
+    <div class="stat-row-grid">
+        <div class="stat-card-premium" style="border-left: 4px solid var(--primary-accent);">
+            <div class="stat-card-label">{% translate "Current Balance" %}</div>
+            <div class="stat-card-value">{{ crm.points_balance|format_number }}</div>
+        </div>
+        <div class="stat-card-premium" style="border-left: 4px solid #10b981;">
+            <div class="stat-card-label">{% translate "Total Earned" %}</div>
+            <div class="stat-card-value">{{ crm.points_earned_lifetime|format_number }}</div>
+        </div>
+        <div class="stat-card-premium" style="border-left: 4px solid #f43f5e;">
+            <div class="stat-card-label">{% translate "Points Spent" %}</div>
+            <div class="stat-card-value">{{ crm.points_spent|format_number }}</div>
+        </div>
+        <div class="stat-card-premium" style="border-left: 4px solid #f59e0b;">
+            <div class="stat-card-label">{% translate "Total Scans" %}</div>
+            <div class="stat-card-value">{{ crm.total_scans|format_number }}</div>
+        </div>
+    </div>
+
+    <!-- Visual Activity Chart -->
+    <div class="product-widget">
+        <div class="widget-bar">
+            <h3>{% translate "Activity Dynamics (Last 14 Days)" %}</h3>
+        </div>
+        <div style="padding: 24px;">
+            <div style="height: 250px;"><canvas id="userTrendChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Location Analytics Section -->
+    {% include "admin/components/location_card.html" %}
+
+    <!-- Triple Log Grid -->
+    <div class="detail-grid">
+        <!-- 1. Scan History -->
+        <div class="log-widget">
+            <div class="log-header">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h2M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 01-1-1V5a1 1 0 001-1zm0 8h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1v-2a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                <h3>{% translate "Scanning History" %} ({{ crm.recent_scans|length }})</h3>
+            </div>
+            <div style="flex-grow:1; overflow-y:auto; max-height: 400px;">
+                <table class="log-table">
+                    <thead><tr><th>{% translate "Time" %}</th><th>{% translate "Code" %}</th><th style="text-align:right;">{% translate "Points" %}</th></tr></thead>
+                    <tbody>
+                        {% for scan in crm.recent_scans %}
+                        <tr>
+                            <td style="color:var(--slate-400); font-size:11px;">{{ scan.date }}</td>
+                            <td><code>{{ scan.code }}</code></td>
+                            <td style="text-align:right; font-weight:700; color:#10b981;">+{{ scan.points }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" style="text-align:center; padding:32px; color:var(--slate-400);">{% translate "No scans found" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. Redemption History -->
+        <div class="log-widget">
+            <div class="log-header">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12V22H4V12M22 7H2V12H22V7ZM12 22V7M12 7c2-2 4-2 4 0 0 2-2 2-4 2M12 7c-2-2-4-2-4 0 0 2 2 2 4 2"></path></svg>
+                <h3>{% translate "Award History" %} ({{ crm.recent_redemptions|length }})</h3>
+            </div>
+            <div style="flex-grow:1; overflow-y:auto; max-height: 400px;">
+                <table class="log-table">
+                    <thead><tr><th>{% translate "Gift" %}</th><th>{% translate "Status" %}</th><th style="text-align:right;">{% translate "Price" %}</th></tr></thead>
+                    <tbody>
+                        {% for red in crm.recent_redemptions %}
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;">{{ red.name }}</div>
+                                <div style="font-size:10px; color:var(--slate-400);">{{ red.date }}</div>
+                            </td>
+                            <td>
+                                <span class="pill {% if red.status == 'completed' %}pill-success{% elif red.status == 'rejected' or red.status == 'cancelled_by_user' %}pill-fail{% else %}pill-warn{% endif %}">
+                                    {{ red.status_display }}
+                                </span>
+                            </td>
+                            <td style="text-align:right; font-weight:700; color:#f43f5e;">-{{ red.points }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" style="text-align:center; padding:32px; color:var(--slate-400);">{% translate "No gift requests" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. Security/Fraud Log -->
+        <div class="log-widget">
+            <div class="log-header">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <h3>{% translate "Security Audit" %}</h3>
+            </div>
+            <div style="flex-grow:1; overflow-y:auto; max-height: 400px;">
+                <table class="log-table">
+                    <thead><tr><th>{% translate "Time" %}</th><th>{% translate "Attempt" %}</th><th>{% translate "Source" %}</th></tr></thead>
+                    <tbody>
+                        {% for fail in crm.failed_logs %}
+                        <tr>
+                            <td style="color:var(--slate-400); font-size:11px;">{{ fail.date }}</td>
+                            <td><code style="color:#ef4444;">{{ fail.code }}</code></td>
+                            <td><span style="font-size:10px; text-transform:uppercase; font-weight:700;">{{ fail.source }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" style="text-align:center; padding:32px; color:#10b981; font-weight:600;">{% translate "No violations found" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ crm.trends|json_script:"trends-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const rawTrends = JSON.parse(document.getElementById('trends-data').textContent);
+    
+    if (rawTrends && rawTrends.labels) {
+        new Chart(document.getElementById('userTrendChart'), {
+            type: 'line',
+            data: {
+                labels: rawTrends.labels,
+                datasets: [{
+                    {% translate "Activations" as activations_label %}
+                    label: '{{ activations_label|escapejs }}',
+                    data: rawTrends.data,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                }
+            }
+        });
+    }
+
+    // Yandex Maps Implementation
+    const mapLat = "{{ crm.latitude|unlocalize|default:'' }}";
+    const mapLng = "{{ crm.longitude|unlocalize|default:'' }}";
+    
+    function copyCoordinates(coords) {
+        navigator.clipboard.writeText(coords).then(() => {
+            {% translate "Coordinates copied to clipboard" as copy_success_msg %}
+            alert('{{ copy_success_msg|escapejs }}');
+        });
+    }
+
+    if (mapLat && mapLng) {
+        // Lazy load script
+        const loadMapScript = () => {
+            if (window.ymaps) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://api-maps.yandex.ru/2.1/?lang={{ request.LANGUAGE_CODE|default:'ru_RU' }}&apikey=103ada03-3e06-4f37-8873-7f6c1327229a";
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        };
+
+        const initMap = () => {
+            ymaps.ready(() => {
+                const map = new ymaps.Map("yandex-map-container", {
+                    center: [parseFloat(mapLat), parseFloat(mapLng)],
+                    zoom: 14,
+                    controls: ['zoomControl', 'fullscreenControl', 'typeSelector', 'geolocationControl', 'routeButtonControl']
+                });
+
+                const placemark = new ymaps.Placemark([parseFloat(mapLat), parseFloat(mapLng)], {
+                    balloonContent: `
+                        <div style="padding:10px; font-family:Inter,sans-serif;">
+                            <div style="font-weight:800; color:#0f172a; margin-bottom:4px;">{{ member.first_name|escapejs }} {{ member.last_name|escapejs }}</div>
+                            <div style="font-size:12px; color:#64748b; margin-bottom:8px;">{{ crm.region|escapejs }} / {{ crm.district|escapejs }}</div>
+                            <div style="font-size:11px; color:#94a3b8; font-family:monospace;">${mapLat}, ${mapLng}</div>
+                            <div style="margin-top:10px; border-top:1px solid #e2e8f0; padding-top:8px; font-size:10px; color:#94a3b8;">
+                                {% translate "Registered" as registered_label %}{{ registered_label|escapejs }}: {{ member.created_at|date:"d.m.Y" }}
+                            </div>
+                        </div>
+                    `
+                }, {
+                    preset: 'islands#blueUserIcon',
+                    iconColor: '#307FCD'
+                });
+
+                map.geoObjects.add(placemark);
+                // No need to show balloon immediately, let user click
+            });
+        };
+
+        // Observer for lazy loading
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    loadMapScript().then(initMap);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        const mapSection = document.getElementById('user-location-section');
+        if (mapSection) observer.observe(mapSection);
+    }
+</script>
+{% endblock %}

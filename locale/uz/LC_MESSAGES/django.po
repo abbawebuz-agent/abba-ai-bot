@@ -1,0 +1,1376 @@
+# Uzbek (O'zbek) translations for admin and project.
+# Основной язык админки — узбекский.
+# Run: python manage.py compilemessages -l uz
+msgid ""
+msgstr ""
+"Project-Id-Version: mono-bot\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-09 00:18+0500\n"
+"PO-Revision-Date: 2026-03-11 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: uz\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: core/dashboard_stats.py:339 mona/urls.py:357
+msgid "Tuman tanlanmagan"
+msgstr "Tuman tanlanmagan"
+
+#: core/dashboard_stats.py:369 templates/admin/dashboard.html:1070
+#: templates/admin/dashboard.html:1215
+msgid "TOTAL"
+msgstr "JAMI"
+
+#: core/models.py:23
+msgid "Viloyat"
+msgstr "Viloyat"
+
+#: core/models.py:24
+msgid "Viloyatlar"
+msgstr "Viloyatlar"
+
+#: core/models.py:44
+msgid "Tuman"
+msgstr "Tuman"
+
+#: core/models.py:45
+msgid "Tumanlar"
+msgstr "Tumanlar"
+
+# Названия моделей (узбекский — как в коде)
+#: core/models.py:125
+msgid "Telegram foydalanuvchisi"
+msgstr "Telegram foydalanuvchisi"
+
+#: core/models.py:126
+msgid "Telegram foydalanuvchilari"
+msgstr "Telegram foydalanuvchilari"
+
+#: core/models.py:477
+msgid "Oʻchirilgan (yumshoq)"
+msgstr "Oʻchirilgan"
+
+#: core/models.py:482
+msgid "Promo-kod tarixi"
+msgstr "Promo-kod tarixi"
+
+#: core/models.py:483
+msgid "Promo-kodlar tarixi"
+msgstr "Promo-kodlar tarixi"
+
+#: core/models.py:618
+msgid "Skanerlash urinishi"
+msgstr "Skanerlash urinishi"
+
+#: core/models.py:619
+msgid "Skanerlash urinishlari"
+msgstr "Skanerlash urinishlari"
+
+#: core/models.py:662
+msgid "Sovg‘a"
+msgstr "Sovg'a"
+
+#: core/models.py:663
+msgid "Sovg‘alar ro‘yxati"
+msgstr "Sovg'alar ro'yxati"
+
+#: core/models.py:690 core/models.py:743 core/models.py:912
+#: templates/admin/dashboard.html:1248 templates/admin/dashboard.html:1286
+#: templates/admin/dashboard.html:1887 templates/admin/dashboard.html:1976
+msgid "Pending"
+msgstr "Kutilmoqda"
+
+#: core/models.py:691 templates/admin/dashboard.html:1891
+#: templates/admin/dashboard.html:1977
+msgid "Approved"
+msgstr "Tasdiqlangan"
+
+#: core/models.py:692 templates/admin/dashboard.html:1895
+#: templates/admin/dashboard.html:1978
+msgid "Sent"
+msgstr "Yuborilgan"
+
+#: core/models.py:693 templates/admin/dashboard.html:1899
+msgid "Issued"
+msgstr "Berilgan"
+
+#: core/models.py:694 templates/admin/dashboard.html:1253
+#: templates/admin/dashboard.html:1292 templates/admin/dashboard.html:1566
+#: templates/admin/dashboard.html:1592 templates/admin/dashboard.html:1903
+#: templates/admin/dashboard.html:1980
+msgid "Rejected"
+msgstr "Rad etilgan"
+
+#: core/models.py:695 templates/admin/dashboard.html:1911
+msgid "Not Received"
+msgstr "Qabul qilinmagan"
+
+#: core/models.py:696 templates/admin/dashboard.html:1907
+#: templates/admin/dashboard_rows.html:114
+msgid "Cancelled"
+msgstr "Bekor qilingan"
+
+#: core/models.py:703 templates/admin/dashboard.html:1663
+#: templates/admin/dashboard.html:1850 templates/admin/user_detail.html:4
+msgid "Member"
+msgstr "Foydalanuvchi"
+
+#: core/models.py:727 core/models.py:728
+msgid "Sovg‘a olish uchun arizalar"
+msgstr "Sovg'a olish uchun arizalar"
+
+#: core/models.py:744
+#, fuzzy
+#| msgid "Pending"
+msgid "Sending"
+msgstr "Kutilmoqda"
+
+#: core/models.py:745 core/models.py:831 core/models.py:914
+#: templates/admin/dashboard.html:1979 templates/admin/dashboard_rows.html:112
+msgid "Completed"
+msgstr "Yakunlangan"
+
+#: core/models.py:746 core/models.py:832 core/models.py:915
+#: templates/admin/dashboard.html:2195
+msgid "Failed"
+msgstr "Xatolik"
+
+#: core/models.py:819 core/models.py:820
+msgid "Xabarlar yuborish"
+msgstr "Xabarlar yuborish"
+
+#: core/models.py:830
+msgid "Running"
+msgstr ""
+
+#: core/models.py:853
+msgid "Лог рассылки по области"
+msgstr "Hudud bo'yicha yuborish jurnali"
+
+#: core/models.py:854
+msgid "Логи рассылок по областям"
+msgstr "Hududlar bo'yicha yuborish jurnallari"
+
+#: core/models.py:874
+msgid "Aksiya"
+msgstr "Aksiya"
+
+#: core/models.py:875
+msgid "Aksiyalar"
+msgstr "Aksiyalar"
+
+#: core/models.py:901 core/models.py:902
+msgid "Maxfiylik siyosati"
+msgstr "Maxfiylik siyosati"
+
+#: core/models.py:913
+msgid "Processing"
+msgstr ""
+
+#: core/models.py:958
+msgid "Promo-kod yaratilish tarixi"
+msgstr "Promo-kod yaratilish tarixi"
+
+#: core/models.py:959
+msgid "Promo-kodlar yaratish tarixi"
+msgstr "Promo-kodlar yaratish tarixi"
+
+#: core/models.py:1006 core/models.py:1007
+msgid "Promokod urinishlari"
+msgstr "Promokod urinishlari"
+
+#: core/models.py:1048 core/models.py:1049
+msgid "Admin kontakt sozlamalari"
+msgstr "Admin kontakt sozlamalari"
+
+#: core/models.py:1140
+msgid "Video ko'rsatma"
+msgstr "Video ko'rsatma"
+
+#: core/models.py:1141
+msgid "Video ko'rsatmalar"
+msgstr "Video ko'rsatmalar"
+
+#: core/models.py:1180 templates/admin/user_detail.html:163
+msgid "SmartUP ID"
+msgstr "SmartUP ID"
+
+#: core/models.py:1181
+msgid "SmartUP IDlar"
+msgstr "SmartUP IDlar"
+
+#: mona/urls.py:197
+msgid "Butun davr"
+msgstr "Butun davr"
+
+#: mona/urls.py:201
+#, python-brace-format
+msgid "{date_from} dan"
+msgstr "{date_from} dan"
+
+#: mona/urls.py:203
+#, python-brace-format
+msgid "{date_to} gacha"
+msgstr "{date_to} gacha"
+
+# Admin — часто используемые подписи (при необходимости добавьте свои)
+#: templates/admin/change_list.html:28
+#: templates/admin/core/qrcode/clear_scans_confirm.html:8
+#: templates/admin/core/qrcode/no_access.html:8
+msgid "Home"
+msgstr "Bosh sahifa"
+
+#: templates/admin/change_list.html:62
+msgid "Please correct the error below."
+msgstr "Iltimos, quyidagi xatoni tuzating."
+
+#: templates/admin/change_list.html:64
+msgid "Please correct the errors below."
+msgstr "Iltimos, quyidagi xatolarni tuzating."
+
+#: templates/admin/change_list.html:108
+msgid "Clear all filters"
+msgstr "Barcha filtrlarni tozalash"
+
+msgid "Location Analytics"
+msgstr "Joylashuv tahlili"
+
+msgid "Copy Coordinates"
+msgstr "Koordinatalarni nusxalash"
+
+msgid "Copy"
+msgstr "Nusxalash"
+
+msgid "Open Yandex"
+msgstr "Yandex'da ochish"
+
+msgid "Build Route"
+msgstr "Yo‘nalish chizish"
+
+#: templates/admin/components/location_card.html:36
+#: templates/admin/dashboard.html:1820
+msgid "Region"
+msgstr "Hudud"
+
+msgid "District"
+msgstr "Tuman"
+
+msgid "Coordinates"
+msgstr "Koordinatalar"
+
+msgid "Last updated"
+msgstr "Oxirgi yangilanish"
+
+msgid "User location not available"
+msgstr "Foydalanuvchi manzili mavjud emas"
+
+msgid "Geolocation data hasn't been shared via the bot"
+msgstr "Geolokatsiya ma'lumotlari bot orqali taqdim etilmagan"
+
+#: templates/admin/core/qrcode/change_form.html:8
+msgid "Cancel Scans"
+msgstr "Jami faollashtirishlar"
+
+#: templates/admin/core/qrcode/clear_scans_confirm.html:4
+#: templates/admin/core/qrcode/no_access.html:4
+msgid "Django site admin"
+msgstr "Django sayt admini"
+
+#: templates/admin/core/qrcode/clear_scans_confirm.html:12
+msgid "Отменить сканирования"
+msgstr "Skanerlashni bekor qilish"
+
+#: templates/admin/core/qrcode/no_access.html:10
+msgid "QR Codes"
+msgstr "Kod"
+
+#: templates/admin/core/qrcode/no_access.html:11
+#: templates/admin/dashboard.html:1643
+msgid "View"
+msgstr "Ko'rish"
+
+#: templates/admin/core/qrcode/no_access.html:20
+msgid "Access to view QR code is limited"
+msgstr "QR-kodni ko'rish imkoniyati cheklangan"
+
+#: templates/admin/core/qrcode/no_access.html:23
+msgid "Current user role does not allow viewing detailed QR code information."
+msgstr ""
+"Joriy foydalanuvchi roli QR-kod haqida batafsil ma'lumotni ko'rishga ruxsat "
+"bermaydi."
+
+#: templates/admin/core/qrcode/no_access.html:28
+msgid "Access Requirements:"
+msgstr "Kirish talablari:"
+
+#: templates/admin/core/qrcode/no_access.html:30
+msgid "Superuser:"
+msgstr "Superuser:"
+
+#: templates/admin/core/qrcode/no_access.html:30
+msgid "Full access to all QR codes"
+msgstr "Barcha QR-kodlarga to'liq kirish"
+
+#: templates/admin/core/qrcode/no_access.html:31
+msgid "Permission 'Can view QR code details':"
+msgstr " 'Can view QR code details' ruxsati:"
+
+#: templates/admin/core/qrcode/no_access.html:31
+msgid "Access to view detailed QR code information"
+msgstr "QR-kodlar haqida batafsil ma'lumotni ko'rish imkoniyati"
+
+#: templates/admin/core/qrcode/no_access.html:35
+msgid "Your current status:"
+msgstr "Sizning joriy holatingiz:"
+
+#: templates/admin/core/qrcode/no_access.html:38
+msgid "You are a superuser"
+msgstr "Siz superuser hisoblanasiz"
+
+#: templates/admin/core/qrcode/no_access.html:40
+msgid "You are not a superuser"
+msgstr "Siz superuser emassiz"
+
+#: templates/admin/core/qrcode/no_access.html:44
+msgid "You have permission 'Can view QR code details'"
+msgstr "Sizda 'Can view QR code details' ruxsati bor"
+
+#: templates/admin/core/qrcode/no_access.html:46
+msgid "You do not have permission 'Can view QR code details'"
+msgstr "Sizda 'Can view QR code details' ruxsati yo'q"
+
+#: templates/admin/core/qrcode/no_access.html:53
+msgid "To gain access, contact the system administrator."
+msgstr "Ruxsat olish uchun tizim administratoriga murojaat qiling."
+
+#: templates/admin/core/qrcode/no_access.html:56
+msgid "← Back to QR code list"
+msgstr "← QR-kodlar ro'yxatiga qaytish"
+
+#: templates/admin/dashboard.html:7
+msgid "Operational Analytics"
+msgstr "Operatsion tahlil"
+
+#: templates/admin/dashboard.html:981 templates/admin/dashboard_base.html:422
+msgid "Dashboard"
+msgstr "Boshqaruv paneli"
+
+#: templates/admin/dashboard.html:982 templates/admin/dashboard.html:1414
+msgid "Users"
+msgstr "Foydalanuvchilar"
+
+#: templates/admin/dashboard.html:983
+msgid "Gifts"
+msgstr "Sovg'alar"
+
+#: templates/admin/dashboard.html:984 templates/admin/dashboard.html:2295
+msgid "Redemptions"
+msgstr "So'rovlar"
+
+msgid "Noma'lum"
+msgstr "Noma'lum"
+
+#: templates/admin/dashboard.html:985 templates/admin/dashboard.html:1625
+msgid "Promo Codes"
+msgstr "Promo-kodlar"
+
+#: templates/admin/dashboard.html:986 templates/admin/dashboard.html:1075
+#: templates/admin/dashboard.html:1795 templates/admin/dashboard.html:1815
+#: templates/admin/dashboard.html:1988 templates/admin/dashboard.html:2190
+msgid "Stores"
+msgstr "Do‘konlar"
+
+#: templates/admin/dashboard.html:987 templates/admin/dashboard.html:1074
+#: templates/admin/dashboard.html:1791 templates/admin/dashboard.html:1814
+#: templates/admin/dashboard.html:1987 templates/admin/dashboard.html:2189
+msgid "Electricians"
+msgstr "Elektriklar"
+
+#: templates/admin/dashboard.html:1008
+msgid "This Month"
+msgstr "Shu oy"
+
+#: templates/admin/dashboard.html:1011
+msgid "Last 7 Days"
+msgstr "7 kun"
+
+#: templates/admin/dashboard.html:1014
+msgid "Lifetime"
+msgstr "Butun davr"
+
+#: templates/admin/dashboard.html:1014 templates/admin/dashboard.html:1986
+msgid "All"
+msgstr "Hammasi"
+
+#: templates/admin/dashboard.html:1020
+msgid "Global Search..."
+msgstr "Umumiy qidiruv..."
+
+#: templates/admin/dashboard.html:1032 templates/admin/dashboard.html:1720
+#: templates/admin/dashboard.html:1838 templates/admin/dashboard.html:1992
+msgid "Reset"
+msgstr "Tiklash"
+
+#: templates/admin/dashboard.html:1066
+msgid "USER OVERVIEW"
+msgstr "FOYDALANUVCHILAR TAHLILI"
+
+#: templates/admin/dashboard.html:1076
+msgid "Unselected"
+msgstr "Tanlanmagan"
+
+#: templates/admin/dashboard.html:1092
+msgid "ELECTRICIAN CODES"
+msgstr "ELEKTRIKLAR KODLARI"
+
+#: templates/admin/dashboard.html:1097 templates/admin/dashboard.html:1121
+#: templates/admin/dashboard.html:2192
+msgid "Scanned"
+msgstr "Skanerlangan"
+
+#: templates/admin/dashboard.html:1099 templates/admin/dashboard.html:1123
+msgid "Remaining (in field)"
+msgstr "Skanerlanmagan"
+
+#: templates/admin/dashboard.html:1116
+msgid "STORE CODES"
+msgstr "DO'KONLAR KODLARI"
+
+#: templates/admin/dashboard.html:1141
+msgid "TOTAL POINTS"
+msgstr "JAMI BALLAR"
+
+#: templates/admin/dashboard.html:1146 templates/admin/dashboard.html:1219
+msgid "from electricians"
+msgstr "elektriklardan"
+
+#: templates/admin/dashboard.html:1147 templates/admin/dashboard.html:1220
+msgid "from stores"
+msgstr "do'konlardan"
+
+#: templates/admin/dashboard.html:1163
+msgid "ELECTRICIAN POOL"
+msgstr "ELEKTRIKLAR PULI"
+
+#: templates/admin/dashboard.html:1167 templates/admin/dashboard.html:1191
+msgid "Collected (period)"
+msgstr "Yig'ilgan (davr)"
+
+#: templates/admin/dashboard.html:1169 templates/admin/dashboard.html:1193
+#: templates/admin/dashboard.html:2193
+msgid "Spent"
+msgstr "Sarflangan"
+
+#: templates/admin/dashboard.html:1171 templates/admin/dashboard.html:1195
+msgid "Total Potential"
+msgstr "Umumiy potensial"
+
+#: templates/admin/dashboard.html:1187
+msgid "STORE POOL"
+msgstr "DO'KONLAR PULI"
+
+#: templates/admin/dashboard.html:1211
+msgid "GIFT REQUESTS"
+msgstr "SOVG'Alarga ARIZALAR"
+
+#: templates/admin/dashboard.html:1229
+msgid "GIFTS: ELECTRICIANS"
+msgstr "SOVG'ALAR: ELEKTRIKLAR"
+
+#: templates/admin/dashboard.html:1236 templates/admin/dashboard.html:1274
+#: templates/admin/dashboard.html:1854 templates/admin/dashboard.html:1973
+#: templates/admin/dashboard.html:2008 templates/admin/user_detail.html:288
+msgid "Status"
+msgstr "Holati"
+
+#: templates/admin/dashboard.html:1237 templates/admin/dashboard.html:1275
+#: templates/admin/dashboard.html:2188
+msgid "Count"
+msgstr "Soni"
+
+#: templates/admin/dashboard.html:1238 templates/admin/dashboard.html:1276
+#: templates/admin/dashboard.html:1666 templates/admin/dashboard.html:1853
+#: templates/admin/user_detail.html:264
+msgid "Points"
+msgstr "Ballar"
+
+#: templates/admin/dashboard.html:1243 templates/admin/dashboard.html:1281
+#: templates/admin/dashboard.html:2194
+msgid "Success"
+msgstr "Muvaffaqiyat"
+
+#: templates/admin/dashboard.html:1267
+msgid "GIFTS: STORES"
+msgstr "SOVG'ALAR: DO'KONLAR"
+
+#: templates/admin/dashboard.html:1307
+msgid "Security Audit: Brute-Force Monitoring"
+msgstr "Xavfsizlik auditi: Brute-Force monitoringi"
+
+#: templates/admin/dashboard.html:1329
+msgid "AVG DAILY FAILURES"
+msgstr "KUNLIK O'RTACHA XATOLAR"
+
+#: templates/admin/dashboard.html:1345
+#, python-format
+msgid "%% CLEAN USERS"
+msgstr "%% TOZA FOYDALANUVCHILAR"
+
+#: templates/admin/dashboard.html:1356
+msgid "Suspicious Leaderboard (Anti-Fraud)"
+msgstr "Shubhali foydalanuvchilar (Anti-Fraud)"
+
+#: templates/admin/dashboard.html:1363
+msgid "User"
+msgstr "Foydalanuvchi"
+
+#: templates/admin/dashboard.html:1365
+msgid "Errors"
+msgstr "Xatolar"
+
+#: templates/admin/dashboard.html:1389
+msgid "No risk data available"
+msgstr "Xavf haqida ma'lumot yo'q"
+
+#: templates/admin/dashboard.html:1410
+msgid "Scanning Geography"
+msgstr "Skanerlash geografiyasi"
+
+#: templates/admin/dashboard.html:1413
+msgid "Scans"
+msgstr "Skanerlashlar"
+
+#: templates/admin/dashboard.html:1423
+msgid "Activity Trends"
+msgstr "Faollik dinamikasi"
+
+#: templates/admin/dashboard.html:1448
+msgid "Account Status"
+msgstr "Akkauntlar holati"
+
+#: templates/admin/dashboard.html:1465
+msgid "Award Popularity"
+msgstr "Sovg'alar mashhurligi"
+
+#: templates/admin/dashboard.html:1482 templates/admin/dashboard.html:1536
+msgid "Point Economy"
+msgstr "Ballar iqtisodiyoti"
+
+#: templates/admin/dashboard.html:1509
+msgid "Award Logistics"
+msgstr "Sovg'alar logistikasi"
+
+#: templates/admin/dashboard.html:1512
+msgid "Export all requests"
+msgstr "Hali so'rovlar yo'q"
+
+#: templates/admin/dashboard.html:1556
+msgid "Electrician Gifts"
+msgstr "Elektriklar"
+
+#: templates/admin/dashboard.html:1560 templates/admin/dashboard.html:1586
+#: templates/admin/dashboard.html:1883
+msgid "Total Requests"
+msgstr "Jami arizalar"
+
+#: templates/admin/dashboard.html:1562 templates/admin/dashboard.html:1588
+msgid "Fulfilled"
+msgstr "Bajarildi"
+
+#: templates/admin/dashboard.html:1564 templates/admin/dashboard.html:1590
+#: templates/admin/dashboard_rows.html:116
+msgid "In Progress"
+msgstr "Jarayonda"
+
+#: templates/admin/dashboard.html:1568 templates/admin/dashboard.html:1594
+msgid "Points Volume"
+msgstr "Ball qiymati"
+
+#: templates/admin/dashboard.html:1582
+msgid "Store Gifts"
+msgstr "Do‘konlar"
+
+#: templates/admin/dashboard.html:1604
+msgid "Regional Breakdown"
+msgstr "Hududiy tahlil"
+
+#: templates/admin/dashboard.html:1604 templates/admin/dashboard.html:1822
+msgid "Nationwide"
+msgstr "Respublika bo‘ylab"
+
+#: templates/admin/dashboard.html:1606
+msgid "← Back"
+msgstr "← Orqaga"
+
+#: templates/admin/dashboard.html:1608
+msgid "Export table"
+msgstr ""
+
+#: templates/admin/dashboard.html:1616
+msgid "Filter..."
+msgstr "Filtr"
+
+#: templates/admin/dashboard.html:1623
+msgid "Territory"
+msgstr "Hudud"
+
+#: templates/admin/dashboard.html:1624
+msgid "Members"
+msgstr "Foydalanuvchilar"
+
+#: templates/admin/dashboard.html:1626
+msgid "Total Points"
+msgstr "Jami faollashtirishlar"
+
+#: templates/admin/dashboard.html:1627
+msgid "Actions"
+msgstr "Harakatlar"
+
+#: templates/admin/dashboard.html:1640
+msgid "Districts"
+msgstr "Tumanlar"
+
+#: templates/admin/dashboard.html:1655
+msgid "Users in"
+msgstr "Foydalanuvchilar"
+
+#: templates/admin/dashboard.html:1657
+msgid "Search users..."
+msgstr "Qidiruv..."
+
+#: templates/admin/dashboard.html:1664 templates/admin/dashboard.html:1755
+#: templates/admin/dashboard.html:1851 templates/admin/dashboard.html:2005
+msgid "Phone"
+msgstr "Telefon"
+
+#: templates/admin/dashboard.html:1665 templates/admin/user_detail.html:348
+msgid "Activations"
+msgstr "Aktivatsiyalar"
+
+#: templates/admin/dashboard.html:1697
+msgid "Global Activity Feed"
+msgstr "Faollik oqimi"
+
+#: templates/admin/dashboard.html:1713 templates/admin/dashboard.html:1805
+#: templates/admin/dashboard.html:1967
+msgid "Quick Search"
+msgstr "Tezkor qidiruv"
+
+#: templates/admin/dashboard.html:1715
+msgid "Code or username..."
+msgstr ""
+
+#: templates/admin/dashboard.html:1733
+msgid "Total scans (period)"
+msgstr "Jami skanerlashlar (davr)"
+
+#: templates/admin/dashboard.html:1737
+msgid "Success rate"
+msgstr "Muvaffaqiyat darajasi"
+
+#: templates/admin/dashboard.html:1741
+msgid "Failed attempts"
+msgstr "Muvaffaqiyatsiz urinishlar"
+
+#: templates/admin/dashboard.html:1750 templates/admin/user_detail.html:264
+msgid "Code"
+msgstr "Kod"
+
+#: templates/admin/dashboard.html:1751
+msgid "Value"
+msgstr "Qiymat"
+
+#: templates/admin/dashboard.html:1752
+msgid "Type"
+msgstr "Tur"
+
+#: templates/admin/dashboard.html:1753
+msgid "Timestamp"
+msgstr "Vaqt"
+
+#: templates/admin/dashboard.html:1754
+msgid "Full Name"
+msgstr ""
+
+#: templates/admin/dashboard.html:1756 templates/admin/user_detail.html:167
+msgid "Location"
+msgstr "Harakatlar"
+
+#: templates/admin/dashboard.html:1757
+msgid "Username"
+msgstr "Foydalanuvchilar"
+
+#: templates/admin/dashboard.html:1758
+msgid "Profile"
+msgstr "Foydalanuvchi profili"
+
+#: templates/admin/dashboard.html:1764 templates/admin/dashboard.html:1863
+#: templates/admin/dashboard.html:2017
+msgid "Loading..."
+msgstr "Yuklanmoqda..."
+
+#: templates/admin/dashboard.html:1772
+msgid "Management Hub"
+msgstr ""
+
+#: templates/admin/dashboard.html:1774
+msgid "Export user list"
+msgstr "Hali so'rovlar yo'q"
+
+#: templates/admin/dashboard.html:1787
+msgid "Total Members"
+msgstr "Barcha foydalanuvchilar"
+
+#: templates/admin/dashboard.html:1807
+msgid "Name or phone..."
+msgstr "Ism yoki telefon..."
+
+#: templates/admin/dashboard.html:1811 templates/admin/dashboard.html:1852
+#: templates/admin/dashboard.html:1984
+msgid "Segment"
+msgstr "Segment"
+
+#: templates/admin/dashboard.html:1813
+msgid "All Members"
+msgstr "Barcha foydalanuvchilar"
+
+#: templates/admin/dashboard.html:1830
+msgid "Sort By"
+msgstr "Saralash"
+
+#: templates/admin/dashboard.html:1832
+msgid "Recently Joined"
+msgstr "Yaqinda qo'shilganlar"
+
+#: templates/admin/dashboard.html:1833
+msgid "Points: High to Low"
+msgstr "Ballar: yuqoridan pastga"
+
+#: templates/admin/dashboard.html:1834
+msgid "Oldest First"
+msgstr "Avval eskilar"
+
+#: templates/admin/dashboard.html:1855
+msgid "Last Active"
+msgstr "Faol"
+
+#: templates/admin/dashboard.html:1871
+msgid "Gift Requests (CRM)"
+msgstr "Hali so'rovlar yo'q"
+
+#: templates/admin/dashboard.html:1873
+msgid "Export gift requests"
+msgstr "Hali so'rovlar yo'q"
+
+#: templates/admin/dashboard.html:1915 templates/admin/dashboard.html:2042
+#: templates/admin/dashboard.html:2201 templates/admin/user_detail.html:232
+msgid "Points Spent"
+msgstr "Sarflangan ballar"
+
+#: templates/admin/dashboard.html:1923
+msgid "Request Dynamics"
+msgstr "So'rovlar dinamikasi"
+
+#: templates/admin/dashboard.html:1934
+msgid "Economy (Points)"
+msgstr "Iqtisodiyot (Ballar)"
+
+#: templates/admin/dashboard.html:1945
+msgid "Popular Gifts"
+msgstr "Do‘konlar"
+
+#: templates/admin/dashboard.html:1954
+msgid "Request Statuses"
+msgstr "So'rovlar holati"
+
+#: templates/admin/dashboard.html:1969
+msgid "Name, phone or gift..."
+msgstr "Ism, telefon yoki sovg'a..."
+
+#: templates/admin/dashboard.html:1975
+msgid "All statuses"
+msgstr "Barcha holatlar"
+
+#: templates/admin/dashboard.html:2004
+msgid "Number / User"
+msgstr "No. / Foydalanuvchi"
+
+#: templates/admin/dashboard.html:2006 templates/admin/user_detail.html:288
+msgid "Gift"
+msgstr "Sovg'a"
+
+#: templates/admin/dashboard.html:2007
+msgid "Cost"
+msgstr "Narxi"
+
+#: templates/admin/dashboard.html:2009
+msgid "Date"
+msgstr "Sana"
+
+#: templates/admin/dashboard.html:2026
+msgid "User Profile"
+msgstr "Foydalanuvchi profili"
+
+#: templates/admin/dashboard.html:2034
+msgid "Balance"
+msgstr "Balans"
+
+#: templates/admin/dashboard.html:2038 templates/admin/user_detail.html:236
+msgid "Total Scans"
+msgstr "Jami faollashtirishlar"
+
+#: templates/admin/dashboard.html:2049
+msgid "Recent Activities"
+msgstr "Oxirgi faollik"
+
+#: templates/admin/dashboard.html:2053
+msgid "Gift History"
+msgstr "Sovg'alar tarixi"
+
+#: templates/admin/dashboard.html:2065
+msgid "Generating Excel Report..."
+msgstr "Excel hisoboti tayyorlanmoqda..."
+
+#: templates/admin/dashboard.html:2066
+msgid "Please wait, this may take a few seconds for large datasets."
+msgstr ""
+"Iltimos kuting, katta ma'lumotlar to'plami uchun bir necha soniya vaqt "
+"ketishi mumkin."
+
+#: templates/admin/dashboard.html:2184
+msgid "Active Members"
+msgstr "Barcha foydalanuvchilar"
+
+#: templates/admin/dashboard.html:2185
+msgid "Success Activations"
+msgstr "Faollashtirishlar"
+
+#: templates/admin/dashboard.html:2186
+msgid "Points Scanned"
+msgstr "To'plangan ballar"
+
+#: templates/admin/dashboard.html:2187
+msgid "Points Redeemed"
+msgstr "Sarflangan ballar"
+
+#: templates/admin/dashboard.html:2191
+msgid "Unchecked"
+msgstr "Tekshirilmagan"
+
+#: templates/admin/dashboard.html:2196
+msgid "Clean"
+msgstr "Toza"
+
+#: templates/admin/dashboard.html:2197
+msgid "Warning"
+msgstr "Ogohlantirish"
+
+#: templates/admin/dashboard.html:2198
+msgid "Suspicious"
+msgstr "Shubhali"
+
+#: templates/admin/dashboard.html:2199 templates/admin/dashboard_rows.html:31
+msgid "Blocked"
+msgstr "Blok"
+
+#: templates/admin/dashboard.html:2200
+msgid "Points Earned"
+msgstr "To'plangan ballar"
+
+#: templates/admin/dashboard_base.html:9
+msgid "Analytics Hub"
+msgstr "Tahliliy markaz"
+
+#: templates/admin/dashboard_base.html:431
+msgid "Admin Panel"
+msgstr "Admin paneli"
+
+#: templates/admin/dashboard_base.html:441
+msgid "Logout"
+msgstr "Chiqish"
+
+#: templates/admin/dashboard_base.html:457
+msgid "Mono Ecosystem"
+msgstr "Mono Ekosistemasi"
+
+#: templates/admin/dashboard_base.html:482
+msgid "AD"
+msgstr ""
+
+#: templates/admin/dashboard_rows.html:21 templates/admin/user_detail.html:137
+msgid "Electrician"
+msgstr "Elektriklar"
+
+#: templates/admin/dashboard_rows.html:23 templates/admin/user_detail.html:139
+msgid "Store"
+msgstr "Do‘konlar"
+
+#: templates/admin/dashboard_rows.html:25 templates/admin/user_detail.html:141
+msgid "Guest"
+msgstr "Mehmon"
+
+#: templates/admin/dashboard_rows.html:33
+msgid "At Risk"
+msgstr "Yuqori xavf"
+
+#: templates/admin/dashboard_rows.html:35
+msgid "Active"
+msgstr "Faol"
+
+#: templates/admin/dashboard_rows.html:43 templates/admin/user_detail.html:156
+msgid "ago"
+msgstr "oldin"
+
+#: templates/admin/dashboard_rows.html:47
+msgid "View Detailed Stats"
+msgstr "Batafsil statistikani ko'rish"
+
+#: templates/admin/dashboard_rows.html:83
+msgid "View Profile"
+msgstr "Foydalanuvchi profili"
+
+#: templates/admin/dashboard_rows.html:128
+msgid "View in Admin"
+msgstr ""
+
+#: templates/admin/search_form.html:4
+#, python-format
+msgid "Search %(name)s"
+msgstr ""
+
+#: templates/admin/search_form.html:9
+msgid "Search"
+msgstr "Qidiruv"
+
+#: templates/admin/search_form.html:11
+#, python-format
+msgid "%(counter)s result"
+msgid_plural "%(counter)s results"
+msgstr[0] ""
+
+#: templates/admin/search_form.html:11
+#, python-format
+msgid "%(full_result_count)s total"
+msgstr ""
+
+#: templates/admin/search_form.html:11
+msgid "Show all"
+msgstr ""
+
+#: templates/admin/user_detail.html:4
+msgid "CRM Details"
+msgstr ""
+
+#: templates/admin/user_detail.html:123
+msgid "Back to List"
+msgstr "Foydalanuvchilarga qaytish"
+
+#: templates/admin/user_detail.html:145
+msgid "Language"
+msgstr "Tili"
+
+#: templates/admin/user_detail.html:148
+msgid "ID"
+msgstr "ID"
+
+#: templates/admin/user_detail.html:154 templates/admin/user_detail.html:409
+msgid "Registered"
+msgstr "Ro'yxatdan o'tgan"
+
+#: templates/admin/user_detail.html:173
+msgid "Map"
+msgstr "Xaritada"
+
+#: templates/admin/user_detail.html:179
+msgid "Offer Agreement"
+msgstr "Oferta shartnomasi"
+
+#: templates/admin/user_detail.html:182
+msgid "Accepted"
+msgstr "Qabul qilingan"
+
+#: templates/admin/user_detail.html:184
+msgid "Not Accepted"
+msgstr "Qabul qilinmagan"
+
+#: templates/admin/user_detail.html:189
+msgid "Outgoing Message"
+msgstr "Chiquvchi xabar"
+
+#: templates/admin/user_detail.html:193
+msgid "Bot Blocking"
+msgstr "Botni bloklash"
+
+#: templates/admin/user_detail.html:197
+msgid "Updated"
+msgstr "Yangilangan"
+
+msgid "Account Verified"
+msgstr "Hisob tasdiqlangan"
+
+msgid "input errors"
+msgstr "kiritish xatosi"
+
+msgid "Security Audit"
+msgstr "Xavfsizlik auditi"
+
+msgid "No violations found"
+msgstr "Qoidabuzarliklar topilmadi"
+
+#: templates/admin/user_detail.html:207
+msgid "Access Temporarily Limited"
+msgstr ""
+
+#: templates/admin/user_detail.html:209
+msgid "Until"
+msgstr ""
+
+#: templates/admin/user_detail.html:224
+
+msgid "Current Balance"
+msgstr "Joriy balans"
+
+#: templates/admin/user_detail.html:228
+msgid "Total Earned"
+msgstr "To'plangan ballar"
+
+#: templates/admin/user_detail.html:244
+msgid "Activity Dynamics (Last 14 Days)"
+msgstr "Skanerlash faolligi (Oxirgi 14 kun)"
+
+#: templates/admin/user_detail.html:260
+msgid "Scanning History"
+msgstr "Skanerlash tarixi"
+
+#: templates/admin/user_detail.html:264 templates/admin/user_detail.html:319
+msgid "Time"
+msgstr "Vaqt"
+
+#: templates/admin/user_detail.html:273
+msgid "No scans found"
+msgstr "Skanerlashlar topilmadi"
+
+#: templates/admin/user_detail.html:284
+msgid "Award History"
+msgstr "Sovg'alar tarixi"
+
+#: templates/admin/user_detail.html:288
+msgid "Price"
+msgstr "Narxi"
+
+#: templates/admin/user_detail.html:304
+msgid "No gift requests"
+msgstr "Hali so'rovlar yo'q"
+
+#: templates/admin/user_detail.html:319
+msgid "Attempt"
+msgstr "Muvaffaqiyatsiz urinishlar"
+
+#: templates/admin/user_detail.html:319
+msgid "Source"
+msgstr ""
+
+msgid "Coordinates copied to clipboard"
+msgstr "Koordinatalar buferga nusxalandi"
+
+#: templates/rangefilter/date_filter.html:3
+#, python-format
+msgid " By %(filter_title)s "
+msgstr ""
+
+#: templates/webapp/index.html:12
+msgid "WEBAPP_MY_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:107 templates/webapp/index.html:330
+#: templates/webapp/index.html:579
+msgid "USER"
+msgstr ""
+
+#: templates/webapp/index.html:127 templates/webapp/index.html:347
+#: templates/webapp/index.html:611
+msgid "WEBAPP_TOTAL_POINTS"
+msgstr ""
+
+#: templates/webapp/index.html:204 templates/webapp/index.html:612
+msgid "WEBAPP_REGISTER"
+msgstr ""
+
+#: templates/webapp/index.html:222 templates/webapp/index.html:613
+msgid "WEBAPP_PARTNER_TEXT"
+msgstr ""
+
+#: templates/webapp/index.html:225 templates/webapp/index.html:614
+msgid "WEBAPP_VIEW_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:234
+msgid "WEBAPP_MY_ORDERS"
+msgstr ""
+
+#: templates/webapp/index.html:242 templates/webapp/index.html:615
+msgid "WEBAPP_INFO_TEXT"
+msgstr ""
+
+#: templates/webapp/index.html:248 templates/webapp/index.html:312
+#: templates/webapp/index.html:470 templates/webapp/index.html:616
+msgid "WEBAPP_CONTACT_ADMIN"
+msgstr ""
+
+#: templates/webapp/index.html:253 templates/webapp/index.html:444
+#: templates/webapp/index.html:515 templates/webapp/index.html:617
+#: templates/webapp/index.html:1543 templates/webapp/index.html:1698
+msgid "WEBAPP_PRIVACY_POLICY"
+msgstr ""
+
+#: templates/webapp/index.html:261 templates/webapp/index.html:582
+msgid "WEBAPP_GIFTS_TITLE"
+msgstr ""
+
+#: templates/webapp/index.html:264 templates/webapp/index.html:600
+msgid "WEBAPP_LOADING_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:272 templates/webapp/index.html:284
+#: templates/webapp/index.html:295 templates/webapp/index.html:583
+msgid "WEBAPP_GIFT_NAME"
+msgstr ""
+
+#: templates/webapp/index.html:309 templates/webapp/index.html:587
+msgid "WEBAPP_SUCCESS_TITLE"
+msgstr ""
+
+#: templates/webapp/index.html:310 templates/webapp/index.html:588
+msgid "WEBAPP_SUCCESS_MESSAGE"
+msgstr ""
+
+#: templates/webapp/index.html:311 templates/webapp/index.html:589
+msgid "WEBAPP_TO_HOME"
+msgstr ""
+
+#: templates/webapp/index.html:320 templates/webapp/index.html:590
+msgid "WEBAPP_PROFILE"
+msgstr ""
+
+#: templates/webapp/index.html:363 templates/webapp/index.html:526
+#: templates/webapp/index.html:591
+msgid "WEBAPP_INTERFACE_LANGUAGE"
+msgstr ""
+
+#: templates/webapp/index.html:391 templates/webapp/index.html:482
+#: templates/webapp/index.html:592
+msgid "WEBAPP_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:416 templates/webapp/index.html:493
+#: templates/webapp/index.html:593
+msgid "WEBAPP_QR_HISTORY"
+msgstr ""
+
+#: templates/webapp/index.html:485 templates/webapp/index.html:601
+msgid "WEBAPP_LOADING_ORDERS"
+msgstr ""
+
+#: templates/webapp/index.html:496 templates/webapp/index.html:598
+msgid "WEBAPP_LOADING_QR_HISTORY"
+msgstr ""
+
+#: templates/webapp/index.html:507 templates/webapp/index.html:518
+#: templates/webapp/index.html:567
+msgid "WEBAPP_LOADING"
+msgstr ""
+
+#: templates/webapp/index.html:532 templates/webapp/index.html:594
+msgid "WEBAPP_UZBEK"
+msgstr ""
+
+#: templates/webapp/index.html:537 templates/webapp/index.html:595
+msgid "WEBAPP_RUSSIAN"
+msgstr ""
+
+#: templates/webapp/index.html:547 templates/webapp/index.html:618
+msgid "WEBAPP_CONFIRM_RECEIPT"
+msgstr ""
+
+#: templates/webapp/index.html:548 templates/webapp/index.html:619
+msgid "WEBAPP_DID_YOU_RECEIVE"
+msgstr ""
+
+#: templates/webapp/index.html:549 templates/webapp/index.html:620
+msgid "WEBAPP_COMMENT_PLACEHOLDER"
+msgstr ""
+
+#: templates/webapp/index.html:551 templates/webapp/index.html:621
+msgid "WEBAPP_YES_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:552 templates/webapp/index.html:622
+msgid "WEBAPP_NO_NOT_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:553 templates/webapp/index.html:623
+msgid "WEBAPP_CANCEL"
+msgstr ""
+
+#: templates/webapp/index.html:568
+msgid "WEBAPP_NO_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:569
+msgid "WEBAPP_POINTS"
+msgstr ""
+
+#: templates/webapp/index.html:570
+msgid "WEBAPP_CONFIRM_REQUEST"
+msgstr ""
+
+#: templates/webapp/index.html:571
+msgid "WEBAPP_REQUEST_SENT"
+msgstr ""
+
+#: templates/webapp/index.html:572
+msgid "WEBAPP_ERROR_LOADING_USER"
+msgstr ""
+
+#: templates/webapp/index.html:573
+msgid "WEBAPP_ERROR_LOADING_GIFTS"
+msgstr ""
+
+#: templates/webapp/index.html:574
+msgid "WEBAPP_ERROR_REQUESTING_GIFT"
+msgstr ""
+
+#: templates/webapp/index.html:575
+msgid "WEBAPP_ERROR_CONFIRMING"
+msgstr ""
+
+#: templates/webapp/index.html:576
+msgid "WEBAPP_THANKS_CONFIRMATION"
+msgstr ""
+
+#: templates/webapp/index.html:577
+msgid "WEBAPP_COMMENT_SENT"
+msgstr ""
+
+#: templates/webapp/index.html:578
+msgid "WEBAPP_COMMENT_REQUIRED"
+msgstr ""
+
+#: templates/webapp/index.html:580
+msgid "WEBAPP_QR_ERROR"
+msgstr ""
+
+#: templates/webapp/index.html:581
+msgid "WEBAPP_QR_PLACEHOLDER"
+msgstr ""
+
+#: templates/webapp/index.html:584
+msgid "WEBAPP_GET_GIFT"
+msgstr ""
+
+#: templates/webapp/index.html:585
+msgid "WEBAPP_NOT_ENOUGH_POINTS"
+msgstr ""
+
+#: templates/webapp/index.html:586
+msgid "WEBAPP_WAITING_PROCESS"
+msgstr ""
+
+#: templates/webapp/index.html:596
+msgid "WEBAPP_CLOSE"
+msgstr ""
+
+#: templates/webapp/index.html:597
+msgid "WEBAPP_BALL"
+msgstr ""
+
+#: templates/webapp/index.html:599
+msgid "WEBAPP_NO_QR_HISTORY"
+msgstr ""
+
+#: templates/webapp/index.html:602
+msgid "WEBAPP_NO_ORDERS"
+msgstr ""
+
+#: templates/webapp/index.html:603
+msgid "WEBAPP_NO_ORDERS_TEXT"
+msgstr ""
+
+#: templates/webapp/index.html:604
+msgid "WEBAPP_STATUS_PENDING"
+msgstr ""
+
+#: templates/webapp/index.html:605
+msgid "WEBAPP_STATUS_APPROVED"
+msgstr ""
+
+#: templates/webapp/index.html:606
+msgid "WEBAPP_STATUS_SENT"
+msgstr ""
+
+#: templates/webapp/index.html:607
+msgid "WEBAPP_STATUS_REJECTED"
+msgstr ""
+
+#: templates/webapp/index.html:608
+msgid "WEBAPP_STATUS_COMPLETED"
+msgstr ""
+
+#: templates/webapp/index.html:609
+msgid "WEBAPP_STATUS_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:610
+msgid "WEBAPP_STATUS_NOT_RECEIVED"
+msgstr ""
+
+#: templates/webapp/index.html:624
+msgid "WEBAPP_UPDATED"
+msgstr ""
+
+#: templates/webapp/index.html:625
+msgid "WEBAPP_QR_MAX_ATTEMPTS"
+msgstr ""
+
+#: templates/webapp/index.html:626
+msgid "WEBAPP_PRIVACY_PDF_DESCRIPTION"
+msgstr ""
+
+#: templates/webapp/index.html:627
+msgid "WEBAPP_OPEN_PDF"
+msgstr ""
+
+msgid "Retention: New vs Returning"
+msgstr "Ushlab qolish: Yangi va qaytganlar"
+
+msgid "Active Users"
+msgstr "Faol foydalanuvchilar"
+
+msgid "New Visitors"
+msgstr "Yangi tashrif buyuruvchilar"
+
+msgid "Returning Visitors"
+msgstr "Qaytgan tashrif buyuruvchilar"
+
+#: templates/admin/dashboard_base.html
+msgid "Back to Admin"
+msgstr "Adminga qaytish"
+
+#: templates/admin/components/location_card.html
+msgid "Edit"
+msgstr "Tahrirlash"
+
+#: templates/admin/components/location_card.html
+msgid "Edit location"
+msgstr "Joylashuvni tahrirlash"
+
+#: templates/admin/dashboard.html
+msgid "Inactive"
+msgstr "Nofaol"
+
+#: templates/admin/dashboard.html
+msgid "No users match the selected filter"
+msgstr "Tanlangan filtrga mos foydalanuvchilar yo'q"

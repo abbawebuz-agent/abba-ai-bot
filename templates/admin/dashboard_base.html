@@ -1,0 +1,555 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" class="h-full bg-slate-50">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% translate "Analytics Hub" %}{% endblock %} | Mono-Bot</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="icon" type="image/png" href="{% static 'core_admin/img/favicon.png' %}">
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 80px;
+            --sidebar-actual-width: var(--sidebar-width);
+            --header-height: 64px;
+            --brand-header-height: 80px;
+            --primary: #0f172a;
+            --primary-accent: #307FCD;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e0;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-minimal: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-premium: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --content-gap: 24px;
+            --layout-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.sidebar-collapsed {
+            --sidebar-actual-width: var(--sidebar-collapsed-width);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: #fff;
+            color: var(--slate-900);
+            display: grid;
+            grid-template-columns: var(--sidebar-actual-width) 1fr;
+            height: 100vh;
+            overflow: hidden;
+            transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar {
+            grid-row: 1;
+            grid-column: 1;
+            width: 100%;
+            background: linear-gradient(180deg, 
+                #F8FAFC 0%, 
+                #F1F5F9 12%, 
+                #475569 35%, 
+                #0F172A 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            transition: var(--layout-transition);
+            position: relative;
+            z-index: 50;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-header {
+            height: var(--brand-header-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+            flex-shrink: 0;
+            background: transparent;
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            border: none;
+            border-bottom: none !important;
+            box-shadow: none !important;
+            transition: var(--layout-transition);
+        }
+
+        .logo-box {
+            width: 120px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: var(--layout-transition);
+            filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.08));
+        }
+
+        body.sidebar-collapsed .logo-box {
+            width: 32px;
+            height: 32px;
+        }
+
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .sidebar-nav {
+            padding: 24px 12px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            position: relative;
+            border-left: 3px solid transparent;
+        }
+
+        body.sidebar-collapsed .nav-item {
+            justify-content: center;
+            padding: 12px 0;
+            margin: 0 8px;
+            overflow: hidden;
+            border-left: none;
+        }
+
+        .nav-item:hover {
+            color: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #fff;
+            font-weight: 600;
+            border-left: 3px solid #60A5FA;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.6;
+            transition: all 0.25s;
+        }
+
+        .nav-item.active svg {
+            opacity: 1;
+            color: #60A5FA;
+        }
+
+        .nav-item span {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        body.sidebar-collapsed .nav-item span {
+            opacity: 0;
+            transform: translateX(-10px);
+            pointer-events: none;
+            position: absolute;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .nav-item:hover svg {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .nav-item.active {
+            background-color: #fff;
+            color: var(--slate-900);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+        }
+
+        .nav-item.active svg {
+            opacity: 1;
+            color: var(--primary-accent);
+        }
+
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid var(--slate-200);
+        }
+
+        .main-shell {
+            grid-row: 1;
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #fff;
+            transition: var(--layout-transition);
+        }
+
+        .header {
+            height: var(--header-height);
+            background-color: #fff;
+            border-bottom: 1px solid var(--slate-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--content-gap);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            transition: var(--layout-transition);
+        }
+
+        .content-body {
+            padding: var(--content-gap);
+            flex-grow: 1;
+            width: 100%;
+            box-sizing: border-box;
+            transition: var(--layout-transition);
+        }
+
+        .product-card {
+            background: #fff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-minimal);
+            transition: 0.2s;
+        }
+
+        .btn-toggle {
+            background: none;
+            border: 1px solid var(--slate-200);
+            color: var(--slate-500);
+            cursor: pointer;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            flex-shrink: 0;
+            z-index: 50;
+        }
+
+        .btn-toggle:hover {
+            border-color: var(--slate-400);
+            color: var(--slate-900);
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--slate-200);
+            cursor: pointer;
+            background: white;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Lang Switcher */
+        .lang-switcher {
+            display: flex;
+            background: var(--slate-100);
+            border-radius: 6px;
+            padding: 2px;
+            margin-right: 16px;
+        }
+
+        .lang-link {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--slate-500);
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .lang-link.active {
+            background: #fff;
+            color: var(--slate-900);
+            box-shadow: var(--shadow-minimal);
+        }
+
+        /* Tooltip Styles */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--slate-900);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: pre-wrap;
+            width: 200px;
+            z-index: 100;
+            box-shadow: var(--shadow-minimal);
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                display: block;
+                overflow-y: auto;
+            }
+
+            :root {
+                --sidebar-collapsed-width: 0px;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                width: var(--sidebar-width) !important;
+                visibility: hidden;
+                z-index: 100;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+                visibility: visible;
+                box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+            }
+
+            .main-shell {
+                margin-left: 0 !important;
+                height: auto;
+            }
+
+            .sidebar.collapsed+.main-shell {
+                margin-left: 0;
+            }
+
+            .header {
+                padding: 0 16px;
+            }
+
+            /* Overlay for mobile */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.4);
+                backdrop-filter: blur(4px);
+                z-index: 90;
+            }
+
+            .sidebar.mobile-open~.sidebar-overlay {
+                display: block;
+            }
+        }
+    </style>
+    {% block extrahead %}{% endblock %}
+</head>
+
+<body>
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-box">
+                <img src="{% static 'core_admin/img/logo.svg' %}" alt="Mono Logo">
+            </div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="{% url 'dashboard' %}{% if is_cc %}?tab=redemptions{% endif %}" class="nav-item active">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z">
+                    </path>
+                </svg>
+                <span>{% translate "Dashboard" %}</span>
+            </a>
+
+            {% if not is_cc %}
+            <a href="/admin/" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                    </path>
+                </svg>
+                <span>{% translate "Admin Panel" %}</span>
+            </a>
+            {% else %}
+            <a href="/admin/" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span>{% translate "Back to Admin" %}</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="/admin/logout/" class="nav-item" style="color: rgba(255,255,255,0.5);">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                <span>{% translate "Logout" %}</span>
+            </a>
+        </div>
+    </aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <main class="main-shell">
+        <header class="header">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <button id="sidebarToggle" class="btn-toggle">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <div
+                    style="font-weight:600; color:var(--slate-400); font-size:11px; text-transform:uppercase; letter-spacing:0.05em;">
+                    {% translate "Mono Ecosystem" %}</div>
+            </div>
+
+            <div style="display:flex; align-items:center;">
+                <!-- Language Switcher -->
+                <div class="lang-switcher">
+                    <form action="{% url 'set_language' %}" method="post" id="lang-form-ru">
+                        {% csrf_token %}
+                        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                        <input name="language" type="hidden" value="ru">
+                        <a href="#" onclick="document.getElementById('lang-form-ru').submit(); return false;"
+                            class="lang-link {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">RU</a>
+                    </form>
+                    <form action="{% url 'set_language' %}" method="post" id="lang-form-uz">
+                        {% csrf_token %}
+                        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                        <input name="language" type="hidden" value="uz">
+                        <a href="#" onclick="document.getElementById('lang-form-uz').submit(); return false;"
+                            class="lang-link {% if LANGUAGE_CODE == 'uz' %}active{% endif %}">UZ</a>
+                    </form>
+                </div>
+
+                <div class="user-pill">
+                    <div
+                        style="width:20px; height:20px; border-radius:50%; background:var(--slate-800); color:white; display:flex; align-items:center; justify-content:center; font-size:10px;">
+                        {% translate "AD" %}</div>
+                    <span>{{ user.username }}</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-body">
+            {% block dashboard_content %}{% endblock %}
+        </div>
+    </main>
+
+    <script>
+        const body = document.body;
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        const isMobile = () => window.innerWidth <= 1024;
+
+        if (localStorage.getItem('sidebar-collapsed') === 'true' && !isMobile()) {
+            body.classList.add('sidebar-collapsed');
+        }
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isMobile()) {
+                sidebar.classList.toggle('mobile-open');
+            } else {
+                body.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebar-collapsed', body.classList.contains('sidebar-collapsed'));
+            }
+        });
+
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+            });
+        }
+
+        // Close sidebar on window resize if moving to mobile
+        window.addEventListener('resize', () => {
+            if (!isMobile()) {
+                sidebar.classList.remove('mobile-open');
+            }
+        });
+
+        // Hover effect for expanded sidebar when collapsed (Desktop only)
+        sidebar.addEventListener('mouseenter', () => {
+            if (!isMobile() && body.classList.contains('sidebar-collapsed')) {
+                body.dataset.wasCollapsed = 'true';
+                body.classList.remove('sidebar-collapsed');
+            }
+        });
+        sidebar.addEventListener('mouseleave', () => {
+            if (!isMobile() && body.dataset.wasCollapsed === 'true') {
+                body.classList.add('sidebar-collapsed');
+                body.dataset.wasCollapsed = 'false';
+            }
+        });
+    </script>
+</body>
+
+</html>

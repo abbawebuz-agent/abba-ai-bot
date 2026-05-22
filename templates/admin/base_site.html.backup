@@ -1,0 +1,104 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom_admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-text">{{ site_header|default:_('Django administration') }}</span>
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<nav class="admin-nav" id="admin-nav">
+    <div class="nav-container">
+        <a href="{% url 'admin:index' %}" class="nav-item {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Главная</span>
+        </a>
+        <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Дашборд</span>
+        </a>
+        <a href="{% url 'admin:core_telegramuser_changelist' %}" class="nav-item {% if 'telegramuser' in request.path %}active{% endif %}">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">Пользователи</span>
+        </a>
+        <a href="{% url 'admin:core_qrcode_changelist' %}" class="nav-item {% if 'qrcode' in request.path and 'generate' not in request.path %}active{% endif %}">
+            <span class="nav-icon">📱</span>
+            <span class="nav-text">QR-коды</span>
+        </a>
+        <a href="{% url 'admin:core_qrcode_generate' %}" class="nav-item {% if 'generate' in request.path %}active{% endif %}">
+            <span class="nav-icon">➕</span>
+            <span class="nav-text">Генерация QR</span>
+        </a>
+        <a href="{% url 'admin:core_gift_changelist' %}" class="nav-item {% if 'gift' in request.path and 'redemption' not in request.path %}active{% endif %}">
+            <span class="nav-icon">🎁</span>
+            <span class="nav-text">Подарки</span>
+        </a>
+        <a href="{% url 'admin:core_giftredemption_changelist' %}" class="nav-item {% if 'redemption' in request.path %}active{% endif %}">
+            <span class="nav-icon">📦</span>
+            <span class="nav-text">Заказы</span>
+        </a>
+        <a href="{% url 'admin:core_broadcastmessage_changelist' %}" class="nav-item {% if 'broadcast' in request.path %}active{% endif %}">
+            <span class="nav-icon">📢</span>
+            <span class="nav-text">Рассылки</span>
+        </a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block footer %}
+<div class="admin-footer">
+    <div class="footer-content">
+        <p>&copy; {% now "Y" %} Mona Admin Panel. Все права защищены.</p>
+        <p class="footer-links">
+            <a href="{% url 'admin:index' %}">Главная</a> |
+            <a href="{% url 'dashboard' %}">Дашборд</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+    // Мобильное меню
+    (function() {
+        if (window.innerWidth <= 768) {
+            const nav = document.getElementById('admin-nav');
+            const header = document.getElementById('header');
+            
+            // Создаем кнопку для открытия меню
+            const menuButton = document.createElement('button');
+            menuButton.innerHTML = '☰';
+            menuButton.style.cssText = 'background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 20px; margin-right: 20px;';
+            menuButton.addEventListener('click', function() {
+                nav.classList.toggle('mobile-open');
+            });
+            
+            if (header) {
+                header.insertBefore(menuButton, header.firstChild);
+            }
+            
+            // Закрываем меню при клике вне его
+            document.addEventListener('click', function(e) {
+                if (!nav.contains(e.target) && !menuButton.contains(e.target)) {
+                    nav.classList.remove('mobile-open');
+                }
+            });
+        }
+    })();
+</script>
+{% endblock %}

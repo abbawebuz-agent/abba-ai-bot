@@ -1,0 +1,124 @@
+{% load i18n l10n %}
+
+<div class="location-card product-widget" id="user-location-section">
+    <div class="widget-bar">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <h3>{% translate "Location Analytics" %}</h3>
+        </div>
+        <div class="action-buttons-group">
+            <a href="{% url 'admin:core_telegramuser_change' member.pk %}" class="btn-secondary-link" title="{% translate 'Edit location' as edit_loc_title %}{{ edit_loc_title|escapejs }}">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                {% translate "Edit" %}
+            </a>
+            {% if crm.latitude and crm.longitude %}
+            <button onclick="copyCoordinates('{{ crm.latitude|unlocalize }}, {{ crm.longitude|unlocalize }}')" class="btn-secondary-link" title="{% translate 'Copy Coordinates' as copy_title %}{{ copy_title|escapejs }}">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                {% translate "Copy" %}
+            </button>
+            <a href="https://yandex.uz/maps/?mode=search&text={{ crm.latitude|unlocalize }},{{ crm.longitude|unlocalize }}" target="_blank" class="btn-secondary-link">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                {% translate "Open Yandex" %}
+            </a>
+            <a href="https://yandex.uz/maps/?rtext=~{{ crm.latitude|unlocalize }},{{ crm.longitude|unlocalize }}&rtt=auto" target="_blank" class="btn-primary-link">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                {% translate "Build Route" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="location-content">
+        <!-- Info Block -->
+        <div class="location-info-block">
+            <div class="loc-meta-item">
+                <div class="loc-icon-box"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg></div>
+                <div class="loc-text-box">
+                    <label>{% translate "Region" %}</label>
+                    <span>{{ crm.region|default:"—" }}</span>
+                </div>
+            </div>
+            <div class="loc-meta-item">
+                <div class="loc-icon-box"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg></div>
+                <div class="loc-text-box">
+                    <label>{% translate "District" %}</label>
+                    <span>{{ crm.district|default:"—" }}</span>
+                </div>
+            </div>
+            
+            {% if crm.latitude and crm.longitude %}
+            <div class="loc-meta-item">
+                <div class="loc-icon-box" style="background:var(--slate-100); color:var(--slate-600);"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></div>
+                <div class="loc-text-box">
+                    <label>{% translate "Coordinates" %}</label>
+                    <span style="font-family:'JetBrains Mono','Courier New',monospace; font-size:12px;">{{ crm.latitude|floatformat:5 }}, {{ crm.longitude|floatformat:5 }}</span>
+                </div>
+            </div>
+            <div class="loc-updated-at">
+                {% translate "Last updated" %}: {{ crm.updated_at|default:"—" }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Map Container -->
+        <div class="location-map-wrapper">
+            {% if crm.latitude and crm.longitude %}
+                <div id="yandex-map-container" style="width:100%; height:320px; background:#f1f5f9; border-radius:8px;"></div>
+            {% else %}
+                <div class="map-empty-state">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.2; margin-bottom:16px;">
+                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <p style="font-weight:600; color:var(--slate-500);">{% translate "User location not available" %}</p>
+                    <span style="font-size:12px; color:var(--slate-400);">{% translate "Geolocation data hasn't been shared via the bot" %}</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .location-card { margin-bottom: 32px; }
+    .location-content { display: flex; gap: 24px; padding: 24px; }
+    
+    .location-info-block { width: 300px; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0; }
+    .location-map-wrapper { flex-grow: 1; min-height: 320px; position: relative; }
+    
+    .loc-meta-item { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 10px; background: var(--slate-50); border: 1px solid var(--slate-100); }
+    .loc-icon-box { width: 32px; height: 32px; border-radius: 8px; background: white; display:flex; align-items:center; justify-content:center; color: var(--primary-accent); box-shadow: var(--shadow-minimal); }
+    
+    .loc-text-box label { display: block; font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .loc-text-box span { font-size: 14px; font-weight: 700; color: var(--slate-900); }
+    
+    .loc-updated-at { font-size: 11px; color: var(--slate-400); margin-top: auto; padding-left: 12px; border-left: 2px solid var(--slate-200); }
+    
+    .map-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; background: #f8fafc; border: 2px dashed var(--slate-200); border-radius: 12px; }
+    
+    .action-buttons-group { display: flex; gap: 8px; }
+    .btn-secondary-link, .btn-primary-link { 
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; 
+        border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; 
+        transition: 0.2s; border: 1px solid var(--slate-200);
+    }
+    .btn-secondary-link { background: white; color: var(--slate-600); }
+    .btn-secondary-link:hover { background: var(--slate-50); color: var(--slate-900); border-color: var(--slate-300); }
+    
+    .btn-primary-link { background: var(--primary-accent); border-color: var(--primary-accent); color: white; box-shadow: 0 4px 12px rgba(48, 127, 205, 0.2); }
+    .btn-primary-link:hover { opacity: 0.9; transform: translateY(-1px); }
+    
+    @media (max-width: 1200px) {
+        .location-content { flex-direction: column; }
+        .location-info-block { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+        .loc-updated-at { grid-column: span 2; margin-top: 8px; }
+    }
+    
+    @media (max-width: 768px) {
+        .location-info-block { grid-template-columns: 1fr; }
+        .loc-updated-at { grid-column: span 1; }
+        .action-buttons-group { flex-wrap: wrap; }
+    }
+</style>

@@ -1,0 +1,44 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    {% if show_export_scanned_history %}
+        <a href="{% url 'admin:core_qrcode_export_history_xlsx' %}?{{ request.GET.urlencode }}"
+           class="btn btn-sm btn-success"
+           style="margin-right: 0.5rem;">
+            Экспорт истории (Excel)
+        </a>
+    {% endif %}
+    {% if show_export_monthly %}
+        <li>
+            <form method="get" action="{% url 'admin:core_qrcode_export_monthly_xlsx' %}"
+                  style="display:inline-flex; align-items:center; gap:6px; margin-right:0.5rem;">
+                <select name="month" style="padding:4px 6px; border-radius:4px; border:1px solid #ccc; font-size:13px;">
+                    <option value="1" {% if export_default_month == 1 %}selected{% endif %}>Январь</option>
+                    <option value="2" {% if export_default_month == 2 %}selected{% endif %}>Февраль</option>
+                    <option value="3" {% if export_default_month == 3 %}selected{% endif %}>Март</option>
+                    <option value="4" {% if export_default_month == 4 %}selected{% endif %}>Апрель</option>
+                    <option value="5" {% if export_default_month == 5 %}selected{% endif %}>Май</option>
+                    <option value="6" {% if export_default_month == 6 %}selected{% endif %}>Июнь</option>
+                    <option value="7" {% if export_default_month == 7 %}selected{% endif %}>Июль</option>
+                    <option value="8" {% if export_default_month == 8 %}selected{% endif %}>Август</option>
+                    <option value="9" {% if export_default_month == 9 %}selected{% endif %}>Сентябрь</option>
+                    <option value="10" {% if export_default_month == 10 %}selected{% endif %}>Октябрь</option>
+                    <option value="11" {% if export_default_month == 11 %}selected{% endif %}>Ноябрь</option>
+                    <option value="12" {% if export_default_month == 12 %}selected{% endif %}>Декабрь</option>
+                </select>
+                <input type="number" name="year" value="{{ export_default_year }}" min="2020" max="2099"
+                       style="width:70px; padding:4px 6px; border-radius:4px; border:1px solid #ccc; font-size:13px;">
+                <select name="user_type" style="padding:4px 6px; border-radius:4px; border:1px solid #ccc; font-size:13px;">
+                    <option value="all">Все</option>
+                    <option value="electrician">Электрики</option>
+                    <option value="seller">Продавцы</option>
+                </select>
+                <button type="submit"
+                        style="padding:4px 12px; background:#28a745; color:#fff; border:none; border-radius:4px; font-size:13px; cursor:pointer; font-weight:600;">
+                    Экспорт по месяцу (Excel)
+                </button>
+            </form>
+        </li>
+    {% endif %}
+    {{ block.super }}
+{% endblock %}

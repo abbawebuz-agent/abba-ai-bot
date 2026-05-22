@@ -1,0 +1,600 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Отправить сообщение по области{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .region-message-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .region-message-header h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .region-message-header p {
+        margin: 10px 0 0 0;
+        opacity: 0.9;
+        font-size: 16px;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+    }
+    
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        font-family: inherit;
+    }
+    
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-group textarea {
+        min-height: 150px;
+        resize: vertical;
+    }
+    
+    .form-group .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 8px 0 0 0;
+        color: #e53e3e;
+        font-size: 13px;
+    }
+    
+    .form-group .errorlist li {
+        padding: 4px 0;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        background: #f7fafc;
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #667eea;
+    }
+    
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        font-weight: 500;
+        color: #2d3748;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+        padding-top: 25px;
+        border-top: 2px solid #e2e8f0;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #718096;
+        color: white;
+        box-shadow: 0 2px 4px rgba(113, 128, 150, 0.3);
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(113, 128, 150, 0.4);
+        color: white;
+    }
+    
+    .info-card {
+        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+        border-radius: 12px;
+        padding: 25px;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .info-card h3 {
+        margin: 0 0 15px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .info-card ul {
+        margin: 0;
+        padding-left: 20px;
+        line-height: 1.8;
+        color: #4a5568;
+    }
+    
+    .info-card li {
+        margin-bottom: 8px;
+    }
+    
+    .help-text {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        color: #718096;
+        font-style: italic;
+    }
+    
+    .message-editor {
+        min-height: 200px;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .message-editor:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .message-editor .ql-toolbar {
+        border: none;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f7fafc;
+        padding: 8px 12px;
+    }
+    .message-editor .ql-container {
+        border: none;
+        font-size: 14px;
+        min-height: 160px;
+    }
+    .message-editor .ql-editor {
+        padding: 12px 16px;
+    }
+
+    .select2-container { width: 100% !important; }
+
+    .test-send-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10050;
+        background: rgba(15, 23, 42, 0.55);
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+    .test-send-modal.is-open { display: flex; }
+    .test-send-modal-inner {
+        background: white;
+        border-radius: 12px;
+        max-width: 520px;
+        width: 100%;
+        padding: 28px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    }
+    .test-send-modal-inner h2 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        color: #1e293b;
+    }
+    .test-send-modal-inner .hint {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+    .test-modal-body { margin-bottom: 20px; }
+    .test-modal-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+    .btn-outline {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+    .btn-outline:hover {
+        background: #f8fafc;
+        color: #5a67d8;
+    }
+    #region-test-feedback {
+        margin-top: 12px;
+        font-size: 14px;
+        min-height: 22px;
+    }
+    #region-test-feedback.is-error { color: #c53030; }
+    #region-test-feedback.is-ok { color: #276749; }
+</style>
+<link rel="stylesheet" href="{% static 'vendor/select2/css/select2.min.css' %}">
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="region-message-header">
+    <h1>
+        <span>📍</span>
+        <span>Отправить сообщение по области</span>
+    </h1>
+    <p>Выберите область Узбекистана и отправьте сообщение всем пользователям этой области.</p>
+</div>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_region">
+                <span>🗺️</span> Область:
+            </label>
+            {{ form.region }}
+            {% if form.region.errors %}
+                <ul class="errorlist">{{ form.region.errors }}</ul>
+            {% endif %}
+            <span class="help-text">Выберите область Узбекистана для отправки сообщения</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_message">
+                <span>💬</span> Текст сообщения:
+            </label>
+            <div id="message-editor" class="message-editor"></div>
+            <div id="message-storage" style="display:none">{{ form.message }}</div>
+            {% if form.message.errors %}
+                <ul class="errorlist">{{ form.message.errors }}</ul>
+            {% endif %}
+            <span class="help-text">Используйте кнопки для форматирования: жирный, курсив, ссылка. Эмодзи можно вставлять напрямую.</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_image">
+                <span>🖼️</span> Фото (опционально):
+            </label>
+            {{ form.image }}
+            {% if form.image.errors %}
+                <ul class="errorlist">{{ form.image.errors }}</ul>
+            {% endif %}
+            <span class="help-text">Загрузите изображение — текст будет отправлен как подпись к фото</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_user_type_filter">
+                <span>👥</span> Тип пользователя:
+            </label>
+            {{ form.user_type_filter }}
+            {% if form.user_type_filter.errors %}
+                <ul class="errorlist">{{ form.user_type_filter.errors }}</ul>
+            {% endif %}
+            <span class="help-text">Фильтр по типу пользователя (электрики или продавцы). Оставьте "Все" для отправки всем.</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_language_filter">
+                <span>🌐</span> Язык пользователя:
+            </label>
+            {{ form.language_filter }}
+            {% if form.language_filter.errors %}
+                <ul class="errorlist">{{ form.language_filter.errors }}</ul>
+            {% endif %}
+            <span class="help-text">Отправить только тем, кто выбрал этот язык в приложении. Оставьте "Все языки" для отправки всем.</span>
+        </div>
+
+        <div class="form-group">
+            <label for="id_scheduled_at">
+                <span>⏰</span> Отложенная отправка:
+            </label>
+            {{ form.scheduled_at }}
+            {% if form.scheduled_at.errors %}
+                <ul class="errorlist">{{ form.scheduled_at.errors }}</ul>
+            {% endif %}
+            <span class="help-text">Если указано — рассылка будет поставлена в очередь и отправится в указанное время (Asia/Tashkent). Оставьте пустым, чтобы отправить сразу.</span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <span>📤</span>
+                <span>Отправить сообщение</span>
+            </button>
+            <button type="button" class="btn btn-secondary" id="region-test-open-btn">
+                <span>🧪</span>
+                <span>Отправить тестовому пользователю</span>
+            </button>
+            <a href="{% url 'admin:core_telegramuser_changelist' %}" class="btn btn-secondary">
+                <span>❌</span>
+                <span>Отмена</span>
+            </a>
+        </div>
+    </form>
+</div>
+
+<div id="region-test-modal" class="test-send-modal" role="dialog" aria-modal="true" aria-labelledby="region-test-modal-title">
+    <div class="test-send-modal-inner">
+        <h2 id="region-test-modal-title">Тестовая отправка</h2>
+        <p class="hint">Будет отправлено то же сообщение и фото (если выбраны), что и при массовой рассылке. Получатель — один выбранный пользователь.</p>
+        <div class="test-modal-body">
+            <label for="region-test-user-select" style="display:block;font-weight:600;margin-bottom:8px;color:#2d3748;font-size:14px;">Пользователь Telegram</label>
+            <select id="region-test-user-select" style="width:100%"></select>
+        </div>
+        <div id="region-test-feedback" aria-live="polite"></div>
+        <div class="test-modal-actions">
+            <button type="button" class="btn btn-primary" id="region-test-send-btn">
+                <span>📨</span>
+                <span>Отправить тест</span>
+            </button>
+            <button type="button" class="btn btn-outline" id="region-test-close-btn">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<div class="info-card">
+    <h3>
+        <span>ℹ️</span>
+        <span>Информация</span>
+    </h3>
+    <ul>
+        <li>Сообщение будет отправлено всем пользователям выбранной области, у которых указаны координаты</li>
+        <li>Можно добавить фото — текст будет подписью к изображению</li>
+        <li>HTML-форматирование: <b>жирный</b>, <i>курсив</i>, <a href="">ссылки</a> — остаются в тексте</li>
+        <li>Эмодзи и стикеры можно вставлять в текст</li>
+        <li>Сообщения отправляются только активным пользователям</li>
+        <li>Фильтр по типу пользователя (электрики/продавцы)</li>
+        <li>Фильтр по языку — сообщение уйдёт только пользователям с выбранным языком в профиле</li>
+        <li>При большом числе получателей (>100 по умолчанию) рассылка выполняется в фоне: страница сразу вернётся, лимиты Telegram соблюдаются автоматически</li>
+    </ul>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script src="{% static 'vendor/select2/js/select2.min.js' %}"></script>
+<script>
+(function() {
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var storage = document.getElementById('message-storage');
+        var textarea = storage ? storage.querySelector('textarea') : null;
+        var editorEl = document.getElementById('message-editor');
+        if (!editorEl) return;
+
+        var quill = new Quill(editorEl, {
+            theme: 'snow',
+            placeholder: 'Введите текст сообщения...',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    ['link'],
+                    [{ 'clean': 'Очистить формат' }]
+                ]
+            }
+        });
+
+        if (textarea && textarea.value) {
+            quill.root.innerHTML = textarea.value;
+        }
+
+        function syncQuillToTextarea() {
+            var html = quill.root.innerHTML;
+            if (html === '<p><br></p>') html = '';
+            if (textarea) textarea.value = html;
+            return html;
+        }
+
+        var form = editorEl.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                syncQuillToTextarea();
+            });
+        }
+
+        var $jq = (typeof django !== 'undefined' && django.jQuery) ? django.jQuery : (window.jQuery || window.$);
+        var modal = document.getElementById('region-test-modal');
+        var openBtn = document.getElementById('region-test-open-btn');
+        var closeBtn = document.getElementById('region-test-close-btn');
+        var sendBtn = document.getElementById('region-test-send-btn');
+        var feedback = document.getElementById('region-test-feedback');
+        var userSelect = document.getElementById('region-test-user-select');
+        var autocompleteUrl = '{{ region_message_user_autocomplete_url|escapejs }}';
+        var testSendUrl = '{{ region_message_test_send_url|escapejs }}';
+        var select2Inited = false;
+
+        function setFeedback(text, kind) {
+            if (!feedback) return;
+            feedback.textContent = text || '';
+            feedback.className = '';
+            if (kind === 'error') feedback.classList.add('is-error');
+            if (kind === 'ok') feedback.classList.add('is-ok');
+        }
+
+        function openModal() {
+            if (!modal) return;
+            modal.classList.add('is-open');
+            setFeedback('');
+            if (!$jq || !$jq.fn.select2) return;
+            if (!select2Inited && userSelect) {
+                $jq(userSelect).select2({
+                    ajax: {
+                        url: autocompleteUrl,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function(params) {
+                            return { q: params.term || '', page: params.page || 1 };
+                        },
+                        processResults: function(data, params) {
+                            params.page = params.page || 1;
+                            return {
+                                results: data.results || [],
+                                pagination: { more: !!(data.pagination && data.pagination.more) }
+                            };
+                        }
+                    },
+                    placeholder: 'Поиск: имя, @username, телефон, Telegram ID…',
+                    allowClear: true,
+                    minimumInputLength: 0,
+                    width: '100%',
+                    dropdownParent: $jq('#region-test-modal .test-send-modal-inner')
+                });
+                select2Inited = true;
+            }
+        }
+
+        function closeModal() {
+            if (modal) modal.classList.remove('is-open');
+        }
+
+        if (openBtn) openBtn.addEventListener('click', openModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
+            });
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal && modal.classList.contains('is-open')) closeModal();
+        });
+
+        if (sendBtn) {
+            sendBtn.addEventListener('click', function() {
+                setFeedback('');
+                var html = syncQuillToTextarea();
+                var uid = userSelect && $jq ? $jq(userSelect).val() : null;
+                if (!uid) {
+                    setFeedback('Выберите пользователя из списка.', 'error');
+                    return;
+                }
+                var fd = new FormData();
+                var csrf = getCookie('csrftoken') || '';
+                fd.append('csrfmiddlewaretoken', csrf);
+                fd.append('test_user_id', uid);
+                fd.append('message', html);
+                var imageInput = form ? form.querySelector('#id_image') : null;
+                if (imageInput && imageInput.files && imageInput.files[0]) {
+                    fd.append('image', imageInput.files[0]);
+                }
+                sendBtn.disabled = true;
+                var headers = { 'X-Requested-With': 'XMLHttpRequest' };
+                if (csrf) headers['X-CSRFToken'] = csrf;
+                fetch(testSendUrl, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                    headers: headers
+                })
+                    .then(function(r) {
+                        return r.text().then(function(text) {
+                            var j = {};
+                            try {
+                                j = text ? JSON.parse(text) : {};
+                            } catch (e) {
+                                j = { ok: false, error: (text || '').slice(0, 300) || 'Ответ сервера не JSON' };
+                            }
+                            return { ok: r.ok, j: j };
+                        });
+                    })
+                    .then(function(x) {
+                        if (x.j && x.j.ok) {
+                            setFeedback(x.j.detail || 'Сообщение отправлено.', 'ok');
+                        } else {
+                            setFeedback((x.j && x.j.error) || 'Ошибка отправки', 'error');
+                        }
+                    })
+                    .catch(function() {
+                        setFeedback('Сетевая ошибка или сервер недоступен.', 'error');
+                    })
+                    .finally(function() {
+                        sendBtn.disabled = false;
+                    });
+            });
+        }
+    });
+})();
+</script>
+{% endblock %}
+

@@ -1,0 +1,344 @@
+"""
+Утилиты для отправки сообщений через Telegram бота.
+"""
+import asyncio
+import logging
+import re
+from typing import List, Optional
+from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramAPIError
+from aiogram.types import LinkPreviewOptions
+from asgiref.sync import sync_to_async
+from django.conf import settings
+from django.utils import timezone
+from .models import TelegramUser, BroadcastMessage
+
+logger = logging.getLogger(__name__)
+
+# Лимиты Telegram API
+# 30 сообщений в секунду для broadcast
+TELEGRAM_BROADCAST_RATE_LIMIT = 30  # сообщений в секунду
+TELEGRAM_MESSAGE_DELAY = 1.0 / TELEGRAM_BROADCAST_RATE_LIMIT  # ~0.033 секунды между сообщениями
+
+# Telegram HTML поддерживает только: b, strong, i, em, u, ins, s, strike, del, span, tg-spoiler, a, code, pre, blockquote
+# Теги <p>, <div>, <br> вызывают "Unsupported start tag"
+# Quill: каждая строка = <p>, двойной Enter = <p><br></p> (пустой абзац)
+TELEGRAM_UNSUPPORTED_TAG_REPLACEMENTS = [
+    (re.compile(r'</p>\s*<p>\s*<br\s*/?>\s*</p>\s*<p>', re.I), '\n\n'),  # абзац (двойной Enter)
+    (re.compile(r'<p>\s*<br\s*/?>\s*</p>', re.I), '\n\n'),               # пустой абзац
+    (re.compile(r'</p>\s*\n+\s*<p>', re.I), '\n\n'),                    # абзац (уже есть \n\n между блоками)
+    (re.compile(r'</p>\s*<p>', re.I), '\n'),                            # новая строка (один Enter)
+    (re.compile(r'^<p>|</p>$', re.I), ''),                              # обёртка в начале/конце
+    (re.compile(r'</?p\s*/?>', re.I), '\n'),
+    (re.compile(r'<br\s*/?>', re.I), '\n'),
+    (re.compile(r'</?div\s*[^>]*>', re.I), '\n'),
+]
+
+
+def sanitize_html_for_telegram(text: str) -> str:
+    """Преобразует HTML в формат, поддерживаемый Telegram (убирает <p>, <div>, <br> и др.)."""
+    if not text:
+        return text
+    result = text
+    for pattern, replacement in TELEGRAM_UNSUPPORTED_TAG_REPLACEMENTS:
+        result = pattern.sub(replacement, result)
+    # Нормализуем абзацы: 3+ переносов подряд → ровно 2 (один пустой абзац)
+    result = re.sub(r'\n{3,}', '\n\n', result)
+    return result.strip()
+
+
+async def send_message_to_user(
+    bot: Bot,
+    user: TelegramUser,
+    text: str,
+    parse_mode: Optional[str] = None,
+    disable_notification: bool = False,
+    photo_path: Optional[str] = None,
+    disable_link_preview: bool = False,
+    reply_markup=None,
+) -> tuple[bool, Optional[str]]:
+    """
+    Отправляет сообщение конкретному пользователю.
+    Поддерживает: текст с HTML-форматированием, ссылки, фото с подписью, inline-клавиатуру.
+
+    Args:
+        bot: Экземпляр бота
+        user: Пользователь Telegram
+        text: Текст сообщения (поддерживает HTML: <b>, <i>, <a href="">)
+        parse_mode: Режим парсинга (HTML, Markdown)
+        disable_notification: Отключить уведомление
+        photo_path: Путь к файлу изображения (если указан — отправляется фото с caption)
+        disable_link_preview: Не показывать превью по ссылкам в тексте (только для текстовых сообщений)
+        reply_markup: Клавиатура (InlineKeyboardMarkup/ReplyKeyboardMarkup) для прикрепления к сообщению
+
+    Returns:
+        tuple: (успешно ли отправлено, сообщение об ошибке если есть)
+    """
+    try:
+        if parse_mode and parse_mode.upper() == 'HTML' and text:
+            text = sanitize_html_for_telegram(text)
+        if photo_path:
+            from aiogram.types import FSInputFile
+            photo = FSInputFile(photo_path)
+            await bot.send_photo(
+                chat_id=user.telegram_id,
+                photo=photo,
+                caption=text or None,
+                parse_mode=parse_mode,
+                disable_notification=disable_notification,
+                reply_markup=reply_markup,
+            )
+        else:
+            send_kwargs = {
+                'chat_id': user.telegram_id,
+                'text': text,
+                'parse_mode': parse_mode,
+                'disable_notification': disable_notification,
+            }
+            if disable_link_preview:
+                send_kwargs['link_preview_options'] = LinkPreviewOptions(is_disabled=True)
+            if reply_markup is not None:
+                send_kwargs['reply_markup'] = reply_markup
+            await bot.send_message(**send_kwargs)
+        
+        # Обновляем время последнего сообщения
+        @sync_to_async
+        def update_user_success():
+            user.last_message_sent_at = timezone.now()
+            user.is_active = True
+            user.blocked_bot_at = None
+            user.save(update_fields=['last_message_sent_at', 'is_active', 'blocked_bot_at'])
+        
+        await update_user_success()
+        
+        return True, None
+        
+    except TelegramForbiddenError as e:
+        # Пользователь заблокировал бота
+        logger.warning(f"Пользователь {user.telegram_id} заблокировал бота: {e}")
+        
+        @sync_to_async
+        def update_user_blocked():
+            user.is_active = False
+            user.blocked_bot_at = timezone.now()
+            user.save(update_fields=['is_active', 'blocked_bot_at'])
+        
+        await update_user_blocked()
+        return False, "Пользователь заблокировал бота"
+        
+    except TelegramBadRequest as e:
+        error_text = str(e).lower()
+        # Деактивируем только если аккаунт удалён/не найден, но не при ошибках контента сообщения
+        user_gone = any(phrase in error_text for phrase in (
+            'chat not found', 'user is deactivated', 'bot was kicked',
+            'have no rights', 'chat_id is empty',
+        ))
+        if user_gone:
+            logger.warning(f"Пользователь {user.telegram_id} не доступен: {e}")
+
+            @sync_to_async
+            def update_user_inactive():
+                user.is_active = False
+                user.save(update_fields=['is_active'])
+
+            await update_user_inactive()
+        else:
+            logger.warning(f"Ошибка контента при отправке пользователю {user.telegram_id}: {e}")
+        return False, f"Ошибка запроса: {str(e)}"
+        
+    except TelegramAPIError as e:
+        # Другие ошибки API
+        logger.error(f"Ошибка Telegram API для пользователя {user.telegram_id}: {e}")
+        return False, f"Ошибка API: {str(e)}"
+        
+    except Exception as e:
+        # Неожиданные ошибки
+        logger.error(f"Неожиданная ошибка при отправке пользователю {user.telegram_id}: {e}")
+        return False, f"Неожиданная ошибка: {str(e)}"
+
+
+async def send_broadcast_message(
+    broadcast: BroadcastMessage,
+    bot: Bot,
+    user_type_filter: Optional[str] = None
+) -> dict:
+    """
+    Отправляет массовое сообщение всем активным пользователям.
+    
+    Args:
+        broadcast: Объект рассылки
+        bot: Экземпляр бота
+        user_type_filter: Фильтр по типу пользователя (опционально, если не указан, используется из broadcast)
+    
+    Returns:
+        dict: Статистика отправки
+    """
+    # Получаем активных пользователей
+    @sync_to_async
+    def get_users():
+        users_query = TelegramUser.objects.filter(is_active=True)
+        
+        # Фильтр по типу пользователя
+        filter_user_type = user_type_filter or broadcast.user_type_filter
+        if filter_user_type:
+            users_query = users_query.filter(user_type=filter_user_type)
+        
+        # Фильтр по языку
+        if broadcast.language_filter:
+            users_query = users_query.filter(language=broadcast.language_filter)
+        
+        # Фильтр по региону
+        if broadcast.region_filter:
+            from core.regions import get_user_region_code
+
+            # Получаем всех пользователей с геолокацией
+            users_with_location = list(users_query.filter(
+                latitude__isnull=False,
+                longitude__isnull=False
+            ))
+
+            # Фильтруем по выбранному региону
+            filtered_user_ids = []
+            for user in users_with_location:
+                user_region = get_user_region_code(user)
+                if user_region == broadcast.region_filter:
+                    filtered_user_ids.append(user.id)
+            
+            # Применяем фильтр по ID
+            if filtered_user_ids:
+                users_query = users_query.filter(id__in=filtered_user_ids)
+            else:
+                # Если никого не найдено, возвращаем пустой queryset
+                users_query = users_query.none()
+        
+        return list(users_query)
+    
+    users = await get_users()
+    total_users = len(users)
+    
+    # Обновляем статистику рассылки
+    @sync_to_async
+    def update_broadcast_start():
+        broadcast.total_users = total_users
+        broadcast.status = 'sending'
+        broadcast.started_at = timezone.now()
+        broadcast.save(update_fields=['total_users', 'status', 'started_at'])
+    
+    await update_broadcast_start()
+    
+    sent_count = 0
+    failed_count = 0
+    
+    logger.info(f"Начало рассылки '{broadcast.title}' для {total_users} пользователей")
+    
+    # Путь к изображению (если есть)
+    photo_path = None
+    if broadcast.image:
+        try:
+            photo_path = broadcast.image.path
+        except (ValueError, OSError):
+            pass
+
+    # Отправляем сообщения с учетом лимитов
+    for i, user in enumerate(users):
+        try:
+            success, error = await send_message_to_user(
+                bot=bot,
+                user=user,
+                text=broadcast.message_text,
+                parse_mode='HTML',
+                photo_path=photo_path,
+                disable_link_preview=True,
+            )
+            
+            if success:
+                sent_count += 1
+            else:
+                failed_count += 1
+                logger.warning(f"Не удалось отправить пользователю {user.telegram_id}: {error}")
+            
+            # Обновляем статистику каждые 10 сообщений
+            if (i + 1) % 10 == 0:
+                @sync_to_async
+                def update_broadcast_progress():
+                    broadcast.sent_count = sent_count
+                    broadcast.failed_count = failed_count
+                    broadcast.save(update_fields=['sent_count', 'failed_count'])
+                
+                await update_broadcast_progress()
+            
+            # Соблюдаем лимит Telegram API (30 сообщений в секунду)
+            # Добавляем небольшую задержку между сообщениями
+            if i < total_users - 1:  # Не ждем после последнего сообщения
+                await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
+                
+        except Exception as e:
+            logger.error(f"Критическая ошибка при отправке пользователю {user.telegram_id}: {e}")
+            failed_count += 1
+            # Помечаем пользователя как неактивного при критической ошибке
+            @sync_to_async
+            def mark_user_inactive():
+                user.is_active = False
+                user.save(update_fields=['is_active'])
+            
+            await mark_user_inactive()
+    
+    # Завершаем рассылку
+    @sync_to_async
+    def update_broadcast_complete():
+        broadcast.sent_count = sent_count
+        broadcast.failed_count = failed_count
+        broadcast.status = 'completed'
+        broadcast.completed_at = timezone.now()
+        broadcast.save(update_fields=['sent_count', 'failed_count', 'status', 'completed_at'])
+    
+    await update_broadcast_complete()
+    
+    logger.info(
+        f"Рассылка '{broadcast.title}' завершена: "
+        f"отправлено {sent_count}, ошибок {failed_count} из {total_users}"
+    )
+    
+    return {
+        'total': total_users,
+        'sent': sent_count,
+        'failed': failed_count
+    }
+
+
+async def send_personal_message(
+    bot: Bot,
+    telegram_id: int,
+    text: str,
+    parse_mode: Optional[str] = None
+) -> tuple[bool, Optional[str]]:
+    """
+    Отправляет персональное сообщение конкретному пользователю.
+    
+    Args:
+        bot: Экземпляр бота
+        telegram_id: Telegram ID пользователя
+        text: Текст сообщения
+        parse_mode: Режим парсинга (HTML, Markdown)
+    
+    Returns:
+        tuple: (успешно ли отправлено, сообщение об ошибке если есть)
+    """
+    @sync_to_async
+    def get_user():
+        try:
+            return TelegramUser.objects.get(telegram_id=telegram_id)
+        except TelegramUser.DoesNotExist:
+            return None
+    
+    user = await get_user()
+    if user is None:
+        return False, "Пользователь не найден"
+    
+    return await send_message_to_user(
+        bot=bot,
+        user=user,
+        text=text,
+        parse_mode=parse_mode
+    )
+

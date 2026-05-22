@@ -1,0 +1,314 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}Главная{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .welcome-header {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        text-align: center;
+    }
+    
+    .welcome-header h1 {
+        margin: 0 0 12px 0;
+        font-size: 36px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    }
+    
+    .welcome-header p {
+        margin: 0;
+        font-size: 18px;
+        opacity: 0.95;
+        font-weight: 400;
+    }
+    
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+    
+    .menu-card {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .menu-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+    }
+    
+    .menu-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        border-color: #6366f1;
+    }
+    
+    .menu-card:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .menu-card-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+        transition: transform 0.3s ease;
+    }
+    
+    .menu-card:hover .menu-card-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+    
+    .menu-card-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 8px 0;
+        transition: color 0.3s ease;
+    }
+    
+    .menu-card:hover .menu-card-title {
+        color: #6366f1;
+    }
+    
+    .menu-card-description {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.6;
+    }
+    
+    .menu-card.users {
+        border-left: 4px solid #6366f1;
+    }
+    
+    .menu-card.dashboard {
+        border-left: 4px solid #10b981;
+    }
+    
+    .menu-card.qrcodes {
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .menu-card.generate {
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .menu-card.gifts {
+        border-left: 4px solid #ec4899;
+    }
+    
+    .menu-card.orders {
+        border-left: 4px solid #8b5cf6;
+    }
+    
+    .menu-card.broadcasts {
+        border-left: 4px solid #06b6d4;
+    }
+    
+    .recent-actions {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-top: 40px;
+    }
+    
+    .recent-actions h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 24px 0;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .action-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .action-item {
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        background: #f8fafc;
+        border-left: 4px solid #6366f1;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .action-item:hover {
+        background: #f1f5f9;
+        transform: translateX(4px);
+    }
+    
+    .action-icon {
+        font-size: 20px;
+    }
+    
+    .action-text {
+        flex: 1;
+        color: #1e293b;
+        font-size: 14px;
+    }
+    
+    .action-time {
+        color: #64748b;
+        font-size: 12px;
+    }
+    
+    .empty-actions {
+        text-align: center;
+        padding: 40px;
+        color: #64748b;
+    }
+    
+    .empty-actions-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .menu-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        .menu-card {
+            padding: 24px;
+        }
+        
+        .welcome-header {
+            padding: 30px 20px;
+        }
+        
+        .welcome-header h1 {
+            font-size: 28px;
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-header">
+    <h1>
+        <span>⚡</span>
+        <span>Добро пожаловать в панель управления</span>
+    </h1>
+    <p>Выберите раздел для работы с системой</p>
+</div>
+
+<div class="menu-grid">
+    
+    <a href="{% url 'dashboard' %}" class="menu-card dashboard">
+        <span class="menu-card-icon">📊</span>
+        <h3 class="menu-card-title">Дашборд</h3>
+        <p class="menu-card-description">Просмотр статистики, аналитики и ТОП лидеров</p>
+    </a>
+    
+    <a href="{% url 'admin:core_telegramuser_changelist' %}" class="menu-card users">
+        <span class="menu-card-icon">👥</span>
+        <h3 class="menu-card-title">Пользователи</h3>
+        <p class="menu-card-description">Управление пользователями Telegram, просмотр статистики</p>
+    </a>
+    
+    <a href="{% url 'admin:core_qrcode_changelist' %}" class="menu-card qrcodes">
+        <span class="menu-card-icon">📱</span>
+        <h3 class="menu-card-title">QR-коды</h3>
+        <p class="menu-card-description">Просмотр и управление QR-кодами, статистика сканирований</p>
+    </a>
+    
+    <a href="{% url 'admin:core_qrcode_generate' %}" class="menu-card generate">
+        <span class="menu-card-icon">➕</span>
+        <h3 class="menu-card-title">Генерация QR</h3>
+        <p class="menu-card-description">Создание новых QR-кодов для пользователей</p>
+    </a>
+    
+    <a href="{% url 'admin:core_gift_changelist' %}" class="menu-card gifts">
+        <span class="menu-card-icon">🎁</span>
+        <h3 class="menu-card-title">Подарки</h3>
+        <p class="menu-card-description">Управление подарками и настройка системы наград</p>
+    </a>
+    
+    <a href="{% url 'admin:core_giftredemption_changelist' %}" class="menu-card orders">
+        <span class="menu-card-icon">📦</span>
+        <h3 class="menu-card-title">Заказы</h3>
+        <p class="menu-card-description">Просмотр и обработка заказов на получение подарков</p>
+    </a>
+    
+    <a href="{% url 'admin:core_broadcastmessage_changelist' %}" class="menu-card broadcasts">
+        <span class="menu-card-icon">📢</span>
+        <h3 class="menu-card-title">Рассылки</h3>
+        <p class="menu-card-description">Создание и управление массовыми рассылками сообщений</p>
+    </a>
+</div>
+
+<!-- {% if app_list %}
+<div class="recent-actions">
+    <h2>📋 Быстрый доступ к моделям</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        {% for app in app_list %}
+        <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border-left: 4px solid #6366f1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">
+                {{ app.name }}
+            </h3>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for model in app.models %}
+                <li style="margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: white; border-radius: 8px; transition: all 0.2s ease; border: 1px solid #e2e8f0; hover:border-color: #6366f1;">
+                        <span style="font-size: 18px;">📄</span>
+                        <a href="{{ model.admin_url }}" style="flex: 1; font-weight: 500; font-size: 14px; color: #1e293b; text-decoration: none; transition: color 0.2s ease;">
+                            {{ model.name }}
+                        </a>
+                        {% if model.add_url %}
+                        <a href="{{ model.add_url }}" style="padding: 4px 10px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);" onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 4px 8px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 4px rgba(16, 185, 129, 0.3)';">
+                            + Добавить
+                        </a>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %} -->
+{% endblock %}
+

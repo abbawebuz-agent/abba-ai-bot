@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Генерация QR-кодов{% endblock %}
+
+{% block content %}
+<h1>Генерация QR-кодов</h1>
+
+<form method="post" action="{% url 'admin:core_qrcode_generate' %}">
+    {% csrf_token %}
+    
+    <div style="margin-bottom: 20px;">
+        <label for="code_type">Тип QR-кода:</label>
+        <select name="code_type" id="code_type" required style="padding: 5px; margin-left: 10px;">
+            <option value="">Выберите тип</option>
+            <option value="electrician">Электрик (E-)</option>
+            <option value="seller">Продавец (D-)</option>
+        </select>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label for="quantity">Количество:</label>
+        <input type="number" name="quantity" id="quantity" min="1" max="30000" required 
+               style="padding: 5px; margin-left: 10px; width: 100px;">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label for="points">Баллы за QR-код:</label>
+        <input type="number" name="points" id="points" min="0" required 
+               style="padding: 5px; margin-left: 10px; width: 100px;"
+               placeholder="50">
+        <small style="display: block; margin-top: 5px; color: #666;">
+            По умолчанию: Электрики - 50 баллов, Продавцы - 20 баллов
+        </small>
+    </div>
+    
+    <div>
+        <button type="submit" style="padding: 10px 20px; background-color: #417690; color: white; border: none; cursor: pointer;">
+            Сгенерировать QR-коды
+        </button>
+    </div>
+</form>
+
+<div style="margin-top: 30px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
+    <h3>Информация:</h3>
+    <ul>
+        <li>Электрики (E-): 50 баллов за QR-код (по умолчанию)</li>
+        <li>Продавцы (D-): 20 баллов за QR-код (по умолчанию)</li>
+        <li>Вы можете указать любое количество баллов в поле "Баллы за QR-код"</li>
+        <li>Генерация выполняется асинхронно - после нажатия кнопки вы будете перенаправлены на страницу со списком генераций</li>
+        <li>После завершения генерации вы сможете скачать ZIP архив со всеми изображениями</li>
+    </ul>
+</div>
+{% endblock %}
+

@@ -1,0 +1,14 @@
+{% extends "admin/dashboard.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Operational Analytics" %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+</div>
+{% endblock %}
+
+{% block mono_main_content %}
+    {{ block.super }}
+{% endblock mono_main_content %}

@@ -1,0 +1,149 @@
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mona_db}
+      POSTGRES_USER: ${DB_USER:-mona_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mona_password}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mona_user} -d ${DB_NAME:-mona_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # mongodb:
+  #   image: mongo:7.0
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   ports:
+  #     - "27017:27017"
+  #   healthcheck:
+  #     test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Локальный Nominatim (OSM PBF в ./osm-data/, см. PBF_PATH). Первый старт — долгий импорт.
+  nominatim:
+    image: mediagis/nominatim:4.4
+    shm_size: 2gb
+    environment:
+      PBF_PATH: /nominatim/data/uzbekistan.osm.pbf
+      REPLICATION_URL: ""
+    volumes:
+      # Без :ro — скрипт старта Nominatim делает chown на /nominatim/data
+      - ./osm-data:/nominatim/data
+      - nominatim_data:/var/lib/postgresql/14/main
+    ports:
+      - "8088:8080"
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      # mongodb:
+      #   condition: service_healthy
+      redis:
+        condition: service_healthy
+      nominatim:
+        condition: service_started
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      # - MONGODB_HOST=mongodb
+      - REDIS_HOST=redis
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-mona.settings.local}
+      - NOMINATIM_BASE_URL=${NOMINATIM_BASE_URL:-http://nominatim:8080}
+
+  bot:
+    build: .
+    command: python manage.py run_bot
+    volumes:
+      - .:/app
+      - media_data:/app/media       # доступ к загружаемым файлам (PDF политики)
+      - static_data:/app/staticfiles # доступ к собранной статике при необходимости
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - db
+      - redis
+      - nominatim
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      # - MONGODB_HOST=mongodb
+      - REDIS_HOST=redis
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-mona.settings.local}
+      - NOMINATIM_BASE_URL=${NOMINATIM_BASE_URL:-http://nominatim:8080}
+
+  celery:
+    build: .
+    command: celery -A mona worker --loglevel=info
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - web
+      - nominatim
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-mona.settings.local}
+      - NOMINATIM_BASE_URL=${NOMINATIM_BASE_URL:-http://nominatim:8080}
+
+  celery-beat:
+    build: .
+    command: celery -A mona beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - web
+      - nominatim
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-mona.settings.local}
+      - NOMINATIM_BASE_URL=${NOMINATIM_BASE_URL:-http://nominatim:8080}
+
+volumes:
+  postgres_data:
+  # mongodb_data:
+  static_data:
+  media_data:
+  nominatim_data:
+

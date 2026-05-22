@@ -1,0 +1,3717 @@
+{% load webapp_i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ user_language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Отключение кеша для Telegram Web App -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>{% trans "WEBAPP_MY_GIFTS" %}</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'webapp/css/styles.css' %}?v={{ app_version }}">
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105967279', 'ym');
+
+        ym(105967279, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/105967279" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+    <script>
+        // Автоматический обход страницы предупреждения ngrok
+        (function() {
+            // Проверяем, находимся ли мы на странице предупреждения ngrok
+            if (document.body && document.body.id === 'ngrok') {
+                // Пытаемся найти кнопку "Visit Site" и кликнуть на неё
+                setTimeout(function() {
+                    var visitButton = document.querySelector('button[data-testid="visit-site-button"]') ||
+                                     document.querySelector('a[href*="ngrok-skip-browser-warning"]') ||
+                                     document.querySelector('button:contains("Visit Site")') ||
+                                     document.querySelector('a:contains("Visit Site")');
+                    if (visitButton) {
+                        visitButton.click();
+                    } else {
+                        // Если кнопка не найдена, пытаемся добавить заголовок и перезагрузить
+                        var currentUrl = window.location.href;
+                        if (currentUrl.indexOf('ngrok-skip-browser-warning') === -1) {
+                            var separator = currentUrl.indexOf('?') === -1 ? '?' : '&';
+                            window.location.href = currentUrl + separator + 'ngrok-skip-browser-warning=true';
+                        }
+                    }
+                }, 100);
+            }
+            
+            // Добавляем заголовок для всех последующих запросов
+            if (typeof fetch !== 'undefined') {
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    if (args[1]) {
+                        args[1].headers = args[1].headers || {};
+                        args[1].headers['ngrok-skip-browser-warning'] = 'true';
+                    }
+                    return originalFetch.apply(this, args);
+                };
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Overlay: показывается пока пользователь не завершил регистрацию -->
+    <div id="registrationOverlay" style="display:none;">
+        <div class="reg-overlay-card">
+            <div class="reg-overlay-icon">⚠️</div>
+            <div class="reg-overlay-messages">
+                <div class="reg-overlay-block">
+                    <p class="reg-overlay-lang">O'zbek</p>
+                    <p class="reg-overlay-text">Siz hali ro'yxatdan o'tmagansiz. Iltimos, botga qaytib, ro'yxatdan o'tishni to'liq yakunlang.</p>
+                </div>
+                <div class="reg-overlay-divider"></div>
+                <div class="reg-overlay-block">
+                    <p class="reg-overlay-lang">Русский</p>
+                    <p class="reg-overlay-text">Вы ещё не зарегистрированы. Пожалуйста, вернитесь в бот и завершите регистрацию.</p>
+                </div>
+            </div>
+            <button class="reg-overlay-btn" id="continueRegBtn" onclick="continueRegistration()">
+                <span>Ro'yxatdan o'tishni davom ettirish</span>
+                <span class="reg-overlay-btn-sub">Продолжить регистрацию</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Профиль пользователя -->
+        <div class="user-header">
+            <div class="user-header-card">
+                <!-- Skeleton loader для профиля -->
+                <div class="skeleton-loader skeleton-user" id="skeletonUser" style="display: flex !important; align-items: center; gap: 0.75rem; flex: 1; visibility: visible !important; opacity: 1 !important;">
+                    <div class="skeleton-avatar"></div>
+                    <div class="skeleton-text-group" style="flex: 1;">
+                        <div class="skeleton-text skeleton-text-name"></div>
+                        <div class="skeleton-text skeleton-text-id"></div>
+                    </div>
+                </div>
+                <div class="user-info" id="userInfo" onclick="showProfile()" style="cursor: pointer; display: none;">
+                    <div class="user-avatar-wrapper">
+                        <div class="user-avatar" id="userAvatar">👤</div>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">
+                            <span id="userName">{% trans "USER" %}</span>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <g clip-path="url(#clip0_110_61)">
+                                <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="#40C4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M6 7.99999L7.33333 9.33332L10 6.66666" stroke="#40C4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </g>
+                                <defs>
+                                <clipPath id="clip0_110_61">
+                                <rect width="16" height="16" fill="white"/>
+                                </clipPath>
+                                </defs>
+                                </svg>                                
+                        </div>
+                        <div class="user-id" id="userId">ID: -</div>
+                    </div>
+                </div>
+                <!-- Skeleton loader для баллов -->
+                <div class="skeleton-loader skeleton-points" id="skeletonPoints" style="display: block !important; visibility: visible !important; opacity: 1 !important;"></div>
+                <div class="points-badge" id="pointsBadge" style="display: none;">
+                    <div class="points-value" id="points">0</div>
+                    <div class="points-label">{% trans "WEBAPP_TOTAL_POINTS" %}</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <!-- Баннер с каруселью -->
+        <div class="banner-section" id="bannerSection" style="display: block;">
+            <!-- Skeleton loader для баннера -->
+            <div class="banner-card skeleton-banner" id="skeletonBanner" style="display: block;">
+                <div class="skeleton-banner-content">
+                    <div class="skeleton-text skeleton-banner-title"></div>
+                </div>
+                <div class="skeleton-banner-date"></div>
+            </div>
+            <div class="banner-card" id="bannerCard" style="display: none;">
+                <img src="" alt="" class="banner-image" id="bannerImage" style="display: none;" onerror="this.style.display='none'">
+                <div class="banner-date-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_11_3740)">
+                        <path d="M12 3.33334H3.99996C3.26358 3.33334 2.66663 3.9303 2.66663 4.66668V12.6667C2.66663 13.4031 3.26358 14 3.99996 14H12C12.7363 14 13.3333 13.4031 13.3333 12.6667V4.66668C13.3333 3.9303 12.7363 3.33334 12 3.33334Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10.6666 2V4.66667" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M5.33337 2V4.66667" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2.66663 7.33334H13.3333" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6.66671 10H5.33337V11.3333H6.66671V10Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        <defs>
+                        <clipPath id="clip0_11_3740">
+                        <rect width="16" height="16" fill="white"/>
+                        </clipPath>
+                        </defs>
+                        </svg>
+                        
+                    <span id="bannerDate"></span>
+                </div>
+            </div>
+            <div class="banner-nav banner-nav-left" id="bannerNavLeft" onclick="event.stopPropagation(); prevBanner()" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.5 15L7.5 10L12.5 5" stroke="#1E72B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="banner-nav banner-nav-right" id="bannerNavRight" onclick="event.stopPropagation(); nextBanner()" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.5 15L12.5 10L7.5 5" stroke="#1E72B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+
+        <!-- Поле ввода QR кода -->
+        <div class="qr-input-section">
+            <div class="qr-input-wrapper" id="qrInputWrapper">
+                <input type="text" class="qr-input" id="qrInput" placeholder="EXXXXXX" maxlength="9">
+                <button class="register-btn" onclick="registerQRCode()">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_110_763)">
+                        <path d="M2.66666 4.66669V4.00002C2.66666 3.6464 2.80713 3.30726 3.05718 3.05721C3.30723 2.80716 3.64637 2.66669 3.99999 2.66669H5.33332" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2.66666 11.3333V12C2.66666 12.3536 2.80713 12.6927 3.05718 12.9428C3.30723 13.1928 3.64637 13.3333 3.99999 13.3333H5.33332" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10.6667 2.66669H12C12.3536 2.66669 12.6928 2.80716 12.9428 3.05721C13.1929 3.30726 13.3334 3.6464 13.3334 4.00002V4.66669" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10.6667 13.3333H12C12.3536 13.3333 12.6928 13.1928 12.9428 12.9428C13.1929 12.6927 13.3334 12.3536 13.3334 12V11.3333" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4.00001 7.33331H3.33334V8.66665H4.00001V7.33331Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6.66666 7.33331V8.66665" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10 7.33331H9.33334V8.66665H10V7.33331Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12.6667 7.33331V8.66665" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        <defs>
+                        <clipPath id="clip0_110_763">
+                        <rect width="16" height="16" fill="white"/>
+                        </clipPath>
+                        </defs>
+                        </svg>                        
+                    <span class="register-text">{% trans "WEBAPP_REGISTER" %}</span>
+                </button>
+            </div>
+            <div class="qr-error" id="qrError" style="display: none;"></div>
+        </div>
+
+        <!-- Карточка следующего подарка -->
+        <div class="next-gift-card" id="nextGiftCard" style="display: none;">
+            <div class="next-gift-label">{% trans "WEBAPP_NEXT_GIFT_LABEL" %}</div>
+            <div class="next-gift-head">
+                <span class="next-gift-name" id="nextGiftName"></span>
+                <span class="next-gift-price">
+                    <span id="nextGiftPrice">0</span>
+                    <span class="next-gift-price-unit">{% trans "WEBAPP_BALL" %}</span>
+                </span>
+            </div>
+            <div class="next-gift-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                <div class="next-gift-progress-fill" id="nextGiftProgressFill" style="width: 0%"></div>
+            </div>
+            <div class="next-gift-needed" id="nextGiftNeeded"></div>
+            <button class="next-gift-btn" onclick="showGifts()">
+                <span>{% trans "WEBAPP_VIEW_GIFTS" %}</span>
+                <span class="next-gift-btn-arrow">›</span>
+            </button>
+        </div>
+
+        <!-- Карточка подарков -->
+        <div class="gifts-card" style="position: relative;">
+            <!-- Skeleton loader для подарков -->
+            <div class="skeleton-gifts" id="skeletonGifts" style="visibility: visible !important; opacity: 1 !important;">
+                <div class="skeleton-gifts-image"></div>
+                <div class="skeleton-text skeleton-gifts-text"></div>
+                <div class="skeleton-text skeleton-gifts-btn"></div>
+            </div>
+            <div class="gifts-content" id="giftsContent" style="display: none;">
+                <div class="gifts-image-wrapper">
+                    <img src="{% static 'images/gift-box.png' %}" alt="Gift" class="gifts-main-image" id="giftsMainImage" onerror="this.style.display='none'">
+                </div>
+                <div class="gifts-text">{% trans "WEBAPP_PARTNER_TEXT" %}</div>
+            </div>
+            <button class="view-gifts-btn" id="viewGiftsBtn" onclick="showGifts()" style="display: none;">
+                <span class="view-gifts-text">{% trans "WEBAPP_VIEW_GIFTS" %}</span>
+                <span class="gifts-count-badge">
+                    <span class="gifts-count" id="giftsCount">0</span>
+                </span>
+            </button>
+        </div>
+
+        <!-- Список заказов -->
+        <div class="orders-section" id="ordersSection" style="display: none;">
+            <!-- <h3 class="orders-title">{% trans "WEBAPP_MY_ORDERS" %}</h3> -->
+            <div class="orders-list" id="ordersList">
+                <!-- Заказы будут загружены динамически -->
+            </div>
+        </div>
+
+        <!-- Топ пользователей -->
+        <div class="top-users-section" id="topUsersSection" style="display: none;">
+            <div class="top-users-header">
+                <h3 class="orders-title top-users-title" id="topUsersTitle" data-tkey="WEBAPP_TOP_USERS_TITLE_ELECTRICIANS"><span class="top-users-title-emoji" aria-hidden="true">🏆</span><span class="top-users-title-text">{% trans "WEBAPP_TOP_USERS_TITLE_ELECTRICIANS" %}</span></h3>
+            </div>
+            <div class="qr-history-filters top-users-filters">
+                <button class="qr-history-filter-btn active" data-period="all" onclick="setTopUsersPeriod('all')">
+                    <span data-tkey="WEBAPP_TOP_USERS_PERIOD_ALL">{% trans "WEBAPP_TOP_USERS_PERIOD_ALL" %}</span>
+                </button>
+                <button class="qr-history-filter-btn" data-period="current" onclick="setTopUsersPeriod('current')">
+                    <span data-tkey="WEBAPP_TOP_USERS_PERIOD_CURRENT">{% trans "WEBAPP_TOP_USERS_PERIOD_CURRENT" %}</span>
+                </button>
+            </div>
+            <div class="top-users-list-wrapper" id="topUsersList">
+                <div class="loading">{% trans "WEBAPP_LOADING" %}</div>
+            </div>
+        </div>
+
+        <!-- Информационный текст -->
+        <div class="info-text">
+            <p>{% trans "WEBAPP_INFO_TEXT" %}</p>
+        </div>
+
+        <!-- Кнопка связи с админом -->
+        <button class="contact-admin-btn" onclick="contactAdmin()" style="order: 0">
+            <span class="contact-icon">🎧</span>
+            <span>{% trans "WEBAPP_CONTACT_ADMIN" %}</span>
+        </button>
+
+        <!-- Политика конфиденциальности -->
+        <div class="privacy-link">
+            <a href="#" onclick="showPrivacy(); return false;">{% trans "WEBAPP_PRIVACY_POLICY" %}</a>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Список подарков -->
+    <div class="screen" id="giftsListScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showScreen('home')">‹</button>
+            <h2 class="screen-title">{% trans "WEBAPP_GIFTS_TITLE" %}</h2>
+        </div>
+        <div class="gifts-list-container" id="giftsListContainer">
+            <div class="loading">{% trans "WEBAPP_LOADING_GIFTS" %}</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Детальная страница запрошенного товара (ожидание) -->
+    <div class="screen" id="redemptionDetailScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showScreen('home')">‹</button>
+            <h2 class="screen-title" id="redemptionDetailTitle">{% trans "WEBAPP_GIFT_NAME" %}</h2>
+        </div>
+        <div class="redemption-detail-container" id="redemptionDetailContainer">
+            <!-- Контент будет загружен динамически -->
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Профиль -->
+    <div class="screen" id="profileScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showScreen('home')">‹</button>
+            <h2 class="screen-title">{% trans "WEBAPP_PROFILE" %}</h2>
+        </div>
+        <div class="profile-container">
+            <!-- Карточка пользователя -->
+            <div class="redemption-user-card profile-user-card">
+                <div class="redemption-user-avatar">
+                    <div class="redemption-avatar-icon" id="profileUserAvatar">👤</div>
+                </div>
+                <div class="redemption-user-info">
+                    <div class="redemption-user-name">
+                        <span id="profileUserName">{% trans "USER" %}</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g clip-path="url(#clip0_110_61_profile)">
+                                <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="#40C4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M6 7.99999L7.33333 9.33332L10 6.66666" stroke="#40C4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </g>
+                            <defs>
+                                <clipPath id="clip0_110_61_profile">
+                                    <rect width="16" height="16" fill="white"/>
+                                </clipPath>
+                            </defs>
+                        </svg>                                
+                    </div>
+                    <div class="redemption-user-id" id="profileUserId">ID: -</div>
+                    <div class="profile-user-type" id="profileUserType" style="display: none;"></div>
+                </div>
+                <div class="points-badge">
+                    <div class="points-value" id="profilePoints">0</div>
+                    <div class="points-label">{% trans "WEBAPP_TOTAL_POINTS" %}</div>
+                </div>
+            </div>
+            
+            <button class="profile-menu-button" onclick="showLanguageModal()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_11_4049)">
+                        <path d="M4.1665 5.83332H9.99984M8.33317 4.16666V5.83332C8.33317 7.60143 7.89418 9.29713 7.11278 10.5474C6.33138 11.7976 5.27157 12.5 4.1665 12.5M4.99984 9.16666C4.99845 10.0265 5.5786 10.8534 6.61906 11.4746C7.65953 12.0957 9.07981 12.4631 10.5832 12.5" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9.1665 15.8333L12.4998 8.33334L15.8332 15.8333M15.0832 14.1667H9.9165" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                    <defs>
+                        <clipPath id="clip0_11_4049">
+                            <rect width="20" height="20" fill="white"/>
+                        </clipPath>
+                    </defs>
+                </svg>
+                <span class="profile-menu-text" data-tkey="WEBAPP_INTERFACE_LANGUAGE">{% trans "WEBAPP_INTERFACE_LANGUAGE" %}</span>
+                <span class="profile-menu-value" id="currentLanguage">O'zbekcha</span>
+                <svg class="profile-menu-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_11_4055_lang)">
+                        <path d="M7.5 5L12.5 10L7.5 15" stroke="#808285" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                    <defs>
+                        <clipPath id="clip0_11_4055_lang">
+                            <rect width="20" height="20" fill="white"/>
+                        </clipPath>
+                    </defs>
+                </svg>
+            </button>
+
+            <button class="profile-menu-button" onclick="showPrivacy()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_11_4065)">
+                    <path d="M15.75 5.83331C16.5037 7.0843 16.8258 8.54818 16.6667 9.99998V10.8333C16.6657 11.7107 16.8956 12.5729 17.3333 13.3333" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6.6665 9.16665C6.6665 8.28259 7.01769 7.43474 7.64281 6.80962C8.26794 6.1845 9.11578 5.83331 9.99984 5.83331C10.8839 5.83331 11.7317 6.1845 12.3569 6.80962C12.982 7.43474 13.3332 8.28259 13.3332 9.16665V9.99998C13.3332 11.8031 13.918 13.5575 14.9998 15" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 9.16669V10.8334C9.99735 13.2162 10.7244 15.5427 12.0833 17.5" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6.6665 12.5C6.87042 14.2415 7.37811 15.9338 8.1665 17.5" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4.08336 15.8333C3.52107 13.9419 3.26781 11.9721 3.33336 9.99999V9.16666C3.33017 7.99487 3.63588 6.84295 4.2197 5.82695C4.80352 4.81096 5.64481 3.96679 6.65881 3.37952C7.67281 2.79224 8.82369 2.48261 9.99548 2.48181C11.1673 2.48102 12.3186 2.78909 13.3334 3.37499" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_11_4065">
+                    <rect width="20" height="20" fill="white"/>
+                    </clipPath>
+                    </defs>
+                    </svg>                    
+                <span class="profile-menu-text" data-tkey="WEBAPP_PRIVACY_POLICY">{% trans "WEBAPP_PRIVACY_POLICY" %}</span>
+                <svg class="profile-menu-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_11_4055_qr)">
+                        <path d="M7.5 5L12.5 10L7.5 15" stroke="#808285" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                    <defs>
+                        <clipPath id="clip0_11_4055_qr">
+                            <rect width="20" height="20" fill="white"/>
+                        </clipPath>
+                    </defs>
+                </svg>
+                
+            </button>
+            <button class="contact-admin-btn" onclick="contactAdmin()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_11_4073)">
+                    <path d="M5.8335 10.8333H5.00016C4.07969 10.8333 3.3335 11.5795 3.3335 12.5V15C3.3335 15.9205 4.07969 16.6666 5.00016 16.6666H5.8335C6.75397 16.6666 7.50016 15.9205 7.50016 15V12.5C7.50016 11.5795 6.75397 10.8333 5.8335 10.8333Z" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M15 10.8333H14.1667C13.2462 10.8333 12.5 11.5795 12.5 12.5V15C12.5 15.9205 13.2462 16.6666 14.1667 16.6666H15C15.9205 16.6666 16.6667 15.9205 16.6667 15V12.5C16.6667 11.5795 15.9205 10.8333 15 10.8333Z" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3.3335 12.5V9.99998C3.3335 8.23187 4.03588 6.53618 5.28612 5.28593C6.53636 4.03569 8.23205 3.33331 10.0002 3.33331C11.7683 3.33331 13.464 4.03569 14.7142 5.28593C15.9645 6.53618 16.6668 8.23187 16.6668 9.99998V12.5" stroke="#1E72B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_11_4073">
+                    <rect width="20" height="20" fill="white"/>
+                    </clipPath>
+                    </defs>
+                </svg>       
+                <span>{% trans "WEBAPP_CONTACT_ADMIN" %}</span>
+            </button>
+
+            <button class="profile-menu-button" onclick="showLiveStreamsList()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2.5" y="5" width="19" height="14" rx="3" stroke="#1E72B7" stroke-width="1.5"/>
+                    <path d="M10 9.5L15 12L10 14.5V9.5Z" fill="#1E72B7" stroke="#1E72B7" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                <span class="profile-menu-text" data-tkey="WEBAPP_LIVE_STREAMS_TITLE">{% trans "WEBAPP_LIVE_STREAMS_TITLE" %}</span>
+                <svg class="profile-menu-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.5 5L12.5 10L7.5 15" stroke="#808285" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+
+        </div>
+
+
+    </div>
+
+    <!-- ЭКРАН: Список прямых эфиров -->
+    <div class="screen" id="liveStreamsListScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showProfile()">‹</button>
+            <h2 class="screen-title" data-tkey="WEBAPP_LIVE_STREAMS_TITLE">{% trans "WEBAPP_LIVE_STREAMS_TITLE" %}</h2>
+        </div>
+        <div class="live-streams-block live-streams-block-screen">
+            <div class="live-streams-section" data-section="upcoming">
+                <div class="live-streams-section-title" data-tkey="WEBAPP_LIVE_STREAMS_UPCOMING">{% trans "WEBAPP_LIVE_STREAMS_UPCOMING" %}</div>
+                <div class="live-streams-list" id="liveStreamsUpcoming">
+                    <div class="loading" data-tkey="WEBAPP_LIVE_STREAM_LOADING">{% trans "WEBAPP_LIVE_STREAM_LOADING" %}</div>
+                </div>
+            </div>
+            <div class="live-streams-section" data-section="past">
+                <div class="live-streams-section-title" data-tkey="WEBAPP_LIVE_STREAMS_PAST">{% trans "WEBAPP_LIVE_STREAMS_PAST" %}</div>
+                <div class="live-streams-list" id="liveStreamsPast">
+                    <div class="loading" data-tkey="WEBAPP_LIVE_STREAM_LOADING">{% trans "WEBAPP_LIVE_STREAM_LOADING" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Детали прямого эфира -->
+    <div class="screen" id="liveStreamDetailScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showLiveStreamsList()">‹</button>
+            <h2 class="screen-title" id="liveStreamDetailTitle"></h2>
+        </div>
+        <div class="live-stream-detail-container" id="liveStreamDetailContainer">
+            <div class="loading" data-tkey="WEBAPP_LIVE_STREAM_LOADING">{% trans "WEBAPP_LIVE_STREAM_LOADING" %}</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Мои заказы -->
+    <div class="screen" id="profileGiftsScreen" style="display: none;">
+        <div class="screen-header orders-screen-header">
+            <button class="back-btn" onclick="showScreen('home')">‹</button>
+            <h2 class="screen-title" style="visibility: hidden;">{% trans "WEBAPP_ORDERS_TITLE" %}</h2>
+        </div>
+        <div class="orders-page">
+            <div class="orders-page-head">
+                <div class="orders-total-label" id="ordersTotalLabel">0 ta jami</div>
+                <h1 class="orders-page-title">{% trans "WEBAPP_ORDERS_TITLE" %}</h1>
+            </div>
+            <div class="orders-tabs" role="tablist">
+                <button class="orders-tab active" data-tab="active" onclick="setOrdersTab('active')">
+                    <span class="orders-tab-label">{% trans "WEBAPP_ORDERS_TAB_ACTIVE" %}</span>
+                    <span class="orders-tab-count" id="ordersTabActiveCount">0</span>
+                </button>
+                <button class="orders-tab" data-tab="delivered" onclick="setOrdersTab('delivered')">
+                    <span class="orders-tab-label">{% trans "WEBAPP_ORDERS_TAB_DELIVERED" %}</span>
+                    <span class="orders-tab-count" id="ordersTabDeliveredCount">0</span>
+                </button>
+            </div>
+            <div class="profile-gifts-container" id="profileGiftsContainer">
+                <div class="loading">{% trans "WEBAPP_LOADING_ORDERS" %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: История QR-кодов -->
+    <div class="screen" id="qrHistoryScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showScreen('home')">‹</button>
+            <h2 class="screen-title">{% trans "WEBAPP_QR_HISTORY" %}</h2>
+        </div>
+        <div class="qr-history-filters">
+            <button class="qr-history-filter-btn active" data-filter="all" onclick="setQrHistoryFilter('all')">
+                <span>{% trans "WEBAPP_QR_FILTER_ALL" %}</span>
+                <span class="pill-count" id="qrFilterAllCount" style="display:none">0</span>
+            </button>
+            <button class="qr-history-filter-btn" data-filter="current" onclick="setQrHistoryFilter('current')">
+                <span>{% trans "WEBAPP_QR_FILTER_CURRENT_MONTH" %}</span>
+                <span class="pill-count" id="qrFilterCurrentCount" style="display:none">0</span>
+            </button>
+        </div>
+        <div class="qr-history-container" id="qrHistoryContainer">
+            <div class="loading">{% trans "WEBAPP_LOADING_QR_HISTORY" %}</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Детальный просмотр акции -->
+    <div class="screen" id="promotionDetailScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showScreen('home')">‹</button>
+            <h2 class="screen-title" id="promotionDetailTitle"></h2>
+        </div>
+        <div class="promotion-detail-container" id="promotionDetailContainer">
+            <div class="loading">{% trans "WEBAPP_LOADING" %}</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН: Политика конфиденциальности -->
+    <div class="screen" id="privacyScreen" style="display: none;">
+        <div class="screen-header">
+            <button class="back-btn" onclick="showScreen(getPreviousScreen())">‹</button>
+            <h2 class="screen-title">{% trans "WEBAPP_PRIVACY_POLICY" %}</h2>
+        </div>
+        <div class="privacy-container" id="privacyContainer">
+            <div class="loading">{% trans "WEBAPP_LOADING" %}</div>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="bottom-nav-item active" data-screen="home" onclick="navigateTo('home')">
+            <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 12L12 4L21 12V20C21 20.5523 20.5523 21 20 21H15V14H9V21H4C3.44772 21 3 20.5523 3 20V12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+            <span class="bottom-nav-label" data-tkey="WEBAPP_NAV_HOME">{% trans "WEBAPP_NAV_HOME" %}</span>
+        </button>
+        <button class="bottom-nav-item" data-screen="giftsList" onclick="navigateTo('giftsList')">
+            <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 8H4C3.44772 8 3 8.44772 3 9V11C3 11.5523 3.44772 12 4 12H20C20.5523 12 21 11.5523 21 11V9C21 8.44772 20.5523 8 20 8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M12 8V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M19 12V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M7.5 8C6.83696 8 6.20107 7.73661 5.73223 7.26777C5.26339 6.79893 5 6.16304 5 5.5C5 4.83696 5.26339 4.20107 5.73223 3.73223C6.20107 3.26339 6.83696 3 7.5 3C8.46469 2.98318 9.40984 3.45122 10.2127 4.34338C11.0156 5.23553 11.6385 6.51087 12 8C12.3615 6.51087 12.9844 5.23553 13.7873 4.34338C14.5902 3.45122 15.5353 2.98318 16.5 3C17.163 3 17.7989 3.26339 18.2678 3.73223C18.7366 4.20107 19 4.83696 19 5.5C19 6.16304 18.7366 6.79893 18.2678 7.26777C17.7989 7.73661 17.163 8 16.5 8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+            <span class="bottom-nav-label" data-tkey="WEBAPP_NAV_GIFTS">{% trans "WEBAPP_NAV_GIFTS" %}</span>
+        </button>
+        <button class="bottom-nav-item" data-screen="qrHistory" onclick="navigateTo('qrHistory')">
+            <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M3 11H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M8 15H10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M14 15H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span class="bottom-nav-label" data-tkey="WEBAPP_NAV_HISTORY">{% trans "WEBAPP_NAV_HISTORY" %}</span>
+        </button>
+        <button class="bottom-nav-item" data-screen="profileGifts" onclick="navigateTo('profileGifts')">
+            <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 4H15C15.5523 4 16 4.44772 16 5V7H8V5C8 4.44772 8.44772 4 9 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M5 7H19C19.5523 7 20 7.44772 20 8V20C20 20.5523 19.5523 21 19 21H5C4.44772 21 4 20.5523 4 20V8C4 7.44772 4.44772 7 5 7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M9 13L11 15L15 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="bottom-nav-label" data-tkey="WEBAPP_NAV_MY_GIFTS">{% trans "WEBAPP_NAV_MY_GIFTS" %}</span>
+        </button>
+        <button class="bottom-nav-item" data-screen="profile" onclick="navigateTo('profile')">
+            <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M4 21C4 16.5817 7.58172 13 12 13C16.4183 13 20 16.5817 20 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span class="bottom-nav-label" data-tkey="WEBAPP_NAV_PROFILE">{% trans "WEBAPP_NAV_PROFILE" %}</span>
+        </button>
+    </nav>
+
+    <!-- МОДАЛКА: Выбор языка -->
+    <div class="modal" id="languageModal">
+        <div class="modal-content language-modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">{% trans "WEBAPP_INTERFACE_LANGUAGE" %}</h3>
+                <button class="modal-close" onclick="closeLanguageModal()">✕</button>
+            </div>
+            <div class="language-options">
+                <div class="language-option" onclick="changeLanguage('uz_latin')">
+                    <span class="language-flag">🇺🇿</span>
+                    <span class="language-name">{% trans "WEBAPP_UZBEK" %}</span>
+                    <span class="language-check" id="checkUzLatin" style="display: none;">✓</span>
+                </div>
+                <div class="language-option" onclick="changeLanguage('ru')">
+                    <span class="language-flag">🇷🇺</span>
+                    <span class="language-name">{% trans "WEBAPP_RUSSIAN" %}</span>
+                    <span class="language-check" id="checkRu" style="display: none;">✓</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: Подарок (детали + успех) -->
+    <div class="modal gift-popup" id="giftPopup" onclick="if(event.target===this) closeGiftPopup()">
+        <div class="modal-content gift-popup-content">
+            <div class="gift-popup-body" id="giftPopupBody">
+                <!-- Контент рендерится в renderGiftPopupDetail() / renderGiftPopupSuccess() -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для подтверждения -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-title">{% trans "WEBAPP_CONFIRM_RECEIPT" %}</div>
+            <p>{% trans "WEBAPP_DID_YOU_RECEIVE" %}</p>
+            <textarea class="comment-input" id="commentInput" placeholder="{% trans 'WEBAPP_COMMENT_PLACEHOLDER' %}"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="confirmDelivery(true)">{% trans "WEBAPP_YES_RECEIVED" %}</button>
+                <button class="btn btn-danger" onclick="confirmDelivery(false)">{% trans "WEBAPP_NO_NOT_RECEIVED" %}</button>
+                <button class="btn btn-secondary" onclick="closeModal()">{% trans "WEBAPP_CANCEL" %}</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        // Устанавливаем цвет шапки Telegram
+        tg.setHeaderColor('#F1F2F4');
+
+        // Переводы для JavaScript
+        let translations = {
+            'WEBAPP_LOADING': '{% trans "WEBAPP_LOADING" %}',
+            'WEBAPP_NO_GIFTS': '{% trans "WEBAPP_NO_GIFTS" %}',
+            'WEBAPP_POINTS': '{% trans "WEBAPP_POINTS" %}',
+            'WEBAPP_CONFIRM_REQUEST': '{% trans "WEBAPP_CONFIRM_REQUEST" %}',
+            'WEBAPP_REQUEST_SENT': '{% trans "WEBAPP_REQUEST_SENT" %}',
+            'WEBAPP_ERROR_LOADING_USER': '{% trans "WEBAPP_ERROR_LOADING_USER" %}',
+            'WEBAPP_ERROR_LOADING_GIFTS': '{% trans "WEBAPP_ERROR_LOADING_GIFTS" %}',
+            'WEBAPP_ERROR_REQUESTING_GIFT': '{% trans "WEBAPP_ERROR_REQUESTING_GIFT" %}',
+            'WEBAPP_ERROR_CONFIRMING': '{% trans "WEBAPP_ERROR_CONFIRMING" %}',
+            'WEBAPP_THANKS_CONFIRMATION': '{% trans "WEBAPP_THANKS_CONFIRMATION" %}',
+            'WEBAPP_COMMENT_SENT': '{% trans "WEBAPP_COMMENT_SENT" %}',
+            'WEBAPP_COMMENT_REQUIRED': '{% trans "WEBAPP_COMMENT_REQUIRED" %}',
+            'USER': '{% trans "USER" %}',
+            'WEBAPP_QR_ERROR': '{% trans "WEBAPP_QR_ERROR" %}',
+            'WEBAPP_QR_PLACEHOLDER': '{% trans "WEBAPP_QR_PLACEHOLDER" %}',
+            'WEBAPP_GIFTS_TITLE': '{% trans "WEBAPP_GIFTS_TITLE" %}',
+            'WEBAPP_GIFT_NAME': '{% trans "WEBAPP_GIFT_NAME" %}',
+            'WEBAPP_GET_GIFT': '{% trans "WEBAPP_GET_GIFT" %}',
+            'WEBAPP_NOT_ENOUGH_POINTS': '{% trans "WEBAPP_NOT_ENOUGH_POINTS" %}',
+            'WEBAPP_GIFT_IN_STOCK': '{% trans "WEBAPP_GIFT_IN_STOCK" %}',
+            'WEBAPP_GIFT_COST': '{% trans "WEBAPP_GIFT_COST" %}',
+            'WEBAPP_GIFT_AFTER_REDEMPTION': '{% trans "WEBAPP_GIFT_AFTER_REDEMPTION" %}',
+            'WEBAPP_CONTACT_ADMIN_CHOOSE': '{% trans "WEBAPP_CONTACT_ADMIN_CHOOSE" %}',
+            'WEBAPP_WAITING_PROCESS': '{% trans "WEBAPP_WAITING_PROCESS" %}',
+            'WEBAPP_SUCCESS_TITLE': '{% trans "WEBAPP_SUCCESS_TITLE" %}',
+            'WEBAPP_SUCCESS_MESSAGE': '{% trans "WEBAPP_SUCCESS_MESSAGE" %}',
+            'WEBAPP_TO_HOME': '{% trans "WEBAPP_TO_HOME" %}',
+            'WEBAPP_PROFILE': '{% trans "WEBAPP_PROFILE" %}',
+            'WEBAPP_INTERFACE_LANGUAGE': '{% trans "WEBAPP_INTERFACE_LANGUAGE" %}',
+            'WEBAPP_GIFTS': '{% trans "WEBAPP_GIFTS" %}',
+            'WEBAPP_QR_HISTORY': '{% trans "WEBAPP_QR_HISTORY" %}',
+            'WEBAPP_UZBEK': '{% trans "WEBAPP_UZBEK" %}',
+            'WEBAPP_RUSSIAN': '{% trans "WEBAPP_RUSSIAN" %}',
+            'WEBAPP_CLOSE': '{% trans "WEBAPP_CLOSE" %}',
+            'WEBAPP_BALL': '{% trans "WEBAPP_BALL" %}',
+            'WEBAPP_NEXT_GIFT_LABEL': '{% trans "WEBAPP_NEXT_GIFT_LABEL" %}',
+            'WEBAPP_POINTS_NEEDED_MORE': '{% trans "WEBAPP_POINTS_NEEDED_MORE" %}',
+            'WEBAPP_ORDERS_TITLE': '{% trans "WEBAPP_ORDERS_TITLE" %}',
+            'WEBAPP_ORDERS_TOTAL': '{% trans "WEBAPP_ORDERS_TOTAL" %}',
+            'WEBAPP_ORDERS_TAB_ACTIVE': '{% trans "WEBAPP_ORDERS_TAB_ACTIVE" %}',
+            'WEBAPP_ORDERS_TAB_DELIVERED': '{% trans "WEBAPP_ORDERS_TAB_DELIVERED" %}',
+            'WEBAPP_ORDER_NUMBER': '{% trans "WEBAPP_ORDER_NUMBER" %}',
+            'WEBAPP_STEP_CONFIRMED': '{% trans "WEBAPP_STEP_CONFIRMED" %}',
+            'WEBAPP_STEP_SHIPPED': '{% trans "WEBAPP_STEP_SHIPPED" %}',
+            'WEBAPP_STEP_DELIVERED': '{% trans "WEBAPP_STEP_DELIVERED" %}',
+            'WEBAPP_BADGE_PROCESSING': '{% trans "WEBAPP_BADGE_PROCESSING" %}',
+            'WEBAPP_BADGE_CONFIRMED': '{% trans "WEBAPP_BADGE_CONFIRMED" %}',
+            'WEBAPP_BADGE_ON_THE_WAY': '{% trans "WEBAPP_BADGE_ON_THE_WAY" %}',
+            'WEBAPP_BADGE_DELIVERED': '{% trans "WEBAPP_BADGE_DELIVERED" %}',
+            'WEBAPP_BADGE_RECEIVED': '{% trans "WEBAPP_BADGE_RECEIVED" %}',
+            'WEBAPP_BADGE_REJECTED': '{% trans "WEBAPP_BADGE_REJECTED" %}',
+            'WEBAPP_BADGE_CANCELLED': '{% trans "WEBAPP_BADGE_CANCELLED" %}',
+            'WEBAPP_BADGE_NOT_RECEIVED': '{% trans "WEBAPP_BADGE_NOT_RECEIVED" %}',
+            'WEBAPP_ORDERS_EMPTY_TAB': '{% trans "WEBAPP_ORDERS_EMPTY_TAB" %}',
+            'WEBAPP_MONTHLY_CHANCES': '{% trans "WEBAPP_MONTHLY_CHANCES" %}',
+            'WEBAPP_QR_FILTER_CURRENT_MONTH': '{% trans "WEBAPP_QR_FILTER_CURRENT_MONTH" %}',
+            'WEBAPP_QR_FILTER_ALL': '{% trans "WEBAPP_QR_FILTER_ALL" %}',
+            'WEBAPP_TICKET_NUMBER': '{% trans "WEBAPP_TICKET_NUMBER" %}',
+            'WEBAPP_LOADING_QR_HISTORY': '{% trans "WEBAPP_LOADING_QR_HISTORY" %}',
+            'WEBAPP_NO_QR_HISTORY': '{% trans "WEBAPP_NO_QR_HISTORY" %}',
+            'WEBAPP_LOADING_GIFTS': '{% trans "WEBAPP_LOADING_GIFTS" %}',
+            'WEBAPP_LOADING_ORDERS': '{% trans "WEBAPP_LOADING_ORDERS" %}',
+            'WEBAPP_NO_ORDERS': '{% trans "WEBAPP_NO_ORDERS" %}',
+            'WEBAPP_NO_ORDERS_TEXT': '{% trans "WEBAPP_NO_ORDERS_TEXT" %}',
+            'WEBAPP_STATUS_PENDING': '{% trans "WEBAPP_STATUS_PENDING" %}',
+            'WEBAPP_STATUS_APPROVED': '{% trans "WEBAPP_STATUS_APPROVED" %}',
+            'WEBAPP_STATUS_SENT': '{% trans "WEBAPP_STATUS_SENT" %}',
+            'WEBAPP_STATUS_REJECTED': '{% trans "WEBAPP_STATUS_REJECTED" %}',
+            'WEBAPP_STATUS_COMPLETED': '{% trans "WEBAPP_STATUS_COMPLETED" %}',
+            'WEBAPP_STATUS_RECEIVED': '{% trans "WEBAPP_STATUS_RECEIVED" %}',
+            'WEBAPP_STATUS_NOT_RECEIVED': '{% trans "WEBAPP_STATUS_NOT_RECEIVED" %}',
+            'WEBAPP_TOTAL_POINTS': '{% trans "WEBAPP_TOTAL_POINTS" %}',
+            'WEBAPP_REGISTER': '{% trans "WEBAPP_REGISTER" %}',
+            'WEBAPP_PARTNER_TEXT': '{% trans "WEBAPP_PARTNER_TEXT" %}',
+            'WEBAPP_VIEW_GIFTS': '{% trans "WEBAPP_VIEW_GIFTS" %}',
+            'WEBAPP_INFO_TEXT': '{% trans "WEBAPP_INFO_TEXT" %}',
+            'WEBAPP_CONTACT_ADMIN': '{% trans "WEBAPP_CONTACT_ADMIN" %}',
+            'WEBAPP_PRIVACY_POLICY': '{% trans "WEBAPP_PRIVACY_POLICY" %}',
+            'WEBAPP_CONFIRM_RECEIPT': '{% trans "WEBAPP_CONFIRM_RECEIPT" %}',
+            'WEBAPP_DID_YOU_RECEIVE': '{% trans "WEBAPP_DID_YOU_RECEIVE" %}',
+            'WEBAPP_COMMENT_PLACEHOLDER': '{% trans "WEBAPP_COMMENT_PLACEHOLDER" %}',
+            'WEBAPP_YES_RECEIVED': '{% trans "WEBAPP_YES_RECEIVED" %}',
+            'WEBAPP_NO_NOT_RECEIVED': '{% trans "WEBAPP_NO_NOT_RECEIVED" %}',
+            'WEBAPP_CANCEL': '{% trans "WEBAPP_CANCEL" %}',
+            'WEBAPP_UPDATED': '{% trans "WEBAPP_UPDATED" %}',
+            'WEBAPP_QR_MAX_ATTEMPTS': '{% trans "WEBAPP_QR_MAX_ATTEMPTS" %}',
+            'WEBAPP_PRIVACY_PDF_DESCRIPTION': '{% trans "WEBAPP_PRIVACY_PDF_DESCRIPTION" %}',
+            'WEBAPP_OPEN_PDF': '{% trans "WEBAPP_OPEN_PDF" %}',
+            'WEBAPP_NAV_HOME': '{% trans "WEBAPP_NAV_HOME" %}',
+            'WEBAPP_NAV_GIFTS': '{% trans "WEBAPP_NAV_GIFTS" %}',
+            'WEBAPP_NAV_HISTORY': '{% trans "WEBAPP_NAV_HISTORY" %}',
+            'WEBAPP_NAV_MY_GIFTS': '{% trans "WEBAPP_NAV_MY_GIFTS" %}',
+            'WEBAPP_NAV_PROFILE': '{% trans "WEBAPP_NAV_PROFILE" %}',
+            'WEBAPP_USER_TYPE_ELECTRICIAN': '{% trans "WEBAPP_USER_TYPE_ELECTRICIAN" %}',
+            'WEBAPP_USER_TYPE_SELLER': '{% trans "WEBAPP_USER_TYPE_SELLER" %}',
+            'WEBAPP_MY_GIFTS_MENU': '{% trans "WEBAPP_MY_GIFTS_MENU" %}',
+            'WEBAPP_LIVE_STREAMS_TITLE': '{% trans "WEBAPP_LIVE_STREAMS_TITLE" %}',
+            'WEBAPP_LIVE_STREAMS_UPCOMING': '{% trans "WEBAPP_LIVE_STREAMS_UPCOMING" %}',
+            'WEBAPP_LIVE_STREAMS_PAST': '{% trans "WEBAPP_LIVE_STREAMS_PAST" %}',
+            'WEBAPP_LIVE_STREAM_OPEN': '{% trans "WEBAPP_LIVE_STREAM_OPEN" %}',
+            'WEBAPP_LIVE_STREAM_WATCH_RECORDING': '{% trans "WEBAPP_LIVE_STREAM_WATCH_RECORDING" %}',
+            'WEBAPP_LIVE_STREAM_NO_UPCOMING': '{% trans "WEBAPP_LIVE_STREAM_NO_UPCOMING" %}',
+            'WEBAPP_LIVE_STREAM_NO_PAST': '{% trans "WEBAPP_LIVE_STREAM_NO_PAST" %}',
+            'WEBAPP_LIVE_STREAM_WINNERS_ELECTRICIANS': '{% trans "WEBAPP_LIVE_STREAM_WINNERS_ELECTRICIANS" %}',
+            'WEBAPP_LIVE_STREAM_WINNERS_SELLERS': '{% trans "WEBAPP_LIVE_STREAM_WINNERS_SELLERS" %}',
+            'WEBAPP_LIVE_STREAM_NO_WINNERS': '{% trans "WEBAPP_LIVE_STREAM_NO_WINNERS" %}',
+            'WEBAPP_LIVE_STREAM_LOADING': '{% trans "WEBAPP_LIVE_STREAM_LOADING" %}',
+            'WEBAPP_TICKET_NUMBER_SHORT': '{% trans "WEBAPP_TICKET_NUMBER_SHORT" %}',
+            'WEBAPP_TICKET_LABEL': '{% trans "WEBAPP_TICKET_LABEL" %}',
+            'WEBAPP_RAFFLE_TICKETS': '{% trans "WEBAPP_RAFFLE_TICKETS" %}',
+            'WEBAPP_RAFFLE_FINISHED': '{% trans "WEBAPP_RAFFLE_FINISHED" %}',
+            'WEBAPP_CHANCES': '{% trans "WEBAPP_CHANCES" %}',
+            'WEBAPP_QR_CURRENT_MONTH_TITLE': '{% trans "WEBAPP_QR_CURRENT_MONTH_TITLE" %}',
+            'WEBAPP_QR_ARCHIVE': '{% trans "WEBAPP_QR_ARCHIVE" %}',
+            'WEBAPP_BALL_SHORT': '{% trans "WEBAPP_BALL_SHORT" %}',
+            'WEBAPP_OPEN': '{% trans "WEBAPP_OPEN" %}',
+            'WEBAPP_PLAY': '{% trans "WEBAPP_PLAY" %}',
+            'WEBAPP_PLACE': '{% trans "WEBAPP_PLACE" %}',
+            'WEBAPP_LIVE_RECORD': '{% trans "WEBAPP_LIVE_RECORD" %}',
+            'WEBAPP_LIVE_PARTICIPANTS': '{% trans "WEBAPP_LIVE_PARTICIPANTS" %}',
+            'WEBAPP_LIVE_WINNERS': '{% trans "WEBAPP_LIVE_WINNERS" %}',
+            'WEBAPP_LIVE_WINNERS_TITLE': '{% trans "WEBAPP_LIVE_WINNERS_TITLE" %}',
+            'WEBAPP_LIVE_FOOTNOTE': '{% trans "WEBAPP_LIVE_FOOTNOTE" %}',
+            'WEBAPP_TAB_ELECTRICIANS': '{% trans "WEBAPP_TAB_ELECTRICIANS" %}',
+            'WEBAPP_TAB_SELLERS': '{% trans "WEBAPP_TAB_SELLERS" %}',
+            'WEBAPP_PRIZE': '{% trans "WEBAPP_PRIZE" %}',
+            'WEBAPP_TOP_USERS_TITLE_ELECTRICIANS': '{% trans "WEBAPP_TOP_USERS_TITLE_ELECTRICIANS" %}',
+            'WEBAPP_TOP_USERS_TITLE_SELLERS': '{% trans "WEBAPP_TOP_USERS_TITLE_SELLERS" %}',
+            'WEBAPP_TOP_USERS_PERIOD_ALL': '{% trans "WEBAPP_TOP_USERS_PERIOD_ALL" %}',
+            'WEBAPP_TOP_USERS_PERIOD_CURRENT': '{% trans "WEBAPP_TOP_USERS_PERIOD_CURRENT" %}',
+            'WEBAPP_TOP_USERS_EMPTY': '{% trans "WEBAPP_TOP_USERS_EMPTY" %}',
+            'WEBAPP_TOP_USERS_YOU': '{% trans "WEBAPP_TOP_USERS_YOU" %}',
+            'WEBAPP_TOP_USERS_NOT_RANKED': '{% trans "WEBAPP_TOP_USERS_NOT_RANKED" %}',
+            'WEBAPP_TOP_USERS_POINTS_SHORT': '{% trans "WEBAPP_TOP_USERS_POINTS_SHORT" %}',
+        };
+
+        async function loadTranslations(language) {
+            try {
+                const url = `${API_BASE}/translations/?lang=${language}`;
+                const response = await fetchNoCache(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    Object.keys(data).forEach(key => {
+                        if (key.startsWith('WEBAPP_') || key === 'USER') {
+                            translations[key] = data[key];
+                        }
+                    });
+                    // Обновляем все тексты на странице после загрузки переводов
+                    updatePageTexts();
+                }
+            } catch (error) {
+                console.error('Error loading translations:', error);
+            }
+        }
+
+        // Функция форматирования чисел с разделителями тысяч (пробелами)
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+        
+        function t(key, params = {}) {
+            let text = translations[key] || key;
+            if (Object.keys(params).length > 0) {
+                for (const [k, v] of Object.entries(params)) {
+                    text = text.replace(`{${k}}`, v);
+                }
+            }
+            return text;
+        }
+
+        // Функция получения SVG-иконки статуса
+        function getStatusIcon(status) {
+            const icons = {
+                'pending': `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M10 6V10L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>`,
+                'approved': '✅',
+                'sent': '📦',
+                'rejected': '❌',
+                'completed': `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.6667 5L7.50004 14.1667L3.33337 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`,
+                'not_received': '🚫',
+                'cancelled_by_user': '🚫'
+            };
+            return icons[status] || icons['pending'];
+        }
+
+        let currentUser = null;
+        let currentRedemptionId = null;
+        let promotions = [];
+        let currentBannerIndex = 0;
+        let currentDotColor = '#1E72B7'; // Цвет по умолчанию для активной точки
+        let previousScreen = null; // Сохраняем предыдущий экран для возврата из политики конфиденциальности
+        // Предпочтительно HTTPS для запросов к API (в т.ч. resend-registration-step)
+        const API_BASE = (typeof location !== 'undefined' && location.host)
+            ? (location.protocol === 'https:' ? location.origin : 'https://' + location.host) + '/api/webapp'
+            : '/api/webapp';
+        
+        // Функция-обертка для fetch с заголовками отключения кеша
+        async function fetchNoCache(url, options = {}) {
+            // Добавляем timestamp к URL для обхода кеша
+            const separator = url.includes('?') ? '&' : '?';
+            const urlWithTimestamp = url + separator + '_t=' + Date.now();
+            
+            const defaultOptions = {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                    ...(options.headers || {})
+                }
+            };
+            
+            // Объединяем опции, сохраняя пользовательские заголовки
+            const mergedOptions = {
+                ...options,
+                cache: 'no-store',
+                headers: {
+                    ...defaultOptions.headers,
+                    ...(options.headers || {})
+                }
+            };
+            
+            return fetch(urlWithTimestamp, mergedOptions);
+        }
+
+        // Функция для получения доминирующего цвета изображения
+        function getDominantColor(imageUrl, callback) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // Упрощенный алгоритм: берем средний цвет из центральной области изображения
+                    const centerX = Math.floor(canvas.width / 2);
+                    const centerY = Math.floor(canvas.height / 2);
+                    const sampleSize = 50; // Размер области для анализа
+                    const startX = Math.max(0, centerX - sampleSize);
+                    const startY = Math.max(0, centerY - sampleSize);
+                    const endX = Math.min(canvas.width, centerX + sampleSize);
+                    const endY = Math.min(canvas.height, centerY + sampleSize);
+                    
+                    let r = 0, g = 0, b = 0, count = 0;
+                    
+                    for (let y = startY; y < endY; y += 5) {
+                        for (let x = startX; x < endX; x += 5) {
+                            const index = (y * canvas.width + x) * 4;
+                            r += data[index];
+                            g += data[index + 1];
+                            b += data[index + 2];
+                            count++;
+                        }
+                    }
+                    
+                    if (count > 0) {
+                        r = Math.floor(r / count);
+                        g = Math.floor(g / count);
+                        b = Math.floor(b / count);
+                        
+                        // Преобразуем в hex
+                        const hexColor = '#' + [r, g, b].map(x => {
+                            const hex = x.toString(16);
+                            return hex.length === 1 ? '0' + hex : hex;
+                        }).join('');
+                        
+                        callback(hexColor);
+                    } else {
+                        callback('#1E72B7'); // Цвет по умолчанию
+                    }
+                } catch (error) {
+                    console.error('Error extracting color:', error);
+                    callback('#1E72B7'); // Цвет по умолчанию при ошибке
+                }
+            };
+            
+            img.onerror = function() {
+                callback('#1E72B7'); // Цвет по умолчанию при ошибке загрузки
+            };
+            
+            img.src = imageUrl;
+        }
+
+        // Функция для обновления placeholder QR кода в зависимости от типа пользователя
+        function updateQRPlaceholder() {
+            const qrInput = document.getElementById('qrInput');
+            if (!qrInput) return;
+            
+            if (currentUser && currentUser.user_type) {
+                // Если Продавец (seller) -> DXXXX
+                // Если Покупатель/Электрик (electrician) -> EXXXX
+                if (currentUser.user_type === 'seller') {
+                    qrInput.placeholder = 'DXXXX';
+                } else if (currentUser.user_type === 'electrician') {
+                    qrInput.placeholder = 'EXXXX';
+                } else {
+                    // По умолчанию EXXXXXX
+                    qrInput.placeholder = 'EXXXX';
+                }
+            } else {
+                // Если тип пользователя не определен, используем EXXXXXX по умолчанию
+                qrInput.placeholder = 'EXXXX';
+            }
+        }
+
+        async function initApp() {
+            try {
+                const initData = tg.initDataUnsafe;
+                let user = initData ? initData.user : null;
+                
+                if (!user && tg.initData) {
+                    try {
+                        const params = new URLSearchParams(tg.initData);
+                        const userParam = params.get('user');
+                        if (userParam) {
+                            user = JSON.parse(decodeURIComponent(userParam));
+                        }
+                    } catch (e) {
+                        console.error('Error parsing initData:', e);
+                    }
+                }
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const testUserId = urlParams.get('telegram_id');
+                if (testUserId && !user) {
+                    user = { id: parseInt(testUserId) };
+                }
+                
+                if (!user || !user.id) {
+                    showError('Web App должен быть открыт из Telegram бота.');
+                    return;
+                }
+
+                const userResponse = await fetchNoCache(`${API_BASE}/user/?telegram_id=${user.id}`);
+                if (!userResponse.ok) {
+                    showRegistrationOverlay();
+                    return;
+                }
+                currentUser = await userResponse.json();
+
+                if (!currentUser.is_registered) {
+                    showRegistrationOverlay();
+                    return;
+                }
+                
+                // Скрываем skeleton loader для пользователя и показываем реальные данные
+                const skeletonUser = document.getElementById('skeletonUser');
+                const skeletonPoints = document.getElementById('skeletonPoints');
+                const userInfo = document.getElementById('userInfo');
+                const pointsBadge = document.getElementById('pointsBadge');
+                
+                if (skeletonUser) skeletonUser.style.display = 'none';
+                if (skeletonPoints) skeletonPoints.style.display = 'none';
+                if (userInfo) userInfo.style.display = 'flex';
+                if (pointsBadge) pointsBadge.style.display = 'flex';
+                
+                document.getElementById('points').textContent = formatNumber(currentUser.points);
+                
+                // Показываем информацию о пользователе
+                if (currentUser.first_name || currentUser.telegram_id) {
+                    document.getElementById('userName').textContent = currentUser.first_name || t('USER');
+                    document.getElementById('userId').textContent = `ID: ${currentUser.telegram_id}`;
+                }
+
+                // Показываем аватар если есть фото пользователя из Telegram
+                if (user.photo_url) {
+                    const avatar = document.getElementById('userAvatar');
+                    avatar.style.backgroundImage = `url(${user.photo_url})`;
+                    avatar.style.backgroundSize = 'cover';
+                    avatar.style.backgroundPosition = 'center';
+                    avatar.textContent = '';
+                    avatar.style.color = 'transparent';
+                }
+                
+                // Устанавливаем placeholder для QR в зависимости от типа пользователя
+                updateQRPlaceholder();
+                
+                if (currentUser.language) {
+                    await loadTranslations(currentUser.language);
+                    // Обновляем отображение текущего языка в профиле
+                    const currentLanguageElement = document.getElementById('currentLanguage');
+                    if (currentLanguageElement) {
+                        currentLanguageElement.textContent = getLanguageName(currentUser.language);
+                    }
+                    // Обновляем галочки в модальном окне выбора языка
+                    updateLanguageChecks();
+                }
+                
+                await loadPromotions();
+                await loadGiftsCount();
+                await loadProductStatus();
+                await loadAdminContact();
+                loadTopUsers();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showError(t('WEBAPP_ERROR_LOADING_USER'));
+            }
+        }
+
+        let cachedGiftsForNext = [];
+
+        function renderNextGiftCard() {
+            const card = document.getElementById('nextGiftCard');
+            if (!card) return;
+            const userPoints = (currentUser && currentUser.points) || 0;
+            const unaffordable = cachedGiftsForNext
+                .filter(g => (g.points_cost || 0) > userPoints)
+                .sort((a, b) => (a.points_cost || 0) - (b.points_cost || 0));
+            const next = unaffordable[0];
+            if (!next) {
+                card.style.display = 'none';
+                return;
+            }
+            const cost = next.points_cost || 0;
+            const remaining = Math.max(0, cost - userPoints);
+            const progressPct = cost > 0 ? Math.min(100, Math.floor((userPoints / cost) * 100)) : 0;
+
+            const nameEl = document.getElementById('nextGiftName');
+            const priceEl = document.getElementById('nextGiftPrice');
+            const fillEl = document.getElementById('nextGiftProgressFill');
+            const neededEl = document.getElementById('nextGiftNeeded');
+            if (nameEl) nameEl.textContent = next.name || t('WEBAPP_GIFT_NAME');
+            if (priceEl) priceEl.textContent = formatNumber(cost);
+            if (fillEl) fillEl.style.width = progressPct + '%';
+            const progressBar = card.querySelector('.next-gift-progress');
+            if (progressBar) progressBar.setAttribute('aria-valuenow', String(progressPct));
+            if (neededEl) {
+                const highlighted = `<strong>${formatNumber(remaining)} ${t('WEBAPP_BALL').toLowerCase()}</strong>`;
+                neededEl.innerHTML = t('WEBAPP_POINTS_NEEDED_MORE', { points: highlighted });
+            }
+            card.style.display = 'flex';
+        }
+
+        async function loadGiftsCount() {
+            try {
+                // Передаем telegram_id для получения описания на правильном языке (если пользователь загружен)
+                const giftsUrl = currentUser && currentUser.telegram_id
+                    ? `${API_BASE}/gifts/?telegram_id=${currentUser.telegram_id}`
+                    : `${API_BASE}/gifts/`;
+                const response = await fetchNoCache(giftsUrl);
+                if (response.ok) {
+                    const gifts = await response.json();
+                    cachedGiftsForNext = Array.isArray(gifts) ? gifts : [];
+                    renderNextGiftCard();
+                    const countElement = document.getElementById('giftsCount');
+                    if (countElement) {
+                        countElement.textContent = gifts.length;
+                    }
+                    
+                    // Скрываем skeleton loader для подарков и показываем реальные данные
+                    const skeletonGifts = document.getElementById('skeletonGifts');
+                    const giftsContent = document.getElementById('giftsContent');
+                    const viewGiftsBtn = document.getElementById('viewGiftsBtn');
+                    
+                    if (skeletonGifts) skeletonGifts.style.display = 'none';
+                    if (giftsContent) giftsContent.style.display = 'flex';
+                    if (viewGiftsBtn) viewGiftsBtn.style.display = 'flex';
+                    
+                    const giftImage = document.getElementById('giftsMainImage');
+                    if (giftImage) {
+                        giftImage.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading gifts count:', error);
+                // В случае ошибки тоже скрываем skeleton
+                const skeletonGifts = document.getElementById('skeletonGifts');
+                const giftsContent = document.getElementById('giftsContent');
+                const viewGiftsBtn = document.getElementById('viewGiftsBtn');
+                
+                if (skeletonGifts) skeletonGifts.style.display = 'none';
+                if (giftsContent) giftsContent.style.display = 'flex';
+                if (viewGiftsBtn) viewGiftsBtn.style.display = 'flex';
+            }
+        }
+
+        async function loadProductStatus() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetchNoCache(`${API_BASE}/redemptions/?telegram_id=${currentUser.telegram_id}`);
+                if (response.ok) {
+                    const redemptions = await response.json();
+                    const ordersSection = document.getElementById('ordersSection');
+                    const ordersList = document.getElementById('ordersList');
+                    
+                    if (redemptions && redemptions.length > 0) {
+                        // Фильтруем заказы: показываем только те, где user_confirmed = False
+                        // Подтвержденные товары не показываются на главной странице
+                        const filteredRedemptions = redemptions.filter(redemption => !redemption.user_confirmed);
+                        
+                        // Сортируем заказы: сначала активные (pending, approved, sent), потом completed, потом rejected, потом not_received
+                        const sortedRedemptions = filteredRedemptions.sort((a, b) => {
+                            const statusOrder = {
+                                'pending': 1,
+                                'approved': 2,
+                                'sent': 3,
+                                'completed': 4,
+                                'rejected': 5,
+                                'not_received': 6,
+                                'cancelled_by_user': 7
+                            };
+                            const orderA = statusOrder[a.status] || 999;
+                            const orderB = statusOrder[b.status] || 999;
+                            if (orderA !== orderB) {
+                                return orderA - orderB;
+                            }
+                            // Если статусы одинаковые, сортируем по дате создания (новые сверху)
+                            const dateA = a.requested_at;
+                            const dateB = b.requested_at;
+                            return new Date(dateB) - new Date(dateA);
+                        });
+                        
+                        ordersList.innerHTML = '';
+                        sortedRedemptions.forEach(redemption => {
+                            // Определяем текст статуса
+                            let statusText = t('WEBAPP_STATUS_PENDING');
+                            let statusClass = 'waiting';
+                            if (redemption.status === 'approved') {
+                                statusText = t('WEBAPP_STATUS_APPROVED');
+                                statusClass = 'approved';
+                            } else if (redemption.status === 'sent') {
+                                statusText = t('WEBAPP_STATUS_SENT');
+                                statusClass = 'sent';
+                            } else if (redemption.status === 'rejected') {
+                                statusText = t('WEBAPP_STATUS_REJECTED');
+                                statusClass = 'rejected';
+                            } else if (redemption.status === 'not_received') {
+                                statusText = t('WEBAPP_STATUS_NOT_RECEIVED');
+                                statusClass = 'not_received';
+                            } else if (redemption.status === 'cancelled_by_user') {
+                                statusText = t('WEBAPP_STATUS_CANCELLED_BY_USER');
+                                statusClass = 'cancelled_by_user';
+                            } else if (redemption.status === 'completed') {
+                                // Если пользователь подтвердил получение, показываем "Товар получен"
+                                if (redemption.user_confirmed) {
+                                    statusText = t('WEBAPP_STATUS_RECEIVED');
+                                    statusClass = 'completed';
+                                } else {
+                                    statusText = t('WEBAPP_STATUS_COMPLETED');
+                                    statusClass = 'completed';
+                                }
+                            }
+                            
+                            // Проверяем возможность отмены (1 час с момента создания)
+                            let cancelButtonHtml = '';
+                            if (redemption.status === 'pending' && redemption.requested_at) {
+                                const createdAt = new Date(redemption.requested_at);
+                                const now = new Date();
+                                const hourInMs = 60 * 60 * 1000;
+                                if ((now - createdAt) < hourInMs) {
+                                    cancelButtonHtml = `
+                                        <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); cancelOrder(${redemption.id});" style="background: #dc3545; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                                            ${t('WEBAPP_CANCEL_ORDER')}
+                                        </button>
+                                    `;
+                                }
+                            }
+                            
+                            const orderCard = document.createElement('div');
+                            orderCard.className = 'order-card';
+                            orderCard.onclick = () => showRedemptionDetail(redemption.id);
+                            
+                            let imageUrl = '/static/images/gift-box.png';
+                            if (redemption.gift && redemption.gift.image) {
+                                imageUrl = redemption.gift.image.startsWith('http') 
+                                    ? redemption.gift.image 
+                                    : redemption.gift.image;
+                            }
+                            
+                            let confirmButtonHtml = '';
+                            if (!redemption.user_confirmed && (redemption.status === 'sent' || redemption.status === 'completed')) {
+                                confirmButtonHtml = `
+                                    <button class="btn btn-success btn-small" onclick="event.stopPropagation(); openConfirmModal(${redemption.id});">
+                                        ${t('WEBAPP_YES_RECEIVED')}
+                                    </button>
+                                `;
+                            }
+                            
+                            orderCard.innerHTML = `
+                                <div class="order-image">
+                                    <img src="${imageUrl}" alt="" onerror="this.src='/static/images/gift-box.png'">
+                                </div>
+                                <div class="order-info">
+                                    <div class="order-name">${redemption.gift ? redemption.gift.name : 'N/A'}</div>
+                                    <div class="order-status ${statusClass}">${statusText}</div>
+                                    ${confirmButtonHtml ? `<div style="margin-top: 0.5rem;">${confirmButtonHtml}</div>` : ''}
+                                    ${cancelButtonHtml ? `<div style="margin-top: 0.5rem;">${cancelButtonHtml}</div>` : ''}
+                                </div>
+                                <div class="order-arrow">›</div>
+                            `;
+                            
+                            ordersList.appendChild(orderCard);
+                        });
+                        
+                        // Если после фильтрации не осталось заказов, скрываем секцию
+                        if (sortedRedemptions.length === 0) {
+                            ordersSection.style.display = 'none';
+                        } else {
+                            ordersSection.style.display = 'block';
+                        }
+                    } else {
+                        ordersSection.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading product status:', error);
+            }
+        }
+
+        async function registerQRCode() {
+            const qrCode = document.getElementById('qrInput').value.trim();
+            const errorDiv = document.getElementById('qrError');
+            const inputWrapper = document.getElementById('qrInputWrapper');
+            
+            // Очищаем предыдущую ошибку
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            inputWrapper.classList.remove('error');
+            
+            if (!qrCode) {
+                showQRError(t('WEBAPP_QR_ERROR'));
+                return;
+            }
+            
+            // Валидация формата QR кода (EXXXX или DXXXX)
+            const qrPattern = /^[ED]\w{4,}$/;
+            if (!qrPattern.test(qrCode)) {
+                showQRError(t('WEBAPP_QR_ERROR'));
+                return;
+            }
+            
+            // Валидация типа кода - проверяем соответствие типу пользователя
+            if (currentUser && currentUser.user_type) {
+                const codePrefix = qrCode.substring(0, 1);
+                const expectedPrefix = currentUser.user_type === 'seller' ? 'D' : 'E';
+                
+                if (codePrefix !== expectedPrefix) {
+                    showQRError(t('WEBAPP_QR_WRONG_TYPE'));
+                    return;
+                }
+            }
+            
+            if (!currentUser || !currentUser.telegram_id) {
+                showQRError(t('WEBAPP_ERROR_LOADING_USER'));
+                return;
+            }
+            
+            try {
+                // Отправляем запрос на регистрацию QR кода
+                const response = await fetchNoCache(`${API_BASE}/register-qr/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        telegram_id: currentUser.telegram_id,
+                        qr_code: qrCode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Если это ошибка превышения лимита попыток, показываем специальное сообщение
+                    if (data.error_code === 'max_attempts') {
+                        showQRError(data.error || t('WEBAPP_QR_MAX_ATTEMPTS'));
+                    } else if (data.error_code === 'wrong_type') {
+                        showQRError(data.error || t('WEBAPP_QR_WRONG_TYPE'));
+                    } else {
+                        showQRError(data.error || t('WEBAPP_QR_ERROR'));
+                    }
+                    return;
+                }
+                
+                // Успешная регистрация
+                if (data.success) {
+                    // Обновляем баллы пользователя
+                    currentUser.points = data.total_points;
+                    document.getElementById('points').textContent = formatNumber(data.total_points);
+                    renderNextGiftCard();
+
+                    // Очищаем поле ввода
+                    const qrInput = document.getElementById('qrInput');
+                    qrInput.value = '';
+                    
+                    // Обновляем стиль кнопки
+                    const registerBtn = document.querySelector('.register-btn');
+                    if (registerBtn) {
+                        registerBtn.classList.remove('active');
+                    }
+                    
+                    // Показываем сообщение об успехе
+                    tg.showAlert(data.message || t('WEBAPP_SUCCESS_MESSAGE'));
+                    
+                    // Обновляем историю QR кодов, если пользователь на странице истории
+                    if (document.getElementById('qrHistoryScreen').style.display !== 'none') {
+                        await loadQRHistory();
+                    }
+                } else {
+                    showQRError(data.error || t('WEBAPP_QR_ERROR'));
+                }
+            } catch (error) {
+                console.error('Error registering QR code:', error);
+                showQRError(t('WEBAPP_QR_ERROR'));
+            }
+        }
+
+        function showQRError(message) {
+            const errorDiv = document.getElementById('qrError');
+            const inputWrapper = document.getElementById('qrInputWrapper');
+            
+            // Обертываем текст в span для корректного переноса
+            errorDiv.innerHTML = '<span class="qr-error-text">' + message + '</span>';
+            errorDiv.style.display = 'flex';
+            inputWrapper.classList.add('error');
+        }
+
+        function showGifts() {
+            showScreen('giftsList');
+            loadGiftsList();
+        }
+
+        // Экраны верхнего уровня — для них показываем нижнюю навигацию.
+        // Ключ — реальный экран; значение — какая вкладка должна подсвечиваться (null — никакая).
+        const BOTTOM_NAV_SCREEN_TABS = {
+            'home': 'home',
+            'profile': 'profile',
+            'profileGifts': 'profileGifts',
+            'qrHistory': 'qrHistory',
+            'giftsList': 'giftsList',
+            'redemptionDetail': null,
+            'privacy': null,
+            'liveStreamDetail': 'profile',
+        };
+
+        function updateBottomNav(screenName) {
+            const nav = document.getElementById('bottomNav');
+            if (!nav) return;
+            const visible = Object.prototype.hasOwnProperty.call(BOTTOM_NAV_SCREEN_TABS, screenName);
+            nav.style.display = visible ? 'flex' : 'none';
+            if (!visible) return;
+            const activeTab = BOTTOM_NAV_SCREEN_TABS[screenName];
+            nav.querySelectorAll('.bottom-nav-item').forEach(btn => {
+                btn.classList.toggle('active', activeTab !== null && btn.dataset.screen === activeTab);
+            });
+        }
+
+        // Переход по нижней навигации (учитывает спец-обработку профиля)
+        function navigateTo(screenName) {
+            if (screenName === 'profile') {
+                showProfile();
+            } else {
+                showScreen(screenName);
+            }
+        }
+
+        // Система навигации между экранами
+        async function showScreen(screenName) {
+            // Скрываем все экраны
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.style.display = 'none';
+            });
+            document.querySelector('.main-container').style.display = screenName === 'home' ? 'flex' : 'none';
+            updateBottomNav(screenName);
+
+            // Показываем нужный экран
+            if (screenName === 'home') {
+                document.querySelector('.main-container').style.display = 'flex';
+                // Обновляем список заказов при возврате на главную страницу
+                await loadProductStatus();
+                // Обновляем данные пользователя (баллы)
+                if (currentUser && currentUser.telegram_id) {
+                    try {
+                        const userResponse = await fetchNoCache(`${API_BASE}/user/?telegram_id=${currentUser.telegram_id}`);
+                        if (userResponse.ok) {
+                            const userData = await userResponse.json();
+                            currentUser.points = userData.points;
+                            document.getElementById('points').textContent = formatNumber(currentUser.points);
+                            renderNextGiftCard();
+                        }
+                    } catch (error) {
+                        console.error('Error updating user data:', error);
+                    }
+                }
+            } else {
+                const screen = document.getElementById(`${screenName}Screen`);
+                if (screen) {
+                    screen.style.display = 'block';
+                    
+                    // Загружаем данные для конкретных экранов
+                    if (screenName === 'profileGifts') {
+                        await loadProfileGifts();
+                    } else if (screenName === 'qrHistory') {
+                        await loadQRHistory();
+                    } else if (screenName === 'privacy') {
+                        await loadPrivacyPolicy();
+                    } else if (screenName === 'giftsList') {
+                        await loadGiftsList();
+                    } else if (screenName === 'liveStreamsList') {
+                        await loadLiveStreams();
+                    }
+                }
+            }
+        }
+
+        async function loadGiftsList() {
+            const container = document.getElementById('giftsListContainer');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="loading">' + t('WEBAPP_LOADING_GIFTS') + '</div>';
+            
+            try {
+                if (!currentUser || !currentUser.telegram_id) {
+                    throw new Error('User not loaded');
+                }
+                
+                // Передаем telegram_id для получения описания на правильном языке
+                const giftsUrl = `${API_BASE}/gifts/?telegram_id=${currentUser.telegram_id}`;
+                const response = await fetchNoCache(giftsUrl);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const gifts = await response.json();
+                
+                // Загружаем redemptions отдельно, если не удалось - продолжаем без них
+                let redemptions = [];
+                try {
+                    const redemptionsResponse = await fetchNoCache(`${API_BASE}/redemptions/?telegram_id=${currentUser.telegram_id}`);
+                    if (redemptionsResponse.ok) {
+                        redemptions = await redemptionsResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Failed to load redemptions:', e);
+                }
+                
+                if (!gifts || gifts.length === 0) {
+                    container.innerHTML = '<div class="empty-state">' + t('WEBAPP_NO_GIFTS') + '</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                gifts.forEach(gift => {
+                    const userPoints = currentUser.points || 0;
+                    const cost = gift.points_cost || 0;
+                    const hasEnoughPoints = cost > 0 ? userPoints >= cost : true;
+                    const progressPct = cost > 0
+                        ? Math.min(100, Math.floor((userPoints / cost) * 100))
+                        : 100;
+
+                    const giftCard = document.createElement('div');
+                    giftCard.className = 'gift-card' + (hasEnoughPoints ? '' : ' unavailable');
+                    giftCard.onclick = () => openGiftPopup(gift.id);
+
+                    const progressHtml = `
+                        <div class="gift-card-progress${hasEnoughPoints ? ' is-full' : ''}" role="progressbar" aria-valuenow="${progressPct}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="gift-card-progress-track">
+                                <div class="gift-card-progress-fill" style="width: ${progressPct}%"></div>
+                            </div>
+                            <span class="gift-card-progress-label">${progressPct}%</span>
+                        </div>
+                    `;
+
+                    let imageUrl = '/static/images/gift-box.png';
+                    if (gift.image) {
+                        if (gift.image.startsWith('http://') || gift.image.startsWith('https://')) {
+                            imageUrl = gift.image;
+                        } else {
+                            imageUrl = gift.image.startsWith('/') ? gift.image : `/${gift.image}`;
+                        }
+                    }
+
+                    giftCard.innerHTML = `
+                        <div class="gift-card-image-wrapper">
+                            <img src="${imageUrl}" alt="${gift.name || 'Gift'}" class="gift-card-image" onerror="this.src='/static/images/gift-box.png'">
+                        </div>
+                        <div class="gift-card-info">
+                            <div class="gift-card-name">${gift.name || t('WEBAPP_GIFT_NAME')}</div>
+                            ${progressHtml}
+                            <div class="gift-card-foot">
+                                <span class="gift-card-price">
+                                    ${formatNumber(cost)}<span class="gift-card-price-unit">${t('WEBAPP_BALL')}</span>
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(giftCard);
+                });
+            } catch (error) {
+                console.error('Error loading gifts:', error);
+                container.innerHTML = '<div class="error">' + t('WEBAPP_ERROR_LOADING_GIFTS') + '</div>';
+            }
+        }
+
+        // ───── Gift popup (bottom-sheet detail + success state) ─────
+        let currentGiftPopup = null;
+
+        function escapeHtml(str) {
+            return String(str == null ? '' : str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function resolveGiftImage(gift) {
+            if (!gift || !gift.image) return '/static/images/gift-box.png';
+            if (gift.image.startsWith('http://') || gift.image.startsWith('https://')) return gift.image;
+            return gift.image.startsWith('/') ? gift.image : `/${gift.image}`;
+        }
+
+        function closeGiftPopup() {
+            const popup = document.getElementById('giftPopup');
+            if (popup) popup.classList.remove('active');
+            currentGiftPopup = null;
+        }
+
+        function renderGiftPopupDetail(gift) {
+            const userPoints = (currentUser && currentUser.points) || 0;
+            const cost = gift.points_cost || 0;
+            const hasEnoughPoints = cost > 0 ? userPoints >= cost : true;
+            const remaining = userPoints - cost;
+            const progress = cost > 0 ? Math.min((userPoints / cost) * 100, 100) : 100;
+            const imageUrl = resolveGiftImage(gift);
+            const safeName = escapeHtml(gift.name || t('WEBAPP_GIFT_NAME'));
+
+            const statusHtml = hasEnoughPoints
+                ? `<div class="gift-popup-stock">${t('WEBAPP_GIFT_IN_STOCK')}</div>`
+                : '';
+
+            const costCardHtml = hasEnoughPoints
+                ? `
+                    <div class="gift-popup-cost-card">
+                        <div class="gift-popup-cost-col">
+                            <span class="gift-popup-cost-label">${t('WEBAPP_GIFT_COST')}</span>
+                            <span class="gift-popup-cost-value primary">
+                                <span class="gift-popup-cost-icon">⚡</span>${formatNumber(cost)}
+                            </span>
+                        </div>
+                        <div class="gift-popup-cost-divider"></div>
+                        <div class="gift-popup-cost-col right">
+                            <span class="gift-popup-cost-label">${t('WEBAPP_GIFT_AFTER_REDEMPTION')}</span>
+                            <span class="gift-popup-cost-value">${formatNumber(remaining)}</span>
+                        </div>
+                    </div>
+                `
+                : `
+                    <div class="gift-popup-cost-card">
+                        <div class="gift-popup-cost-col">
+                            <span class="gift-popup-cost-label">${t('WEBAPP_GIFT_COST')}</span>
+                            <span class="gift-popup-cost-value primary">
+                                <span class="gift-popup-cost-icon">⚡</span>${formatNumber(cost)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="gift-popup-progress">
+                        <div class="gift-popup-progress-track">
+                            <div class="gift-popup-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="gift-popup-progress-text">${formatNumber(userPoints)} / ${formatNumber(cost)} ${t('WEBAPP_BALL')}</div>
+                    </div>
+                `;
+
+            const buttonHtml = hasEnoughPoints
+                ? `<button class="gift-popup-redeem-btn" onclick="requestGift(${gift.id})">
+                       <span>✓</span>
+                       <span>${t('WEBAPP_GET_GIFT')}</span>
+                   </button>`
+                : `<button class="gift-popup-redeem-btn" disabled>
+                       <span>${t('WEBAPP_NOT_ENOUGH_POINTS')}</span>
+                   </button>`;
+
+            return `
+                <div class="gift-popup-image-wrapper">
+                    <img src="${imageUrl}" alt="${safeName}" class="gift-popup-image" onerror="this.src='/static/images/gift-box.png'">
+                </div>
+                ${statusHtml}
+                <div class="gift-popup-title">${safeName}</div>
+                ${costCardHtml}
+                ${buttonHtml}
+            `;
+        }
+
+        function renderGiftPopupSuccess() {
+            return `
+                <div class="gift-popup-success">
+                    <div class="gift-popup-success-icon">✓</div>
+                    <div class="gift-popup-success-title">${t('WEBAPP_SUCCESS_TITLE')}</div>
+                    <div class="gift-popup-success-message">${t('WEBAPP_SUCCESS_MESSAGE')}</div>
+                    <div class="gift-popup-success-actions">
+                        <button class="btn btn-primary" onclick="closeGiftPopup(); showScreen('home');">${t('WEBAPP_TO_HOME')}</button>
+                        <button class="btn btn-secondary" onclick="contactAdmin()">${t('WEBAPP_CONTACT_ADMIN')}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function openGiftPopup(giftId) {
+            const popup = document.getElementById('giftPopup');
+            const body = document.getElementById('giftPopupBody');
+            if (!popup || !body) return;
+
+            body.innerHTML = `<div class="gift-popup-loading">${t('WEBAPP_LOADING')}</div>`;
+            popup.classList.add('active');
+
+            try {
+                if (!currentUser || !currentUser.telegram_id) throw new Error('User not loaded');
+
+                const giftsUrl = `${API_BASE}/gifts/?telegram_id=${currentUser.telegram_id}`;
+                const giftsResponse = await fetchNoCache(giftsUrl);
+                const gifts = await giftsResponse.json();
+                const gift = gifts.find(g => g.id === giftId);
+                if (!gift) throw new Error('Gift not found');
+
+                currentGiftPopup = gift;
+                body.innerHTML = renderGiftPopupDetail(gift);
+            } catch (error) {
+                body.innerHTML = `<div class="gift-popup-error">${t('WEBAPP_ERROR_LOADING_GIFTS')}</div>`;
+            }
+        }
+
+        async function showRedemptionDetail(redemptionId) {
+            showScreen('redemptionDetail');
+            const container = document.getElementById('redemptionDetailContainer');
+            container.innerHTML = '<div class="loading">' + t('WEBAPP_LOADING') + '</div>';
+            
+            try {
+                if (!currentUser || !currentUser.telegram_id) {
+                    throw new Error('User not loaded');
+                }
+                
+                // Загружаем данные о redemption
+                const response = await fetchNoCache(`${API_BASE}/redemptions/?telegram_id=${currentUser.telegram_id}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load redemption');
+                }
+                
+                const redemptions = await response.json();
+                const redemption = redemptions.find(r => r.id === redemptionId);
+                
+                if (!redemption) {
+                    throw new Error('Redemption not found');
+                }
+                
+                // Устанавливаем currentRedemptionId для модалки подтверждения
+                currentRedemptionId = redemptionId;
+                
+                // Устанавливаем заголовок
+                document.getElementById('redemptionDetailTitle').textContent = redemption.gift ? redemption.gift.name : t('WEBAPP_GIFT_NAME');
+                
+                // Определяем текст статуса и иконку
+                let statusText = t('WEBAPP_STATUS_PENDING');
+                let statusClass = 'waiting';
+                let statusIcon = getStatusIcon('pending');
+                if (redemption.status === 'approved') {
+                    statusText = t('WEBAPP_STATUS_APPROVED');
+                    statusClass = 'approved';
+                    statusIcon = getStatusIcon('approved');
+                } else if (redemption.status === 'sent') {
+                    statusText = t('WEBAPP_STATUS_SENT');
+                    statusClass = 'sent';
+                    statusIcon = getStatusIcon('sent');
+                } else if (redemption.status === 'rejected') {
+                    statusText = t('WEBAPP_STATUS_REJECTED');
+                    statusClass = 'rejected';
+                    statusIcon = getStatusIcon('rejected');
+                } else if (redemption.status === 'not_received') {
+                    statusText = t('WEBAPP_STATUS_NOT_RECEIVED');
+                    statusClass = 'not_received';
+                    statusIcon = getStatusIcon('not_received');
+                } else if (redemption.status === 'cancelled_by_user') {
+                    statusText = t('WEBAPP_STATUS_CANCELLED_BY_USER');
+                    statusClass = 'cancelled_by_user';
+                    statusIcon = getStatusIcon('cancelled_by_user');
+                } else if (redemption.status === 'completed') {
+                    // Если пользователь подтвердил получение, показываем "Товар получен"
+                    if (redemption.user_confirmed) {
+                        statusText = t('WEBAPP_STATUS_RECEIVED');
+                        statusClass = 'completed';
+                        statusIcon = getStatusIcon('completed');
+                    } else {
+                        statusText = t('WEBAPP_STATUS_COMPLETED');
+                        statusClass = 'completed';
+                        statusIcon = getStatusIcon('completed');
+                    }
+                }
+                
+                // Обрабатываем URL изображения
+                let imageUrl = '/static/images/gift-box.png';
+                if (redemption.gift && redemption.gift.image) {
+                    if (redemption.gift.image.startsWith('http://') || redemption.gift.image.startsWith('https://')) {
+                        imageUrl = redemption.gift.image;
+                    } else if (redemption.gift.image.startsWith('/')) {
+                        imageUrl = redemption.gift.image;
+                    } else {
+                        imageUrl = '/' + redemption.gift.image;
+                    }
+                }
+                
+                // Форматируем стоимость подарка
+                const giftPoints = redemption.gift ? redemption.gift.points_cost : 0;
+                
+                // HTML для страницы ожидания товара (дизайн по второму рисунку)
+                container.innerHTML = `
+                    <div class="redemption-detail-content">
+                        <!-- Карточка пользователя -->
+                        <div class="redemption-user-card" onclick="showProfile()" style="cursor: pointer;">
+                            <div class="redemption-user-avatar">
+                                <div class="redemption-avatar-icon">👤</div>
+                            </div>
+                            <div class="redemption-user-info">
+                                <div class="redemption-user-name">
+                                    ${currentUser.first_name || t('USER')}
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <g clip-path="url(#clip0_110_61)">
+                                        <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="#40C4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M6 7.99999L7.33333 9.33332L10 6.66666" stroke="#40C4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </g>
+                                        <defs>
+                                        <clipPath id="clip0_110_61">
+                                        <rect width="16" height="16" fill="white"/>
+                                        </clipPath>
+                                        </defs>
+                                    </svg>
+                                </div>
+                                <div class="redemption-user-id">ID: ${currentUser.telegram_id}</div>
+                            </div>
+                            <div class="points-badge" onclick="event.stopPropagation();">
+                                <div class="points-value">${formatNumber(currentUser.points || 0)}</div>
+                                <div class="points-label">${t('WEBAPP_TOTAL_POINTS')}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопки статуса и связи -->
+                        <div class="redemption-actions">
+                            <button class="redemption-status-btn ${statusClass}" ${(redemption.status === 'sent' || (redemption.status === 'completed' && !redemption.user_confirmed)) ? 'onclick="openConfirmModal(' + redemptionId + ')"' : ''} ${redemption.status === 'completed' && redemption.user_confirmed ? 'style="cursor: default;"' : ''}>
+                                <span class="status-icon">${statusIcon}</span>
+                                ${statusText}
+                            </button>
+                            <button class="redemption-contact-btn" onclick="contactAdmin()">
+                                <span class="contact-icon">🎧</span>
+                                ${t('WEBAPP_CONTACT_ADMIN')}
+                            </button>
+                        </div>
+                        ${(() => {
+                            if (redemption.status === 'pending' && redemption.requested_at) {
+                                const createdAt = new Date(redemption.requested_at);
+                                const now = new Date();
+                                const hourInMs = 60 * 60 * 1000;
+                                if ((now - createdAt) < hourInMs) {
+                                    return '<div style="margin-top: 0.75rem;"><button class="redemption-cancel-btn" onclick="cancelOrder(' + redemptionId + ')" style="width: 100%; background: #dc3545; color: white; border: none; padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">🚫 ' + t('WEBAPP_CANCEL_ORDER') + '</button></div>';
+                                }
+                            }
+                            return '';
+                        })()}
+                        
+                        <!-- Карточка подарка -->
+                        <div class="redemption-gift-card">
+                            <div class="redemption-gift-image-wrapper">
+                                <img src="${imageUrl}" alt="${redemption.gift ? redemption.gift.name : ''}" class="redemption-gift-img" onerror="this.onerror=null; this.src='/static/images/gift-box.png';">
+                            </div>
+                            <div class="redemption-gift-name">${redemption.gift ? redemption.gift.name : t('WEBAPP_GIFT_NAME')}</div>
+                            <div class="redemption-gift-points">${formatNumber(giftPoints)} ${t('WEBAPP_BALL')}</div>
+                        </div>
+                        
+                        <!-- Политика конфиденциальности -->
+                        <div class="redemption-privacy-link">
+                            <a href="#" onclick="showPrivacy(); return false;">{% trans "WEBAPP_PRIVACY_POLICY" %}</a>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading redemption detail:', error);
+                container.innerHTML = '<div class="error">' + (error.message || t('WEBAPP_ERROR_LOADING_ORDERS')) + '</div>';
+            }
+        }
+
+        async function requestGift(giftId) {
+            if (!confirm(t('WEBAPP_CONFIRM_REQUEST'))) return;
+
+            const popupBody = document.getElementById('giftPopupBody');
+            const popupActive = document.getElementById('giftPopup')?.classList.contains('active');
+
+            try {
+                const response = await fetchNoCache(`${API_BASE}/request-gift/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        telegram_id: currentUser.telegram_id,
+                        gift_id: giftId
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || t('WEBAPP_ERROR_REQUESTING_GIFT'));
+                }
+
+                const redemption = await response.json();
+                currentUser.points = redemption.user.points;
+                document.getElementById('points').textContent = formatNumber(currentUser.points);
+                renderNextGiftCard();
+                // Обновляем список заказов в фоне, пока пользователь видит экран успеха
+                loadProductStatus();
+                // Обновляем список подарков, чтобы прогресс/кнопки отразили новый баланс
+                if (typeof loadGiftsList === 'function') {
+                    loadGiftsList();
+                }
+
+                if (popupActive && popupBody) {
+                    popupBody.innerHTML = renderGiftPopupSuccess();
+                } else {
+                    // Fallback: попап закрылся — открываем успех в попапе
+                    const popup = document.getElementById('giftPopup');
+                    if (popup && popupBody) {
+                        popupBody.innerHTML = renderGiftPopupSuccess();
+                        popup.classList.add('active');
+                    }
+                }
+            } catch (error) {
+                tg.showAlert(error.message || t('WEBAPP_ERROR_REQUESTING_GIFT'));
+            }
+        }
+
+        async function cancelOrder(redemptionId) {
+            if (!confirm(t('WEBAPP_CANCEL_ORDER_CONFIRM'))) return;
+            
+            try {
+                const response = await fetchNoCache(`${API_BASE}/cancel-order/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        telegram_id: currentUser.telegram_id,
+                        redemption_id: redemptionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || t('WEBAPP_ERROR'));
+                }
+                
+                const result = await response.json();
+                
+                // Обновляем баланс пользователя
+                if (result.new_points !== undefined) {
+                    currentUser.points = result.new_points;
+                    const pointsEl = document.getElementById('points');
+                    if (pointsEl) pointsEl.textContent = formatNumber(currentUser.points);
+                    renderNextGiftCard();
+                }
+                
+                tg.showAlert(t('WEBAPP_CANCEL_ORDER_SUCCESS'));
+                
+                // Обновляем список заказов
+                await loadProductStatus();
+                showScreen('home');
+            } catch (error) {
+                tg.showAlert(error.message || t('WEBAPP_ERROR'));
+            }
+        }
+
+        let ordersCache = { active: [], delivered: [] };
+        let ordersCurrentTab = 'active';
+
+        const ORDER_STEPS = ['confirmed', 'shipped', 'delivered'];
+
+        function getOrderViewModel(r) {
+            const status = r.status;
+            const confirmed = !!r.user_confirmed;
+            // Шаги прогресса: какие отметить выполненными.
+            // Дефолт — pending: только step 1 (заявка зафиксирована).
+            let stepsDone = 1;
+            let state = 'pending';      // visual stage
+            let badgeKey = 'WEBAPP_BADGE_PROCESSING';
+            let badgeIcon = '⏳';
+            let badgeTone = 'warn';     // warn/info/success/danger
+            let isDelivered = false;
+            let isCancelled = false;
+
+            if (status === 'pending') {
+                stepsDone = 1;
+                state = 'pending';
+                badgeKey = 'WEBAPP_BADGE_PROCESSING';
+                badgeIcon = '⏳';
+                badgeTone = 'warn';
+            } else if (status === 'approved') {
+                stepsDone = 1;
+                state = 'approved';
+                badgeKey = 'WEBAPP_BADGE_CONFIRMED';
+                badgeIcon = '✓';
+                badgeTone = 'info';
+            } else if (status === 'sent') {
+                stepsDone = 2;
+                state = 'sent';
+                badgeKey = 'WEBAPP_BADGE_ON_THE_WAY';
+                badgeIcon = '🚚';
+                badgeTone = 'info';
+            } else if (status === 'completed' && !confirmed) {
+                stepsDone = 3;
+                state = 'awaiting_confirm';
+                badgeKey = 'WEBAPP_BADGE_DELIVERED';
+                badgeIcon = '📦';
+                badgeTone = 'info';
+            } else if (status === 'completed' && confirmed) {
+                stepsDone = 3;
+                state = 'received';
+                badgeKey = 'WEBAPP_BADGE_RECEIVED';
+                badgeIcon = '✅';
+                badgeTone = 'success';
+                isDelivered = true;
+            } else if (status === 'rejected') {
+                stepsDone = 0;
+                state = 'rejected';
+                badgeKey = 'WEBAPP_BADGE_REJECTED';
+                badgeIcon = '❌';
+                badgeTone = 'danger';
+                isCancelled = true;
+                isDelivered = true;
+            } else if (status === 'cancelled_by_user') {
+                stepsDone = 0;
+                state = 'cancelled_by_user';
+                badgeKey = 'WEBAPP_BADGE_CANCELLED';
+                badgeIcon = '🚫';
+                badgeTone = 'danger';
+                isCancelled = true;
+                isDelivered = true;
+            } else if (status === 'not_received') {
+                stepsDone = 0;
+                state = 'not_received';
+                badgeKey = 'WEBAPP_BADGE_NOT_RECEIVED';
+                badgeIcon = '⚠️';
+                badgeTone = 'danger';
+                isCancelled = true;
+                isDelivered = true;
+            }
+
+            return { stepsDone, state, badgeKey, badgeIcon, badgeTone, isDelivered, isCancelled };
+        }
+
+        function renderOrderProgressHtml(stepsDone, isCancelled) {
+            const labels = {
+                confirmed: t('WEBAPP_STEP_CONFIRMED'),
+                shipped:   t('WEBAPP_STEP_SHIPPED'),
+                delivered: t('WEBAPP_STEP_DELIVERED'),
+            };
+            const stateFor = (idx1) => {
+                if (isCancelled) return 'cancelled';
+                if (idx1 < stepsDone) return 'done';
+                if (idx1 === stepsDone) return 'current';
+                return 'pending';
+            };
+            const dotIcon = (s) => {
+                if (s === 'done' || s === 'current') {
+                    return '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                }
+                if (s === 'cancelled') return '×';
+                return '';
+            };
+            const items = ORDER_STEPS.map((key, i) => {
+                const idx1 = i + 1;
+                const s = stateFor(idx1);
+                return `
+                    <div class="order-step ${s}">
+                        <div class="order-step-dot">${dotIcon(s)}</div>
+                        <div class="order-step-label">${labels[key]}</div>
+                    </div>
+                `;
+            }).join(`
+                <div class="order-step-line"></div>
+            `);
+            return `<div class="order-progress${isCancelled ? ' cancelled' : ''}">${items}</div>`;
+        }
+
+        function renderOrderCard(redemption) {
+            const vm = getOrderViewModel(redemption);
+            const imageUrl = redemption.gift && redemption.gift.image ? redemption.gift.image : '/static/images/gift-box.png';
+            const giftName = (redemption.gift && redemption.gift.name) || t('WEBAPP_GIFT_NAME');
+            const points = (redemption.gift && redemption.gift.points_cost) || 0;
+            const orderNumber = t('WEBAPP_ORDER_NUMBER', { n: redemption.id });
+            const badge = t(vm.badgeKey);
+
+            const confirmButtonHtml = (!redemption.user_confirmed && (redemption.status === 'sent' || redemption.status === 'completed'))
+                ? `<button class="btn btn-success btn-small order-card-confirm-btn" onclick="event.stopPropagation(); openConfirmModal(${redemption.id});">${t('WEBAPP_YES_RECEIVED')}</button>`
+                : '';
+
+            return `
+                <div class="order-card-v2" onclick="showRedemptionDetail(${redemption.id})">
+                    <div class="order-card-top">
+                        <div class="order-card-image-wrapper">
+                            <img src="${imageUrl}" alt="" class="order-card-image" onerror="this.src='/static/images/gift-box.png'">
+                        </div>
+                        <div class="order-card-main">
+                            <div class="order-card-head">
+                                <span class="order-card-badge badge-${vm.badgeTone}">
+                                    <span class="order-card-badge-icon" aria-hidden="true">${vm.badgeIcon}</span>
+                                    <span>${badge}</span>
+                                </span>
+                                <span class="order-card-points">
+                                    <span aria-hidden="true">⚡</span>${formatNumber(points)}
+                                </span>
+                            </div>
+                            <div class="order-card-name">${giftName}</div>
+                            <div class="order-card-sub">${orderNumber}</div>
+                        </div>
+                    </div>
+                    ${renderOrderProgressHtml(vm.stepsDone, vm.isCancelled)}
+                    ${confirmButtonHtml ? `<div class="order-card-foot">${confirmButtonHtml}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function setOrdersTab(tab) {
+            ordersCurrentTab = tab;
+            document.querySelectorAll('.orders-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            renderOrdersList();
+        }
+
+        function renderOrdersList() {
+            const container = document.getElementById('profileGiftsContainer');
+            if (!container) return;
+            const list = ordersCache[ordersCurrentTab] || [];
+            if (list.length === 0) {
+                container.innerHTML = `<div class="empty-state-small orders-empty-tab">${t('WEBAPP_ORDERS_EMPTY_TAB')}</div>`;
+                return;
+            }
+            container.innerHTML = list.map(renderOrderCard).join('');
+        }
+
+        async function loadProfileGifts() {
+            const container = document.getElementById('profileGiftsContainer');
+            if (!container) return;
+
+            container.innerHTML = '<div class="loading">' + t('WEBAPP_LOADING_ORDERS') + '</div>';
+
+            if (!currentUser || !currentUser.telegram_id) {
+                container.innerHTML = '<div class="error">' + t('WEBAPP_ERROR_LOADING_USER') + '</div>';
+                console.error('loadProfileGifts: currentUser not loaded');
+                return;
+            }
+
+            try {
+                const response = await fetchNoCache(`${API_BASE}/redemptions/?telegram_id=${currentUser.telegram_id}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                const redemptions = await response.json();
+
+                if (redemptions.length === 0) {
+                    const totalLabel = document.getElementById('ordersTotalLabel');
+                    if (totalLabel) totalLabel.textContent = t('WEBAPP_ORDERS_TOTAL', { count: 0 });
+                    const activeCount = document.getElementById('ordersTabActiveCount');
+                    const deliveredCount = document.getElementById('ordersTabDeliveredCount');
+                    if (activeCount) activeCount.textContent = '0';
+                    if (deliveredCount) deliveredCount.textContent = '0';
+                    container.innerHTML = `
+                        <div class="empty-orders-state">
+                            <img src="/static/images/notfoundredemption.png" alt="No orders" class="empty-orders-image">
+                            <div class="empty-orders-title">${t('WEBAPP_NO_ORDERS')}</div>
+                            <div class="empty-orders-text">${t('WEBAPP_NO_ORDERS_TEXT')}</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Сортировка: новые сверху (по requested_at, fallback по id).
+                redemptions.sort((a, b) => {
+                    const da = new Date(a.requested_at || 0).getTime();
+                    const db = new Date(b.requested_at || 0).getTime();
+                    if (da !== db) return db - da;
+                    return (b.id || 0) - (a.id || 0);
+                });
+
+                const active = [];
+                const delivered = [];
+                redemptions.forEach(r => {
+                    const vm = getOrderViewModel(r);
+                    (vm.isDelivered ? delivered : active).push(r);
+                });
+                ordersCache = { active, delivered };
+
+                const totalLabel = document.getElementById('ordersTotalLabel');
+                if (totalLabel) totalLabel.textContent = t('WEBAPP_ORDERS_TOTAL', { count: redemptions.length });
+                const activeCount = document.getElementById('ordersTabActiveCount');
+                const deliveredCount = document.getElementById('ordersTabDeliveredCount');
+                if (activeCount) activeCount.textContent = String(active.length);
+                if (deliveredCount) deliveredCount.textContent = String(delivered.length);
+
+                // Если в текущем табе пусто, а в соседнем есть — переключаемся.
+                if (ordersCache[ordersCurrentTab].length === 0 && ordersCache[ordersCurrentTab === 'active' ? 'delivered' : 'active'].length > 0) {
+                    ordersCurrentTab = ordersCurrentTab === 'active' ? 'delivered' : 'active';
+                    document.querySelectorAll('.orders-tab').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.tab === ordersCurrentTab);
+                    });
+                }
+                renderOrdersList();
+            } catch (error) {
+                console.error('Error loading profile gifts:', error);
+                container.innerHTML = '<div class="error">' + (error.message || t('WEBAPP_ERROR_LOADING_ORDERS')) + '</div>';
+            }
+        }
+
+        function openConfirmModal(redemptionId) {
+            currentRedemptionId = redemptionId;
+            const modal = document.getElementById('confirmModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('confirmModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            const commentInput = document.getElementById('commentInput');
+            if (commentInput) {
+                commentInput.value = '';
+            }
+        }
+
+        async function confirmDelivery(confirmed) {
+            if (!currentRedemptionId) {
+                tg.showAlert(t('WEBAPP_ERROR_CONFIRMING'));
+                return;
+            }
+
+            try {
+                const comment = document.getElementById('commentInput') ? document.getElementById('commentInput').value.trim() : '';
+
+                const response = await fetchNoCache(`${API_BASE}/confirm-delivery/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        redemption_id: currentRedemptionId,
+                        confirmed: confirmed,
+                        comment: comment
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || t('WEBAPP_ERROR_CONFIRMING'));
+                }
+
+                await response.json();
+
+                closeModal();
+                tg.showAlert(t('WEBAPP_THANKS_CONFIRMATION'));
+
+                // Обновляем список заказов и статус продукта
+                // Проверяем, на каком экране мы находимся
+                const profileGiftsScreen = document.getElementById('profileGiftsScreen');
+                if (profileGiftsScreen && profileGiftsScreen.style.display !== 'none') {
+                    // Если на экране "Мои подарки", обновляем его
+                    await loadProfileGifts();
+                }
+                // Всегда обновляем главную страницу, если она видна (товар должен исчезнуть)
+                const mainContainer = document.querySelector('.main-container');
+                if (mainContainer && mainContainer.style.display !== 'none') {
+                    await loadProductStatus();
+                }
+                // Если мы на детальной странице заказа, возвращаемся на главную или в "Мои подарки"
+                const redemptionDetailScreen = document.getElementById('redemptionDetailScreen');
+                if (redemptionDetailScreen && redemptionDetailScreen.style.display !== 'none') {
+                    // Возвращаемся на предыдущий экран или на главную
+                    if (profileGiftsScreen && profileGiftsScreen.style.display !== 'none') {
+                        await showScreen('profileGifts');
+                    } else {
+                        await showScreen('home');
+                    }
+                }
+            } catch (error) {
+                console.error('Error confirming delivery:', error);
+                tg.showAlert(error.message || t('WEBAPP_ERROR_CONFIRMING'));
+            }
+        }
+
+        let qrHistoryFilter = 'all';
+
+        function setQrHistoryFilter(filter) {
+            qrHistoryFilter = filter;
+            document.querySelectorAll('.qr-history-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            loadQRHistory();
+        }
+
+        function getQrItemMonthKey(item) {
+            // scanned_at — строка вида "DD.MM.YYYY HH:MM" или ISO; парсим консервативно
+            const raw = item.scanned_at_iso || item.scanned_at || '';
+            let d = null;
+            const isoMatch = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoMatch) {
+                d = new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+            } else {
+                const ruMatch = String(raw).match(/^(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{2,4})/);
+                if (ruMatch) {
+                    let yr = parseInt(ruMatch[3], 10);
+                    if (yr < 100) yr += 2000;
+                    d = new Date(yr, parseInt(ruMatch[2], 10) - 1, parseInt(ruMatch[1], 10));
+                }
+            }
+            if (!d || isNaN(d.getTime())) return { key: 'unknown', label: '—', date: null };
+            return {
+                key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleDateString(currentUser && currentUser.language === 'ru' ? 'ru-RU' : 'ru-RU', { month: 'long', year: 'numeric' }),
+                date: d,
+            };
+        }
+
+        function renderQrCard(item, isCurrentMonth) {
+            const card = document.createElement('div');
+            card.className = 'qr-history-card';
+
+            const isFail = !!item.error;
+            const ticketNum = item.ticket_number || item.monthly_order;
+
+            let iconHtml;
+            if (isFail) {
+                iconHtml = `<div class="qr-history-icon fail">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>`;
+            } else if (isCurrentMonth && ticketNum != null) {
+                iconHtml = `<div class="qr-history-icon ticket">
+                    <span class="qr-history-icon-label">${t('WEBAPP_TICKET_NUMBER_SHORT')}</span>
+                    <span class="qr-history-icon-num">${ticketNum}</span>
+                </div>`;
+            } else {
+                iconHtml = `<div class="qr-history-icon archive">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M5 10l3.5 3.5L15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>`;
+            }
+
+            const isBonus = !!item.is_bonus || (item.points && item.points >= 100);
+            const multHtml = item.multiplier && item.multiplier > 1
+                ? `<span class="qr-history-points-mult">×${item.multiplier}</span>`
+                : '';
+
+            card.innerHTML = `
+                ${iconHtml}
+                <div class="qr-history-info">
+                    <div class="qr-history-code">${item.code || ''}</div>
+                    <div class="qr-history-date">${item.scanned_at || ''}</div>
+                </div>
+                <div class="qr-history-points">
+                    <div class="qr-history-points-value${isBonus ? ' bonus' : ''}">+${item.points || 0}</div>
+                    ${multHtml}
+                </div>
+            `;
+            return card;
+        }
+
+        async function loadQRHistory() {
+            const container = document.getElementById('qrHistoryContainer');
+            container.innerHTML = '<div class="loading">' + t('WEBAPP_LOADING_QR_HISTORY') + '</div>';
+
+            try {
+                const monthParam = qrHistoryFilter === 'current' ? '&month=current' : '';
+                const response = await fetchNoCache(`${API_BASE}/qr-history/?telegram_id=${currentUser.telegram_id}${monthParam}`);
+                if (!response.ok) throw new Error();
+
+                const history = await response.json();
+
+                if (history.length === 0) {
+                    container.innerHTML = '<div class="empty-state">' + t('WEBAPP_NO_QR_HISTORY') + '</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                // Текущий месяц-ключ
+                const now = new Date();
+                const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+                // Группируем по месяцам
+                const groups = new Map();
+                history.forEach(item => {
+                    const meta = getQrItemMonthKey(item);
+                    if (!groups.has(meta.key)) {
+                        groups.set(meta.key, { label: meta.label, date: meta.date, items: [] });
+                    }
+                    groups.get(meta.key).items.push(item);
+                });
+
+                // Сортируем по дате убыв.
+                const sorted = Array.from(groups.entries()).sort((a, b) => {
+                    if (a[0] === currentKey) return -1;
+                    if (b[0] === currentKey) return 1;
+                    return (b[1].date?.getTime() || 0) - (a[1].date?.getTime() || 0);
+                });
+
+                // Hero «Билеты на розыгрыш» — только если есть текущий месяц и фильтр «current»/'all' с current items
+                const currentGroup = groups.get(currentKey);
+                if (currentGroup) {
+                    const ticketCount = currentGroup.items.filter(i => !i.error && (i.ticket_number != null || i.monthly_order != null)).length;
+                    const totalChances = currentGroup.items.reduce((sum, i) => sum + (i.error ? 0 : (i.multiplier || 1)), 0);
+                    if (ticketCount > 0) {
+                        const hero = document.createElement('div');
+                        hero.className = 'qr-tickets-hero';
+                        hero.innerHTML = `
+                            <div class="qr-tickets-hero-text">
+                                <span class="qr-tickets-hero-label">${t('WEBAPP_RAFFLE_TICKETS')}</span>
+                                <span class="qr-tickets-hero-value">${totalChances} ${t('WEBAPP_CHANCES')}</span>
+                            </div>
+                            <span class="qr-tickets-hero-mult">×${ticketCount}</span>
+                        `;
+                        container.appendChild(hero);
+                    }
+                }
+
+                sorted.forEach(([key, group]) => {
+                    const isCurrent = key === currentKey;
+                    const groupEl = document.createElement('div');
+                    groupEl.className = 'qr-history-group' + (isCurrent ? '' : ' archive');
+
+                    const headerEl = document.createElement('div');
+                    headerEl.className = 'qr-history-group-header';
+                    const titleText = isCurrent
+                        ? `${group.label}`
+                        : `${group.label} · ${t('WEBAPP_QR_ARCHIVE')}`;
+                    headerEl.innerHTML = `
+                        <span class="qr-history-group-title">${titleText}</span>
+                        <span class="qr-history-group-meta">${isCurrent ? group.items.length : t('WEBAPP_RAFFLE_FINISHED')}</span>
+                    `;
+                    groupEl.appendChild(headerEl);
+
+                    group.items.forEach(item => {
+                        groupEl.appendChild(renderQrCard(item, isCurrent));
+                    });
+
+                    container.appendChild(groupEl);
+                });
+            } catch (error) {
+                container.innerHTML = '<div class="error">' + t('WEBAPP_ERROR_LOADING_ORDERS') + '</div>';
+            }
+        }
+
+        function showLanguageModal() {
+            document.getElementById('languageModal').classList.add('active');
+            updateLanguageChecks();
+        }
+
+        function closeLanguageModal() {
+            document.getElementById('languageModal').classList.remove('active');
+        }
+
+        function updateLanguageChecks() {
+            document.getElementById('checkUzLatin').style.display = currentUser.language === 'uz_latin' ? 'inline-flex' : 'none';
+            document.getElementById('checkRu').style.display = currentUser.language === 'ru' ? 'inline-flex' : 'none';
+        }
+
+        function getLanguageName(language) {
+            if (language === 'uz_latin') return t('WEBAPP_UZBEK');
+            if (language === 'ru') return t('WEBAPP_RUSSIAN');
+            return t('WEBAPP_UZBEK');
+        }
+
+        async function changeLanguage(language) {
+            if (!currentUser || !currentUser.telegram_id) {
+                tg.showAlert(t('WEBAPP_ERROR_LOADING_USER'));
+                return;
+            }
+            
+            try {
+                // Отправляем запрос на сервер для изменения языка
+                const response = await fetchNoCache(`${API_BASE}/update-language/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        telegram_id: currentUser.telegram_id,
+                        language: language
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update language');
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    currentUser.language = language;
+                    await loadTranslations(language);
+                    updateLanguageChecks();
+                    closeLanguageModal();
+                    // Обновляем текст в меню профиля
+                    document.getElementById('currentLanguage').textContent = getLanguageName(language);
+                    // Обновляем все тексты на странице
+                    updatePageTexts();
+                }
+            } catch (error) {
+                console.error('Error updating language:', error);
+                tg.showAlert(t('WEBAPP_ERROR_LOADING_USER'));
+            }
+        }
+
+        // Обновляем функции для работы с экранами
+        function showProfile() {
+            showScreen('profile');
+            // Обновляем данные пользователя в карточке профиля
+            if (currentUser) {
+                const profileUserName = document.getElementById('profileUserName');
+                const profileUserId = document.getElementById('profileUserId');
+                const profilePoints = document.getElementById('profilePoints');
+                
+                if (profileUserName) profileUserName.textContent = currentUser.first_name || t('USER');
+                if (profileUserId) profileUserId.textContent = `ID: ${currentUser.telegram_id}`;
+                if (profilePoints) profilePoints.textContent = formatNumber(currentUser.points);
+
+                const profileUserType = document.getElementById('profileUserType');
+                if (profileUserType) {
+                    let typeKey = null;
+                    if (currentUser.user_type === 'electrician') typeKey = 'WEBAPP_USER_TYPE_ELECTRICIAN';
+                    else if (currentUser.user_type === 'seller') typeKey = 'WEBAPP_USER_TYPE_SELLER';
+                    if (typeKey) {
+                        profileUserType.dataset.tkey = typeKey;
+                        profileUserType.textContent = t(typeKey);
+                        profileUserType.style.display = '';
+                    } else {
+                        profileUserType.style.display = 'none';
+                    }
+                }
+                // Копируем аватар из главной страницы
+                const mainAvatar = document.getElementById('userAvatar');
+                const profileAvatar = document.getElementById('profileUserAvatar');
+                if (mainAvatar && profileAvatar) {
+                    profileAvatar.style.backgroundImage = mainAvatar.style.backgroundImage;
+                    profileAvatar.style.backgroundSize = 'cover';
+                    profileAvatar.style.backgroundPosition = 'center';
+                    if (mainAvatar.style.backgroundImage) {
+                        profileAvatar.textContent = '';
+                        profileAvatar.style.color = 'transparent';
+                    }
+                }
+            }
+        }
+
+        function formatLiveStreamDate(iso) {
+            try {
+                const d = new Date(iso);
+                if (isNaN(d.getTime())) return iso || '';
+                const lang = currentUser && currentUser.language === 'ru' ? 'ru-RU' : 'uz-UZ';
+                return d.toLocaleString(lang, {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                });
+            } catch (e) {
+                return iso || '';
+            }
+        }
+
+        function renderLiveStreamCard(stream, opts = {}) {
+            const isPast = !!stream.is_past;
+            const dateStr = formatLiveStreamDate(stream.scheduled_at);
+            const titleEsc = (stream.title || '').replace(/</g, '&lt;');
+            const descrEsc = (stream.description || '').replace(/</g, '&lt;');
+            const linkLabel = isPast ? t('WEBAPP_LIVE_STREAM_WATCH_RECORDING') : t('WEBAPP_LIVE_STREAM_OPEN');
+            const safeUrl = (stream.stream_url || '').replace(/"/g, '&quot;');
+            const detailHandler = opts.clickable
+                ? `onclick="showLiveStreamDetail(${stream.id})" style="cursor: pointer;"`
+                : '';
+            const playerIcon = `
+                <div class="live-stream-cover live-stream-cover-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="5" width="20" height="14" rx="3" fill="currentColor" opacity="0.18"/>
+                        <rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M10 9.5L15.5 12L10 14.5V9.5Z" fill="currentColor"/>
+                    </svg>
+                </div>`;
+            return `
+                <div class="live-stream-card" ${detailHandler}>
+                    ${playerIcon}
+                    <div class="live-stream-info">
+                        <div class="live-stream-title-text">${titleEsc}</div>
+                        <div class="live-stream-date">${dateStr}</div>
+                        ${descrEsc ? `<div class="live-stream-description">${descrEsc}</div>` : ''}
+                    </div>
+                    <a class="live-stream-link" href="${safeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation();" aria-label="${linkLabel}">
+                        <span class="live-stream-link-text">${linkLabel}</span>
+                        <svg class="live-stream-link-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                </div>
+            `;
+        }
+
+        async function loadLiveStreams() {
+            const upcomingEl = document.getElementById('liveStreamsUpcoming');
+            const pastEl = document.getElementById('liveStreamsPast');
+            if (!upcomingEl || !pastEl) return;
+            const upcomingSection = upcomingEl.closest('.live-streams-section');
+            const loadingHtml = `<div class="loading">${t('WEBAPP_LIVE_STREAM_LOADING')}</div>`;
+            upcomingEl.innerHTML = loadingHtml;
+            pastEl.innerHTML = loadingHtml;
+            if (upcomingSection) upcomingSection.style.display = '';
+            try {
+                const tg = currentUser && currentUser.telegram_id ? `?telegram_id=${currentUser.telegram_id}` : '';
+                const response = await fetchNoCache(`${API_BASE}/live-streams/${tg}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const upcoming = Array.isArray(data.upcoming) ? data.upcoming : [];
+                const past = Array.isArray(data.past) ? data.past : [];
+                if (upcoming.length) {
+                    upcomingEl.innerHTML = upcoming.map(s => renderLiveStreamCard(s)).join('');
+                    if (upcomingSection) upcomingSection.style.display = '';
+                } else {
+                    upcomingEl.innerHTML = '';
+                    if (upcomingSection) upcomingSection.style.display = 'none';
+                }
+                pastEl.innerHTML = past.length
+                    ? past.map(s => renderLiveStreamCard(s, { clickable: true })).join('')
+                    : `<div class="empty-state-small">${t('WEBAPP_LIVE_STREAM_NO_PAST')}</div>`;
+            } catch (error) {
+                console.error('Error loading live streams:', error);
+                const errHtml = `<div class="error">${t('WEBAPP_ERROR_LOADING_USER')}</div>`;
+                upcomingEl.innerHTML = errHtml;
+                pastEl.innerHTML = errHtml;
+                if (upcomingSection) upcomingSection.style.display = '';
+            }
+        }
+
+        function renderLiveWinnerRow(w) {
+            const pos = parseInt(w.position, 10) || 0;
+            const safe = (s) => String(s || '').replace(/</g, '&lt;');
+            const isTop3 = pos >= 1 && pos <= 3;
+            const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : '';
+            const placeHtml = isTop3
+                ? `<span class="live-winners-medal">${medal}</span>`
+                : `<span class="live-winners-place">
+                       <span class="live-winners-place-num">№${pos || ''}</span>
+                   </span>`;
+            const ticketHtml = w.ticket_number != null
+                ? `<span class="live-winners-ticket">№${w.ticket_number}</span>`
+                : '';
+            const cityHtml = w.city
+                ? `<span class="live-winners-city">${safe(w.city)}</span>`
+                : '';
+            const prizeHtml = w.prize_text
+                ? `<span class="live-winners-prize">${safe(w.prize_text)}</span>`
+                : '';
+            return `
+                <li class="live-winners-row${isTop3 ? ' rank-' + pos : ''}">
+                    ${placeHtml}
+                    <span class="live-winners-info">
+                        <span class="live-winners-name">${safe(w.name)} ${ticketHtml}</span>
+                        ${cityHtml}
+                        ${prizeHtml}
+                    </span>
+                </li>
+            `;
+        }
+
+        function setLiveWinnersTab(tab) {
+            document.querySelectorAll('.live-winners-tab').forEach(b => {
+                b.classList.toggle('active', b.dataset.tab === tab);
+            });
+            document.querySelectorAll('.live-winners-list').forEach(el => {
+                el.style.display = el.dataset.tab === tab ? '' : 'none';
+            });
+        }
+
+        async function showLiveStreamDetail(streamId) {
+            showScreen('liveStreamDetail');
+            const container = document.getElementById('liveStreamDetailContainer');
+            const titleEl = document.getElementById('liveStreamDetailTitle');
+            if (!container) return;
+            container.innerHTML = `<div class="loading">${t('WEBAPP_LIVE_STREAM_LOADING')}</div>`;
+            if (titleEl) titleEl.textContent = '';
+            try {
+                const tgQ = currentUser && currentUser.telegram_id ? `?telegram_id=${currentUser.telegram_id}` : '';
+                const response = await fetchNoCache(`${API_BASE}/live-streams/${streamId}/${tgQ}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const stream = await response.json();
+                if (titleEl) titleEl.textContent = stream.title || '';
+
+                const winners = stream.winners || { electricians: [], sellers: [] };
+                const elec = winners.electricians || [];
+                const sellers = winners.sellers || [];
+                const totalWinners = elec.length + sellers.length;
+                const totalParticipants = stream.participants_count != null ? stream.participants_count : (stream.participants || '—');
+                const watchUrl = stream.stream_url || stream.video_url || '';
+                const safeWatchUrl = watchUrl.replace(/"/g, '&quot;');
+                const heroClickAttr = safeWatchUrl
+                    ? `onclick="window.open('${safeWatchUrl}', '_blank')" style="cursor: pointer;"`
+                    : '';
+                const bannerImgHtml = stream.banner
+                    ? `<img src="${stream.banner.replace(/"/g, '&quot;')}" alt="">`
+                    : '';
+
+                const heroHtml = `
+                    <div class="live-winners-hero" ${heroClickAttr}>
+                        ${bannerImgHtml}
+                        <span class="live-winners-tag">${t('WEBAPP_LIVE_RECORD')}</span>
+                        ${stream.duration ? `<span class="live-winners-duration">${stream.duration}</span>` : ''}
+                        ${safeWatchUrl ? `<button class="live-winners-play" onclick="event.stopPropagation(); window.open('${safeWatchUrl}', '_blank')" aria-label="${t('WEBAPP_PLAY')}">
+                            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                                <path d="M7 5l10 6-10 6V5z" fill="currentColor"/>
+                            </svg>
+                        </button>` : ''}
+                    </div>
+                    <div class="live-winners-meta">
+                        <span class="live-winners-meta-title">${(stream.title || '').replace(/</g, '&lt;')}</span>
+                        ${stream.broadcasted_at ? `<span class="live-winners-meta-sub">${stream.broadcasted_at}</span>` : ''}
+                    </div>
+                `;
+
+                const statsHtml = `
+                    <div class="live-winners-stats">
+                        <div class="live-winners-stat">
+                            <span class="live-winners-stat-value">${totalParticipants}</span>
+                            <span class="live-winners-stat-label">${t('WEBAPP_LIVE_PARTICIPANTS')}</span>
+                        </div>
+                        <div class="live-winners-stat">
+                            <span class="live-winners-stat-value">${totalWinners}</span>
+                            <span class="live-winners-stat-label">${t('WEBAPP_LIVE_WINNERS')}</span>
+                        </div>
+                    </div>
+                `;
+
+                const tabsHtml = `
+                    <div class="live-winners-tabs" role="tablist">
+                        <button class="live-winners-tab active" data-tab="electricians" onclick="setLiveWinnersTab('electricians')">
+                            <span>${t('WEBAPP_TAB_ELECTRICIANS')}</span>
+                            <span class="tab-count">${elec.length}</span>
+                        </button>
+                        <button class="live-winners-tab" data-tab="sellers" onclick="setLiveWinnersTab('sellers')">
+                            <span>${t('WEBAPP_TAB_SELLERS')}</span>
+                            <span class="tab-count">${sellers.length}</span>
+                        </button>
+                    </div>
+                `;
+
+                const elecListHtml = elec.length
+                    ? `<ul class="live-winners-list" data-tab="electricians">${elec.map(renderLiveWinnerRow).join('')}</ul>`
+                    : `<div class="empty-state-small" data-tab="electricians">${t('WEBAPP_LIVE_STREAM_NO_WINNERS')}</div>`;
+                const sellersListHtml = sellers.length
+                    ? `<ul class="live-winners-list" style="display:none" data-tab="sellers">${sellers.map(renderLiveWinnerRow).join('')}</ul>`
+                    : `<div class="empty-state-small" style="display:none" data-tab="sellers">${t('WEBAPP_LIVE_STREAM_NO_WINNERS')}</div>`;
+
+                const noWinners = totalWinners === 0;
+
+                container.innerHTML = `
+                    <div class="live-stream-detail-content">
+                        ${heroHtml}
+                        ${statsHtml}
+                        ${noWinners
+                            ? `<div class="empty-state-small">${t('WEBAPP_LIVE_STREAM_NO_WINNERS')}</div>`
+                            : `${tabsHtml}${elecListHtml}${sellersListHtml}<div class="live-winners-foot">${t('WEBAPP_LIVE_FOOTNOTE')}</div>`}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading live stream detail:', error);
+                container.innerHTML = `<div class="error">${t('WEBAPP_ERROR_LOADING_USER')}</div>`;
+            }
+        }
+
+        function showQRHistory() {
+            showScreen('qrHistory');
+            loadQRHistory();
+        }
+
+        function showLiveStreamsList() {
+            showScreen('liveStreamsList');
+        }
+
+        function showProfileGifts() {
+            showScreen('profileGifts');
+            // loadProfileGifts() вызывается автоматически в showScreen()
+        }
+
+        let topUsersPeriod = 'all';
+        let topUsersLoadedFor = null;
+
+        function setTopUsersPeriod(period) {
+            if (topUsersPeriod === period) return;
+            topUsersPeriod = period;
+            document.querySelectorAll('.top-users-filters .qr-history-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+            loadTopUsers();
+        }
+
+        function renderTopUserRow(item, currentTelegramId) {
+            const safe = (s) => String(s || '').replace(/</g, '&lt;');
+            const pos = parseInt(item.position, 10) || 0;
+            const isTop3 = pos >= 1 && pos <= 3;
+            const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : '';
+            const placeHtml = isTop3
+                ? `<span class="live-winners-medal">${medal}</span>`
+                : `<span class="live-winners-place">
+                       <span class="live-winners-place-num">№${pos || ''}</span>
+                   </span>`;
+            const isMe = item.is_me || (currentTelegramId && Number(item.telegram_id) === Number(currentTelegramId));
+            const youBadge = isMe
+                ? `<span class="top-users-you-badge">${t('WEBAPP_TOP_USERS_YOU')}</span>`
+                : '';
+            return `
+                <li class="live-winners-row top-users-row${isTop3 ? ' rank-' + pos : ''}${isMe ? ' is-me' : ''}">
+                    ${placeHtml}
+                    <span class="live-winners-info">
+                        <span class="live-winners-name">${safe(item.name)} ${youBadge}</span>
+                    </span>
+                    <span class="top-users-points">
+                        <span class="top-users-points-value">${formatNumber(item.points || 0)}</span>
+                        <span class="top-users-points-unit">${t('WEBAPP_TOP_USERS_POINTS_SHORT')}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        async function loadTopUsers() {
+            const section = document.getElementById('topUsersSection');
+            const list = document.getElementById('topUsersList');
+            const titleEl = document.getElementById('topUsersTitle');
+            if (!section || !list || !currentUser || !currentUser.telegram_id) return;
+
+            // Заголовок по типу пользователя
+            const titleKey = currentUser.user_type === 'seller'
+                ? 'WEBAPP_TOP_USERS_TITLE_SELLERS'
+                : 'WEBAPP_TOP_USERS_TITLE_ELECTRICIANS';
+            if (titleEl) {
+                titleEl.dataset.tkey = titleKey;
+                const textEl = titleEl.querySelector('.top-users-title-text');
+                if (textEl) {
+                    textEl.dataset.tkey = titleKey;
+                    textEl.textContent = t(titleKey);
+                } else {
+                    titleEl.textContent = t(titleKey);
+                }
+            }
+
+            section.style.display = 'flex';
+            list.innerHTML = `<div class="loading">${t('WEBAPP_LOADING')}</div>`;
+
+            try {
+                const url = `${API_BASE}/top-users/?telegram_id=${currentUser.telegram_id}&period=${topUsersPeriod}&limit=10`;
+                const response = await fetchNoCache(url);
+                if (!response.ok) throw new Error('top-users request failed');
+                const data = await response.json();
+                topUsersLoadedFor = topUsersPeriod;
+
+                const items = Array.isArray(data.items) ? data.items : [];
+                if (items.length === 0) {
+                    list.innerHTML = `<div class="empty-state-small">${t('WEBAPP_TOP_USERS_EMPTY')}</div>`;
+                } else {
+                    const rowsHtml = items.map(it => renderTopUserRow(it, currentUser.telegram_id)).join('');
+                    let footerHtml = '';
+                    const me = data.me;
+                    if (me && !me.in_top && me.points > 0) {
+                        const posTxt = me.position ? `№${me.position}` : t('WEBAPP_TOP_USERS_NOT_RANKED');
+                        footerHtml = `
+                            <li class="live-winners-row top-users-row top-users-me-row">
+                                <span class="live-winners-place">
+                                    <span class="live-winners-place-num">${posTxt}</span>
+                                </span>
+                                <span class="live-winners-info">
+                                    <span class="live-winners-name">${t('WEBAPP_TOP_USERS_YOU')}</span>
+                                </span>
+                                <span class="top-users-points">
+                                    <span class="top-users-points-value">${formatNumber(me.points || 0)}</span>
+                                    <span class="top-users-points-unit">${t('WEBAPP_TOP_USERS_POINTS_SHORT')}</span>
+                                </span>
+                            </li>
+                        `;
+                    }
+                    list.innerHTML = `<ul class="live-winners-list top-users-list">${rowsHtml}${footerHtml}</ul>`;
+                }
+            } catch (error) {
+                console.error('Error loading top users:', error);
+                list.innerHTML = `<div class="empty-state-small">${t('WEBAPP_TOP_USERS_EMPTY')}</div>`;
+            }
+        }
+
+        let adminContactSettings = null;
+
+        async function loadAdminContact() {
+            try {
+                const response = await fetchNoCache(`${API_BASE}/admin-contact/`);
+                if (response.ok) {
+                    adminContactSettings = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading admin contact:', error);
+            }
+        }
+        
+        async function executeAdminContact(contact) {
+            if (!contact) return;
+            const contactType = contact.contact_type;
+            const contactUrl = contact.contact_url;
+            const contactValue = contact.contact_value;
+
+            if (contactType === 'telegram') {
+                if (contactUrl) {
+                    tg.openTelegramLink(contactUrl);
+                } else if (contactValue) {
+                    const username = String(contactValue).replace('@', '');
+                    tg.openTelegramLink(`https://t.me/${username}`);
+                }
+            } else if (contactType === 'phone') {
+                const phoneNumber = contactValue || contactUrl || '';
+                if (phoneNumber) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        try {
+                            await navigator.clipboard.writeText(phoneNumber);
+                            tg.showAlert(`${t('WEBAPP_CONTACT_ADMIN')}\n\n📞 ${phoneNumber}\n\nНомер телефона скопирован в буфер обмена.`);
+                        } catch (err) {
+                            tg.showAlert(`${t('WEBAPP_CONTACT_ADMIN')}\n\n📞 ${phoneNumber}`);
+                        }
+                    } else {
+                        tg.showAlert(`${t('WEBAPP_CONTACT_ADMIN')}\n\n📞 ${phoneNumber}`);
+                    }
+                }
+            } else if (contactType === 'link') {
+                if (contactUrl) {
+                    if (tg && tg.openLink) {
+                        tg.openLink(contactUrl);
+                    } else {
+                        window.open(contactUrl, '_blank');
+                    }
+                }
+            }
+        }
+
+        function getAdminContactsList() {
+            if (!adminContactSettings) return [];
+            // Новый формат: contacts — массив активных контактов.
+            if (Array.isArray(adminContactSettings.contacts) && adminContactSettings.contacts.length > 0) {
+                return adminContactSettings.contacts;
+            }
+            // Обратная совместимость: одиночный контакт в верхнеуровневых полях.
+            if (adminContactSettings.contact_url || adminContactSettings.contact_value) {
+                return [{
+                    contact_type: adminContactSettings.contact_type,
+                    contact_value: adminContactSettings.contact_value,
+                    contact_url: adminContactSettings.contact_url,
+                }];
+            }
+            return [];
+        }
+
+        function getAdminContactLabel(contactType) {
+            const lang = (currentUser && currentUser.language) === 'ru' ? 'ru' : 'uz';
+            if (contactType === 'telegram') return '💬 Telegram';
+            if (contactType === 'phone') return lang === 'ru' ? '📞 Телефон' : '📞 Telefon';
+            if (contactType === 'link') return lang === 'ru' ? '🔗 Ссылка' : '🔗 Havola';
+            return contactType || '';
+        }
+
+        async function contactAdmin() {
+            if (!adminContactSettings) {
+                await loadAdminContact();
+            }
+
+            const contacts = getAdminContactsList();
+
+            if (contacts.length === 0) {
+                // Fallback на старый способ через TELEGRAM_BOT_ADMIN_USERNAME
+                const botUsername = '{{ TELEGRAM_BOT_ADMIN_USERNAME }}';
+                if (botUsername) {
+                    tg.openTelegramLink(`https://t.me/${botUsername}`);
+                } else {
+                    tg.showAlert(t('WEBAPP_CONTACT_ADMIN') || 'Admin bilan bog\'laning');
+                }
+                return;
+            }
+
+            if (contacts.length === 1) {
+                await executeAdminContact(contacts[0]);
+                return;
+            }
+
+            // Несколько активных контактов — показываем чузер.
+            if (tg && tg.showPopup) {
+                // tg.showPopup допускает максимум 3 кнопки. При 3 типах не добавляем cancel.
+                const items = contacts.slice(0, 3);
+                const buttons = items.map((c, idx) => ({
+                    id: String(idx),
+                    type: 'default',
+                    text: getAdminContactLabel(c.contact_type).slice(0, 64),
+                }));
+                if (buttons.length < 3) {
+                    buttons.push({ id: 'cancel', type: 'cancel' });
+                }
+                const chooseMsg = t('WEBAPP_CONTACT_ADMIN_CHOOSE') || t('WEBAPP_CONTACT_ADMIN') || ' ';
+                tg.showPopup({
+                    title: t('WEBAPP_CONTACT_ADMIN') || '',
+                    message: chooseMsg,
+                    buttons,
+                }, async (chosenId) => {
+                    if (!chosenId || chosenId === 'cancel') return;
+                    const idx = parseInt(chosenId, 10);
+                    if (Number.isFinite(idx) && items[idx]) {
+                        await executeAdminContact(items[idx]);
+                    }
+                });
+            } else {
+                // Если showPopup недоступен — выполняем первый по приоритету.
+                await executeAdminContact(contacts[0]);
+            }
+        }
+
+        function openPrivacyPDF(pdfUrl) {
+            if (tg && tg.openLink) {
+                tg.openLink(pdfUrl);
+            } else {
+                window.open(pdfUrl, '_blank');
+            }
+        }
+
+        async function showPrivacy() {
+            // Определяем текущий экран перед открытием политики
+            const screens = [
+                'redemptionDetail', 'profileGifts', 'qrHistory', 'giftDetail', 
+                'giftsList', 'profile', 'promotionDetail', 'home'
+            ];
+            
+            // Проверяем все экраны
+            for (const screen of screens) {
+                const screenElement = document.getElementById(`${screen}Screen`);
+                if (screenElement && screenElement.style.display !== 'none') {
+                    previousScreen = screen;
+                    break;
+                }
+            }
+            
+            // Если ни один экран не найден, проверяем main-container
+            if (!previousScreen && document.querySelector('.main-container').style.display !== 'none') {
+                previousScreen = 'home';
+            }
+            
+            // Если все еще не определено, используем 'profile' по умолчанию
+            if (!previousScreen) {
+                previousScreen = 'profile';
+            }
+            
+            showScreen('privacy');
+            // loadPrivacyPolicy() вызывается автоматически в showScreen()
+        }
+        
+        function getPreviousScreen() {
+            // Возвращаем сохраненный экран или 'profile' по умолчанию
+            return previousScreen || 'profile';
+        }
+
+        async function loadPrivacyPolicy() {
+            const container = document.getElementById('privacyContainer');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="loading">' + t('WEBAPP_LOADING') + '</div>';
+            
+            if (!currentUser || !currentUser.language) {
+                container.innerHTML = '<div class="error">' + t('WEBAPP_ERROR_LOADING_USER') + '</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetchNoCache(`${API_BASE}/privacy-policy/?lang=${currentUser.language}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                let contentHtml = '';
+                
+                // Если есть PDF файл, показываем кнопку для открытия
+                // В Telegram Web App PDF нельзя отобразить напрямую из-за ограничений безопасности
+                if (data.pdf_url) {
+                    contentHtml = `
+                        <div class="privacy-content">
+                            <div class="privacy-pdf-wrapper">
+                                <div class="privacy-pdf-icon">📄</div>
+                                <h3 class="privacy-pdf-title">${t('WEBAPP_PRIVACY_POLICY') || 'Политика конфиденциальности'}</h3>
+                                <p class="privacy-pdf-text">${t('WEBAPP_PRIVACY_PDF_DESCRIPTION') || 'Политика конфиденциальности доступна в формате PDF. Нажмите кнопку ниже, чтобы открыть документ в браузере.'}</p>
+                                <button class="btn btn-primary privacy-pdf-open-btn" onclick="openPrivacyPDF('${data.pdf_url}')">
+                                    ${t('WEBAPP_OPEN_PDF') || 'Открыть PDF'}
+                                </button>
+                            </div>
+                            ${data.updated_at ? `<div class="privacy-updated">${t('WEBAPP_UPDATED')}: ${data.updated_at}</div>` : ''}
+                        </div>
+                    `;
+                    container.innerHTML = contentHtml;
+                } else {
+                    contentHtml = '<div class="empty-state">' + (t('WEBAPP_NO_CONTENT') || 'Контент не найден') + '</div>';
+                    container.innerHTML = contentHtml;
+                }
+            } catch (error) {
+                console.error('Error loading privacy policy:', error);
+                container.innerHTML = '<div class="error">' + (error.message || t('WEBAPP_ERROR_LOADING_USER')) + '</div>';
+            }
+        }
+
+        function handleBannerClick() {
+            if (promotions.length > 0 && promotions[currentBannerIndex]) {
+                showPromotionDetail(promotions[currentBannerIndex].id);
+            }
+        }
+
+        async function showPromotionDetail(promotionId) {
+            showScreen('promotionDetail');
+            const container = document.getElementById('promotionDetailContainer');
+            container.innerHTML = '<div class="loading">' + t('WEBAPP_LOADING') + '</div>';
+            
+            try {
+                const response = await fetchNoCache(`${API_BASE}/promotions/${promotionId}/`);
+                if (!response.ok) throw new Error();
+                
+                const promotion = await response.json();
+                
+                document.getElementById('promotionDetailTitle').textContent = promotion.title || '';
+                
+                const dateBlockHtml = promotion.date
+                    ? `
+                        <div class="promotion-detail-date">
+                            <svg class="calendar-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2.67" y="3.33" width="10.67" height="10.67" stroke="currentColor" stroke-width="1.5" fill="none" rx="1"/>
+                                <line x1="5.33" y1="1.67" x2="5.33" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <line x1="10.67" y1="1.67" x2="10.67" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <line x1="2.67" y1="7.33" x2="13.33" y2="7.33" stroke="currentColor" stroke-width="1.5"/>
+                                <line x1="5.33" y1="10" x2="5.33" y2="13.33" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <line x1="8" y1="10" x2="8" y2="13.33" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <line x1="10.67" y1="10" x2="10.67" y2="13.33" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>${promotion.date}</span>
+                        </div>
+                    `
+                    : '';
+                container.innerHTML = `
+                    <div class="promotion-detail-image">
+                        <img src="${promotion.image || ''}" alt="${promotion.title || 'Promotion'}" onerror="this.style.display='none'">
+                    </div>
+                    <div class="promotion-detail-info">
+                        ${dateBlockHtml}
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = '<div class="error">' + t('WEBAPP_ERROR_LOADING_USER') + '</div>';
+            }
+        }
+
+        async function loadPromotions() {
+            try {
+                // Показываем skeleton loader сразу
+                const bannerSection = document.getElementById('bannerSection');
+                const skeletonBanner = document.getElementById('skeletonBanner');
+                if (bannerSection) bannerSection.style.display = 'block';
+                if (skeletonBanner) skeletonBanner.style.display = 'block';
+                
+                const response = await fetchNoCache(`${API_BASE}/promotions/`);
+                if (response.ok) {
+                    promotions = await response.json();
+                    const bannerCard = document.getElementById('bannerCard');
+                    const bannerNavLeft = document.getElementById('bannerNavLeft');
+                    const bannerNavRight = document.getElementById('bannerNavRight');
+                    
+                    if (promotions && promotions.length > 0) {
+                        currentBannerIndex = 0;
+                        if (bannerSection) {
+                            bannerSection.style.display = 'block';
+                        }
+                        // Скрываем skeleton и показываем реальный баннер
+                        if (skeletonBanner) {
+                            skeletonBanner.style.display = 'none';
+                            skeletonBanner.style.visibility = 'hidden';
+                            skeletonBanner.style.opacity = '0';
+                        }
+                        if (bannerCard) {
+                            bannerCard.style.display = 'block';
+                        }
+                        
+                        updateBanner();
+                        updateCarouselDots();
+                    } else {
+                        // Если нет акций, скрываем баннер и skeleton
+                        if (bannerSection) {
+                            bannerSection.style.display = 'none';
+                        }
+                        if (skeletonBanner) {
+                            skeletonBanner.style.display = 'none';
+                            skeletonBanner.style.visibility = 'hidden';
+                            skeletonBanner.style.opacity = '0';
+                        }
+                    }
+                } else {
+                    // Если запрос не успешен, проверяем есть ли уже загруженные акции
+                    const bannerSection = document.getElementById('bannerSection');
+                    const skeletonBanner = document.getElementById('skeletonBanner');
+                    const bannerCard = document.getElementById('bannerCard');
+                    const bannerNavLeft = document.getElementById('bannerNavLeft');
+                    const bannerNavRight = document.getElementById('bannerNavRight');
+                    
+                    if (bannerSection && promotions && promotions.length > 0) {
+                        bannerSection.style.display = 'block';
+                        if (skeletonBanner) {
+                            skeletonBanner.style.display = 'none';
+                            skeletonBanner.style.visibility = 'hidden';
+                            skeletonBanner.style.opacity = '0';
+                        }
+                        if (bannerCard) {
+                            bannerCard.style.display = 'block';
+                        }
+                        updateBanner();
+                    } else if (bannerSection) {
+                        bannerSection.style.display = 'none';
+                        if (skeletonBanner) {
+                            skeletonBanner.style.display = 'none';
+                            skeletonBanner.style.visibility = 'hidden';
+                            skeletonBanner.style.opacity = '0';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading promotions:', error);
+                // Не скрываем баннер при ошибке, если уже есть загруженные акции
+                const bannerSection = document.getElementById('bannerSection');
+                const skeletonBanner = document.getElementById('skeletonBanner');
+                const bannerCard = document.getElementById('bannerCard');
+                
+                if (bannerSection && promotions && promotions.length > 0) {
+                    bannerSection.style.display = 'block';
+                    if (skeletonBanner) {
+                        skeletonBanner.style.display = 'none';
+                        skeletonBanner.style.visibility = 'hidden';
+                        skeletonBanner.style.opacity = '0';
+                    }
+                    if (bannerCard) {
+                        bannerCard.style.display = 'block';
+                    }
+                    updateBanner();
+                } else if (bannerSection) {
+                    bannerSection.style.display = 'none';
+                    if (skeletonBanner) {
+                        skeletonBanner.style.display = 'none';
+                        skeletonBanner.style.visibility = 'hidden';
+                        skeletonBanner.style.opacity = '0';
+                    }
+                }
+            }
+        }
+
+        function updateBanner() {
+            if (!promotions || promotions.length === 0) return;
+            
+            // Проверяем валидность индекса
+            if (currentBannerIndex < 0 || currentBannerIndex >= promotions.length) {
+                currentBannerIndex = 0;
+            }
+            
+            const promotion = promotions[currentBannerIndex];
+            if (!promotion) return;
+            
+            const bannerTitle = document.getElementById('bannerTitle');
+            const bannerDate = document.getElementById('bannerDate');
+            const bannerImage = document.getElementById('bannerImage');
+            const bannerCard = document.getElementById('bannerCard');
+            const bannerSection = document.getElementById('bannerSection');
+            const bannerNavLeft = document.getElementById('bannerNavLeft');
+            const bannerNavRight = document.getElementById('bannerNavRight');
+            const skeletonBanner = document.getElementById('skeletonBanner');
+            
+            // Скрываем skeleton loader и показываем реальный баннер
+            if (skeletonBanner) {
+                skeletonBanner.style.display = 'none';
+                skeletonBanner.style.visibility = 'hidden';
+                skeletonBanner.style.opacity = '0';
+            }
+            if (bannerCard) {
+                bannerCard.style.display = 'block';
+                bannerCard.style.visibility = 'visible';
+                bannerCard.style.opacity = '1';
+            }
+            
+            // Показываем баннер если он скрыт
+            if (bannerSection) {
+                bannerSection.style.display = 'block';
+            }
+            
+            // Показываем навигационные кнопки только если есть больше одной акции
+            if (promotions.length > 1) {
+                if (bannerNavLeft) bannerNavLeft.style.display = 'flex';
+                if (bannerNavRight) bannerNavRight.style.display = 'flex';
+            } else {
+                if (bannerNavLeft) bannerNavLeft.style.display = 'none';
+                if (bannerNavRight) bannerNavRight.style.display = 'none';
+            }
+            
+            if (bannerTitle) {
+                bannerTitle.textContent = promotion.title || '';
+                bannerTitle.style.display = promotion.title ? '' : 'none';
+            }
+
+            const bannerDateBtn = bannerDate ? bannerDate.closest('.banner-date-btn') : null;
+            if (bannerDate) {
+                bannerDate.textContent = promotion.date || '';
+            }
+            if (bannerDateBtn) {
+                bannerDateBtn.style.display = promotion.date ? '' : 'none';
+            }
+            
+            if (bannerImage && promotion.image) {
+                bannerImage.src = promotion.image;
+                bannerImage.style.display = 'block';
+                // Убираем градиентный фон и padding, когда есть изображение
+                if (bannerCard) {
+                    bannerCard.style.background = 'transparent';
+                    bannerCard.style.padding = '0';
+                }
+                
+                // Получаем доминирующий цвет изображения и применяем к активной точке
+                getDominantColor(promotion.image, function(color) {
+                    currentDotColor = color;
+                    updateCarouselDots();
+                });
+                
+                bannerImage.onerror = function() {
+                    this.style.display = 'none';
+                    // Возвращаем градиентный фон, если изображение не загрузилось
+                    if (bannerCard) {
+                        bannerCard.style.background = '';
+                        bannerCard.style.padding = '';
+                    }
+                    // Используем цвет по умолчанию при ошибке
+                    currentDotColor = '#1E72B7';
+                    updateCarouselDots();
+                };
+            } else if (bannerImage) {
+                bannerImage.style.display = 'none';
+                // Возвращаем градиентный фон, если нет изображения
+                if (bannerCard) {
+                    bannerCard.style.background = '';
+                    bannerCard.style.padding = '';
+                }
+                // Используем цвет по умолчанию если нет изображения
+                currentDotColor = '#1E72B7';
+                updateCarouselDots();
+            } else {
+                // Используем цвет по умолчанию
+                currentDotColor = '#1E72B7';
+                updateCarouselDots();
+            }
+        }
+
+        function updateCarouselDots() {
+            const dotsContainer = document.getElementById('carouselDots');
+            if (!dotsContainer) return;
+            
+            // Проверяем валидность индекса
+            if (currentBannerIndex < 0 || currentBannerIndex >= promotions.length) {
+                currentBannerIndex = 0;
+            }
+            
+            dotsContainer.innerHTML = '';
+            
+            if (!promotions || promotions.length === 0) {
+                dotsContainer.style.display = 'none';
+                return;
+            }
+            
+            dotsContainer.style.display = 'flex';
+            
+            // Если только один слайд, не показываем точки
+            if (promotions.length === 1) {
+                dotsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Создаем точки в порядке слайдов
+            for (let i = 0; i < promotions.length; i++) {
+                const dot = document.createElement('div');
+                
+                if (i === currentBannerIndex) {
+                    // Активная точка - используем цвет из текущего изображения
+                    dot.className = 'dot active';
+                    dot.style.background = currentDotColor;
+                    dot.style.boxShadow = `0 0 0.375rem ${currentDotColor}66`; // Добавляем прозрачность для тени
+                } else {
+                    // Неактивная точка - серый цвет
+                    dot.className = 'dot';
+                }
+                
+                // Сохраняем индекс в data-атрибут
+                dot.setAttribute('data-index', i);
+                dot.onclick = (e) => {
+                    e.stopPropagation();
+                    const targetIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+                    if (targetIndex >= 0 && targetIndex < promotions.length && targetIndex !== currentBannerIndex) {
+                        currentBannerIndex = targetIndex;
+                        updateBanner();
+                        updateCarouselDots();
+                    }
+                };
+                
+                dotsContainer.appendChild(dot);
+            }
+            
+            // Убеждаемся, что точки центрированы и wrapper не растягивается
+            dotsContainer.style.marginLeft = 'auto';
+            dotsContainer.style.marginRight = 'auto';
+            dotsContainer.style.width = 'fit-content';
+            dotsContainer.style.maxWidth = 'fit-content';
+            dotsContainer.style.display = 'flex';
+            dotsContainer.style.justifyContent = 'center';
+            dotsContainer.style.alignItems = 'center';
+        }
+
+        function prevBanner() {
+            if (!promotions || promotions.length === 0) return;
+            currentBannerIndex = (currentBannerIndex - 1 + promotions.length) % promotions.length;
+            if (currentBannerIndex < 0) currentBannerIndex = promotions.length - 1;
+            if (currentBannerIndex >= promotions.length) currentBannerIndex = 0;
+            updateBanner();
+            updateCarouselDots();
+        }
+
+        function nextBanner() {
+            if (!promotions || promotions.length === 0) return;
+            currentBannerIndex = (currentBannerIndex + 1) % promotions.length;
+            if (currentBannerIndex < 0) currentBannerIndex = promotions.length - 1;
+            if (currentBannerIndex >= promotions.length) currentBannerIndex = 0;
+            updateBanner();
+            updateCarouselDots();
+        }
+
+        function updatePageTexts() {
+            // Обновляем метку баллов
+            const pointsLabel = document.querySelector('.points-label');
+            if (pointsLabel) {
+                pointsLabel.textContent = t('WEBAPP_TOTAL_POINTS');
+            }
+            
+            // Обновляем информационный текст
+            const infoText = document.querySelector('.info-text p');
+            if (infoText) {
+                infoText.textContent = t('WEBAPP_INFO_TEXT');
+            }
+            
+            // Обновляем кнопки связи с админом
+            const contactBtns = document.querySelectorAll('.contact-admin-btn span:last-child');
+            contactBtns.forEach(btn => {
+                if (btn.textContent.trim() !== '') {
+                    btn.textContent = t('WEBAPP_CONTACT_ADMIN');
+                }
+            });
+            
+            // Обновляем текст кнопки регистрации QR
+            const registerText = document.querySelector('.register-text');
+            if (registerText) {
+                registerText.textContent = t('WEBAPP_REGISTER');
+            }
+            
+            // Обновляем placeholder для QR ввода в зависимости от типа пользователя
+            updateQRPlaceholder();
+            
+            // Обновляем текст партнера
+            const partnerText = document.querySelector('.gifts-text');
+            if (partnerText) {
+                partnerText.textContent = t('WEBAPP_PARTNER_TEXT');
+            }
+            
+            // Обновляем текст кнопки просмотра подарков
+            const viewGiftsText = document.querySelector('.view-gifts-text');
+            if (viewGiftsText) {
+                viewGiftsText.textContent = t('WEBAPP_VIEW_GIFTS');
+            }
+            
+            // Обновляем ссылку на политику конфиденциальности
+            const privacyLink = document.querySelector('.privacy-link a');
+            if (privacyLink) {
+                privacyLink.textContent = t('WEBAPP_PRIVACY_POLICY');
+            }
+            
+            // Обновляем заголовки экранов
+            const screenTitles = document.querySelectorAll('.screen-title');
+            screenTitles.forEach(title => {
+                const screenId = title.closest('.screen')?.id;
+                if (screenId === 'giftsListScreen') {
+                    title.textContent = t('WEBAPP_GIFTS_TITLE');
+                } else if (screenId === 'profileScreen') {
+                    title.textContent = t('WEBAPP_PROFILE');
+                } else if (screenId === 'profileGiftsScreen') {
+                    title.textContent = t('WEBAPP_GIFTS');
+                } else if (screenId === 'qrHistoryScreen') {
+                    title.textContent = t('WEBAPP_QR_HISTORY');
+                } else if (screenId === 'privacyScreen') {
+                    title.textContent = t('WEBAPP_PRIVACY_POLICY');
+                }
+            });
+            
+            // Обновляем тексты в модальном окне выбора языка
+            const languageModalTitle = document.querySelector('.language-modal-content .modal-title');
+            if (languageModalTitle) {
+                languageModalTitle.textContent = t('WEBAPP_INTERFACE_LANGUAGE');
+            }
+            
+            // Обновляем названия языков в модальном окне
+            const languageOptions = document.querySelectorAll('.language-option .language-name');
+            languageOptions.forEach((option, index) => {
+                if (index === 0) {
+                    option.textContent = t('WEBAPP_UZBEK');
+                } else if (index === 1) {
+                    option.textContent = t('WEBAPP_RUSSIAN');
+                }
+            });
+            
+            // Обновляем тексты с data-tkey (меню профиля, нижняя навигация и т.п.)
+            document.querySelectorAll('[data-tkey]').forEach(el => {
+                const key = el.dataset.tkey;
+                if (key) el.textContent = t(key);
+            });
+            
+            // Обновляем тексты в меню профиля (старые элементы, если есть)
+            const menuItems = document.querySelectorAll('.menu-item .menu-text');
+            menuItems.forEach((item, index) => {
+                const menuItem = item.closest('.menu-item');
+                if (menuItem) {
+                    const icon = menuItem.querySelector('.menu-icon')?.textContent;
+                    if (icon === '🌐') {
+                        item.textContent = t('WEBAPP_INTERFACE_LANGUAGE');
+                    } else if (icon === '🎁') {
+                        item.textContent = t('WEBAPP_GIFTS');
+                    } else if (icon === '🕐') {
+                        item.textContent = t('WEBAPP_QR_HISTORY');
+                    } else if (icon === '🔒') {
+                        item.textContent = t('WEBAPP_PRIVACY_POLICY');
+                    }
+                }
+            });
+            
+            // Обновляем тексты в модальном окне подтверждения
+            const confirmModalTitle = document.querySelector('#confirmModal .modal-title');
+            if (confirmModalTitle) {
+                confirmModalTitle.textContent = t('WEBAPP_CONFIRM_RECEIPT');
+            }
+            
+            const confirmModalText = document.querySelector('#confirmModal p');
+            if (confirmModalText) {
+                confirmModalText.textContent = t('WEBAPP_DID_YOU_RECEIVE');
+            }
+            
+            const commentInput = document.getElementById('commentInput');
+            if (commentInput) {
+                commentInput.placeholder = t('WEBAPP_COMMENT_PLACEHOLDER');
+            }
+            
+            const yesBtn = document.querySelector('#confirmModal .btn-success');
+            if (yesBtn) {
+                yesBtn.textContent = t('WEBAPP_YES_RECEIVED');
+            }
+            
+            const noBtn = document.querySelector('#confirmModal .btn-danger');
+            if (noBtn) {
+                noBtn.textContent = t('WEBAPP_NO_NOT_RECEIVED');
+            }
+            
+            const cancelBtn = document.querySelector('#confirmModal .btn-secondary');
+            if (cancelBtn) {
+                cancelBtn.textContent = t('WEBAPP_CANCEL');
+            }
+            
+            // Если открыт экран со списком подарков, перезагружаем его
+            if (document.getElementById('giftsListScreen').style.display !== 'none') {
+                loadGiftsList();
+            }
+            
+            // Если открыт экран с историей QR, перезагружаем его
+            if (document.getElementById('qrHistoryScreen').style.display !== 'none') {
+                loadQRHistory();
+            }
+            
+            // Если открыт экран с подарками профиля, перезагружаем его
+            if (document.getElementById('profileGiftsScreen').style.display !== 'none') {
+                loadProfileGifts();
+            }
+            
+            // Если открыт popup с деталями подарка, перерендерим его новым языком
+            const giftPopup = document.getElementById('giftPopup');
+            if (giftPopup && giftPopup.classList.contains('active') && currentGiftPopup) {
+                const body = document.getElementById('giftPopupBody');
+                if (body) body.innerHTML = renderGiftPopupDetail(currentGiftPopup);
+            }
+
+            // Обновляем статус продукта, если он отображается
+            const productStatus = document.getElementById('productStatus');
+            if (productStatus && productStatus.textContent) {
+                const statusText = productStatus.textContent.trim();
+                if (statusText === t('WEBAPP_STATUS_PENDING') || 
+                    statusText.includes('pending') || 
+                    statusText.includes('Ожидает') ||
+                    statusText.includes('Kutilmoqda')) {
+                    productStatus.textContent = t('WEBAPP_STATUS_PENDING');
+                }
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function showRegistrationOverlay() {
+            document.getElementById('registrationOverlay').style.display = 'flex';
+        }
+
+        async function continueRegistration() {
+            const btn = document.getElementById('continueRegBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+            }
+
+            // Получаем telegram_id из WebApp или из URL-параметра
+            const initData = tg.initDataUnsafe;
+            const tgUser = initData ? initData.user : null;
+            const urlParams = new URLSearchParams(window.location.search);
+            const telegramId = (tgUser && tgUser.id)
+                ? tgUser.id
+                : parseInt(urlParams.get('telegram_id') || '0');
+
+            if (telegramId) {
+                try {
+                    await fetch(`${API_BASE}/resend-registration-step/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ telegram_id: telegramId }),
+                    });
+                } catch (e) {
+                    // Не блокируем закрытие даже если запрос упал
+                    console.error('resend-registration-step failed:', e);
+                }
+            }
+
+            tg.close();
+        }
+
+        // Очистка ошибки при вводе и изменение стиля кнопки
+        document.addEventListener('DOMContentLoaded', function() {
+            const qrInput = document.getElementById('qrInput');
+            const registerBtn = document.querySelector('.register-btn');
+            
+            function updateRegisterButton() {
+                if (qrInput && registerBtn) {
+                    const value = qrInput.value.trim();
+                    if (value.length > 0) {
+                        registerBtn.classList.add('active');
+                    } else {
+                        registerBtn.classList.remove('active');
+                    }
+                }
+            }
+            
+            function getExpectedPrefix() {
+                if (currentUser && currentUser.user_type) {
+                    return currentUser.user_type === 'seller' ? 'D' : 'E';
+                }
+                return 'E'; // По умолчанию E
+            }
+            
+            if (qrInput) {
+                // Проверяем начальное состояние
+                updateRegisterButton();
+                
+                // Обработка первого символа - сразу добавляем префикс
+                qrInput.addEventListener('keydown', function(e) {
+                    // Если поле пустое и пользователь начинает вводить символ
+                    if (qrInput.value.length === 0) {
+                        const key = e.key;
+                        // Если это буква или цифра (не служебные клавиши)
+                        if (key.length === 1 && /[A-Za-z0-9]/.test(key)) {
+                            const expectedPrefix = getExpectedPrefix();
+                            // Устанавливаем префикс + первый символ в верхнем регистре
+                            qrInput.value = expectedPrefix + key.toUpperCase();
+                            e.preventDefault();
+                            // Устанавливаем курсор в конец
+                            setTimeout(() => {
+                                qrInput.setSelectionRange(qrInput.value.length, qrInput.value.length);
+                                updateRegisterButton();
+                            }, 0);
+                        }
+                    }
+                });
+                
+                qrInput.addEventListener('input', function(e) {
+                    let value = qrInput.value;
+                    const cursorPosition = qrInput.selectionStart;
+                    
+                    // Преобразуем все буквы в верхний регистр
+                    value = value.toUpperCase();
+                    
+                    // Определяем ожидаемый префикс на основе типа пользователя
+                    const expectedPrefix = getExpectedPrefix();
+                    
+                    // Если поле пустое, просто очищаем ошибки
+                    if (value.length === 0) {
+                        updateRegisterButton();
+                        return;
+                    }
+                    
+                    // Если пользователь начинает вводить без префикса, добавляем его автоматически
+                    if (!value.startsWith('E') && !value.startsWith('D')) {
+                        // Если первый символ - буква или цифра, добавляем префикс типа пользователя
+                        if (/^[A-Z0-9]/.test(value)) {
+                            value = expectedPrefix + value;
+                        }
+                    }
+                    
+                    // Сохраняем старую длину для корректного восстановления позиции курсора
+                    const oldLength = qrInput.value.length;
+                    
+                    // Обновляем значение
+                    qrInput.value = value;
+                    
+                    // Восстанавливаем позицию курсора с учетом изменений
+                    let newCursorPosition = cursorPosition;
+                    if (value.length !== oldLength) {
+                        const lengthDiff = value.length - oldLength;
+                        // Если добавили префикс в начале, курсор должен быть после добавленного текста
+                        if (lengthDiff > 0 && cursorPosition === 0 && oldLength === 0) {
+                            newCursorPosition = value.length;
+                        } else if (lengthDiff > 0) {
+                            // Если добавили символы, сдвигаем курсор
+                            newCursorPosition = Math.min(cursorPosition + lengthDiff, value.length);
+                        } else {
+                            // Если удалили символы
+                            newCursorPosition = Math.min(cursorPosition, value.length);
+                        }
+                    }
+                    qrInput.setSelectionRange(newCursorPosition, newCursorPosition);
+                    
+                    const errorDiv = document.getElementById('qrError');
+                    const inputWrapper = document.getElementById('qrInputWrapper');
+                    if (errorDiv && errorDiv.style.display !== 'none') {
+                        errorDiv.style.display = 'none';
+                        if (inputWrapper) inputWrapper.classList.remove('error');
+                    }
+                    // Обновляем стиль кнопки
+                    updateRegisterButton();
+                });
+                
+                // Также отслеживаем изменения через другие события
+                qrInput.addEventListener('change', updateRegisterButton);
+                qrInput.addEventListener('paste', function(e) {
+                    setTimeout(function() {
+                        // После вставки также применяем преобразование
+                        let value = qrInput.value.toUpperCase();
+                        const expectedPrefix = getExpectedPrefix();
+                        
+                        if (value.length > 0 && !value.startsWith('E') && !value.startsWith('D')) {
+                            if (/^[A-Z0-9]/.test(value)) {
+                                value = expectedPrefix + value;
+                            }
+                        }
+                        qrInput.value = value;
+                        updateRegisterButton();
+                    }, 10);
+                });
+            }
+        });
+
+        initApp();
+    </script>
+</body>
+</html>
