@@ -25,10 +25,6 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='QRCodeGeneration',
         ),
-        # Remove HistoricalSmartUPId
-        migrations.DeleteModel(
-            name='HistoricalSmartUPId',
-        ),
         migrations.DeleteModel(
             name='SmartUPId',
         ),
