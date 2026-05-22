@@ -864,9 +864,9 @@ def _resend_step_for_user(user: TelegramUser) -> str:
         _tg_api('sendMessage', {
             'chat_id': chat_id,
             'text': (
-                "Assalomu alaykum!\n«Mono Electric» aksiyasiga xush kelibsiz.\n"
+                "Assalomu alaykum!\n«JIP» dasturiga xush kelibsiz.\n"
                 "Iltimos, qulay bo'lgan tilni tanlang:\n\n"
-                "Добрый день!\nДобро пожаловать в акцию «Mono Electric».\n"
+                "Добрый день!\nДобро пожаловать в программу «JIP».\n"
                 "Пожалуйста, выберите удобный для вас язык:"
             ),
             'reply_markup': {
@@ -970,9 +970,9 @@ def resend_registration_step(request):
         _tg_api('sendMessage', {
             'chat_id': int(telegram_id),
             'text': (
-                "Assalomu alaykum!\n«Mono Electric» aksiyasiga xush kelibsiz.\n"
+                "Assalomu alaykum!\n«JIP» dasturiga xush kelibsiz.\n"
                 "Iltimos, qulay bo'lgan tilni tanlang:\n\n"
-                "Добрый день!\nДобро пожаловать в акцию «Mono Electric».\n"
+                "Добрый день!\nДобро пожаловать в программу «JIP».\n"
                 "Пожалуйста, выберите удобный для вас язык:"
             ),
             'reply_markup': {

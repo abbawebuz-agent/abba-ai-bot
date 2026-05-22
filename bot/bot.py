@@ -478,7 +478,7 @@ async def ask_language(message: Message, user, state: FSMContext):
     logger.info(f"[ask_language] Вызывается для пользователя {user.telegram_id}, текущий язык: {user.language}")
     
     # Показываем приветствие на всех языках
-    welcome_text = "Assalomu alaykum!\n«Mono Electric» aksiyasiga xush kelibsiz.\nIltimos, qulay bo‘lgan tilni tanlang:\n\nДобрый день!\nДобро пожаловать в акцию «Mono Electric».\nПожалуйста, выберите удобный для вас язык:"
+    welcome_text = "Assalomu alaykum!\n«JIP» dasturiga xush kelibsiz.\nIltimos, qulay bo’lgan tilni tanlang:\n\nДобрый день!\nДобро пожаловать в программу «JIP».\nПожалуйста, выберите удобный для вас язык:"
     
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(
@@ -539,7 +539,7 @@ async def process_name(message: Message, state: FSMContext):
 
 
 async def ask_user_type(message: Message, user, state: FSMContext):
-    """Спрашивает у пользователя его тип (электрик или продавец)."""
+    """Foydalanuvchi turini so'raydi (santenik yoki sotuvchi)."""
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(
             text=get_text(user, 'USER_TYPE_ELECTRICIAN'),
@@ -1161,7 +1161,7 @@ async def process_user_type_selection(callback: CallbackQuery, state: FSMContext
     if callback.from_user.is_bot:
         return
     
-    user_type = callback.data.split('_')[2]  # electrician или seller
+    user_type = callback.data.split('_')[2]  # santenik yoki sotuvchi
     
     @sync_to_async
     def update_user_type():
