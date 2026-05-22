@@ -323,10 +323,10 @@ LOGIN_URL = '/admin/login/'
 # Jazzmin Configuration
 JAZZMIN_SETTINGS = {
     # Заголовок сайта
-    "site_brand": "Mono",
-    "site_logo": "core_admin/img/logo.svg",
-    "login_logo": "core_admin/img/logo.svg",
-    "login_logo_dark": "core_admin/img/logo.svg",
+    "site_brand": "JIP",
+    "site_logo": None,
+    "login_logo": None,
+    "login_logo_dark": None,
     "site_logo_classes": "img-fluid",
     "site_icon": "core_admin/img/favicon.png",
     
@@ -392,7 +392,7 @@ JAZZMIN_SETTINGS = {
     "show_ui_builder": False,
     
     # Настройки футера
-    "copyright": "Mono Admin Panel",
+    "copyright": "JIP Admin Panel",
     
     # Настройки поиска
     "search_model": ["auth.User", "core.TelegramUser"],
