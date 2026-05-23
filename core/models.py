@@ -626,6 +626,15 @@ class QRCodeBatch(models.Model):
         verbose_name="Batch nomi",
         help_text="Avtomatik: STORE-MAY-2026-001",
     )
+    seller = models.ForeignKey(
+        'TelegramUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='seller_batches',
+        limit_choices_to={'user_type': 'sotuvchi'},
+        verbose_name='Sotuvchi',
+    )
     store = models.ForeignKey(
         Store,
         on_delete=models.PROTECT,
@@ -975,6 +984,7 @@ class SellerPointsTransaction(models.Model):
     TRANSACTION_TYPE_CHOICES = [
         ('manual_add', "Admin qo'shdi"),
         ('sales_bonus', 'Sotuv bonusi'),
+        ('bonus', 'Batch bonusi'),
         ('correction', 'Tuzatish'),
         ('penalty', 'Jarima'),
     ]

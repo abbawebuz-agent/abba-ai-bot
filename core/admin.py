@@ -709,11 +709,8 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     def batch_history_html(self, obj):
         if not obj or not obj.pk:
             return '—'
-        store = obj.owned_stores.filter(is_active=True).first()
-        if not store:
-            return format_html('<p style="color:#999;">Do\'kon yo\'q — batch\'lar ham yo\'q</p>')
 
-        batches = store.batches.order_by('-created_at')
+        batches = obj.seller_batches.order_by('-created_at')
         if not batches.exists():
             return format_html('<p style="color:#999;">Hali batch yaratilmagan</p>')
 
@@ -762,7 +759,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         if not obj or not obj.pk:
             return '—'
         store = obj.owned_stores.filter(is_active=True).first()
-        total_batches = store.batches.count() if store else 0
+        total_batches = obj.seller_batches.count()
         total_qr = store.total_qr_codes() if store else 0
         scanned_qr = store.scanned_qr_codes() if store else 0
         activation_rate = store.activation_rate() if store else 0
@@ -808,7 +805,6 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         except TelegramUser.DoesNotExist:
             return HttpResponse('User topilmadi', status=404)
 
-        store = user.owned_stores.filter(is_active=True).first()
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = 'Promokodlar'
@@ -823,20 +819,19 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             cell.alignment = Alignment(horizontal='center')
 
         row = 2
-        if store:
-            for batch in store.batches.order_by('-created_at'):
-                for qr in batch.qr_codes.filter(is_deleted=False).order_by('serial_number'):
-                    scanned_by = ''
-                    if qr.scanned_by:
-                        scanned_by = qr.scanned_by.first_name or qr.scanned_by.username or str(qr.scanned_by.telegram_id)
-                    ws.append([
-                        batch.name or f'Batch #{batch.pk}',
-                        qr.code,
-                        'Ha' if qr.is_scanned else 'Yo\'q',
-                        qr.scanned_at.strftime('%d.%m.%Y %H:%M') if qr.scanned_at else '',
-                        scanned_by,
-                    ])
-                    row += 1
+        for batch in user.seller_batches.order_by('-created_at'):
+            for qr in batch.qr_codes.filter(is_deleted=False).order_by('serial_number'):
+                scanned_by = ''
+                if qr.scanned_by:
+                    scanned_by = qr.scanned_by.first_name or qr.scanned_by.username or str(qr.scanned_by.telegram_id)
+                ws.append([
+                    batch.name or f'Batch #{batch.pk}',
+                    qr.code,
+                    'Ha' if qr.is_scanned else 'Yo\'q',
+                    qr.scanned_at.strftime('%d.%m.%Y %H:%M') if qr.scanned_at else '',
+                    scanned_by,
+                ])
+                row += 1
 
         for col in ws.columns:
             ws.column_dimensions[col[0].column_letter].width = 22
@@ -2991,22 +2986,29 @@ class StoreAdmin(SimpleHistoryAdmin):
 
 @admin.register(QRCodeBatch)
 class QRCodeBatchAdmin(SimpleHistoryAdmin):
-    """JIP: Skretch-karta batch admin."""
+    """JIP: Skretch-karta batch admin. Sotuvchini tanlang — store va ballar avtomatik."""
     list_display = [
-        'name', 'store_link', 'quantity', 'points_per_code',
+        'name', 'seller_link', 'quantity', 'points_per_code',
         'activation_display', 'scanned_count', 'status', 'delivery_status',
         'zip_link', 'created_at',
     ]
-    list_filter = ['status', 'delivery_status', 'store', 'store__region']
-    search_fields = ['name', 'store__name']
-    autocomplete_fields = ['store']
-    readonly_fields = ['name', 'created_at', 'completed_at', 'zip_file', 'error_message', 'batch_qr_history_link']
+    list_filter = ['status', 'delivery_status', 'store__region']
+    search_fields = ['name', 'seller__first_name', 'seller__phone_number', 'store__name']
+    autocomplete_fields = ['seller']
+    readonly_fields = [
+        'name', 'store', 'points_per_code',
+        'created_at', 'completed_at', 'zip_file', 'error_message',
+        'batch_qr_history_link',
+    ]
     list_per_page = 50
 
     fieldsets = (
         ("Batch ma'lumotlari", {
-            'fields': ('name', 'store', 'quantity', 'points_per_code'),
-            'description': "Batch saqlanganda avtomatik nom va ZIP generatsiya boshlanadi.",
+            'fields': ('seller', 'store', 'quantity', 'points_per_code'),
+            'description': (
+                "Sotuvchini tanlang va miqdorni kiriting. "
+                "Ballar (50 × miqdor) sotuvchiga avtomatik qo'shiladi."
+            ),
         }),
         ('📊 QR tarixi', {
             'fields': ('batch_qr_history_link',),
@@ -3022,11 +3024,21 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         }),
     )
 
-    def store_link(self, obj):
-        url = reverse('admin:core_store_change', args=[obj.store_id])
-        return format_html('<a href="{}">{}</a>', url, obj.store.name)
-    store_link.short_description = "Do'kon"
-    store_link.admin_order_field = 'store__name'
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if obj is None:
+            if 'seller' in form.base_fields:
+                form.base_fields['seller'].required = True
+        return form
+
+    def seller_link(self, obj):
+        if obj.seller_id:
+            url = reverse('admin:core_telegramuser_change', args=[obj.seller_id])
+            name = obj.seller.first_name or f'ID:{obj.seller.telegram_id}'
+            return format_html('<a href="{}">{}</a>', url, name)
+        return obj.store.name if obj.store_id else '—'
+    seller_link.short_description = 'Sotuvchi'
+    seller_link.admin_order_field = 'seller__first_name'
 
     def scanned_count(self, obj):
         scanned = obj.qr_codes.filter(is_scanned=True).count()
@@ -3057,10 +3069,23 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     def activation_display(self, obj):
         rate = obj.activation_rate()
         color = '#16a34a' if rate >= 50 else ('#ca8a04' if rate >= 20 else '#dc2626')
-        return format_html(
-            '<span style="color:{}; font-weight:600;">{}%</span>', color, rate,
-        )
+        return format_html('<span style="color:{}; font-weight:600;">{}%</span>', color, rate)
     activation_display.short_description = 'Aktivatsiya'
+
+    def _get_or_create_store_for_seller(self, seller):
+        """Seller's store topilsa qaytaradi, aks holda minimal store yaratadi."""
+        store = Store.objects.filter(owner=seller).first()
+        if store:
+            return store
+        region = seller.region or UzRegion.objects.first()
+        store = Store.objects.create(
+            name=seller.first_name or f'Sotuvchi #{seller.id}',
+            phone=seller.phone_number or '—',
+            address='—',
+            region=region,
+            owner=seller,
+        )
+        return store
 
     actions = ['action_generate_zip', 'action_mark_shipped', 'action_mark_delivered']
 
@@ -3100,19 +3125,42 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         is_new = not obj.pk
         if not obj.created_by_id:
             obj.created_by = request.user
+        # Always enforce fixed points_per_code
+        obj.points_per_code = 50
+        # Auto-assign store from seller
+        if obj.seller_id:
+            obj.store = self._get_or_create_store_for_seller(obj.seller)
         super().save_model(request, obj, form, change)
         if is_new:
             if not obj.name:
                 obj.name = QRCodeBatch.generate_name(obj.store)
                 obj.save(update_fields=['name'])
+            # Credit bonus points to seller
+            if obj.seller_id:
+                bonus_points = obj.quantity * 50
+                from django.db.models import F as DbF
+                TelegramUser.objects.filter(pk=obj.seller_id).update(points=DbF('points') + bonus_points)
+                SellerPointsTransaction.objects.create(
+                    seller=obj.seller,
+                    store=obj.store,
+                    transaction_type='bonus',
+                    points=bonus_points,
+                    note=f"Batch '{obj.name}' yaratildi ({obj.quantity} ta × 50 ball)",
+                    created_by=request.user,
+                )
+                obj.seller.invalidate_points_cache()
+                self.message_user(
+                    request,
+                    f"✅ '{obj.name}' batch yaratildi. Sotuvchiga {bonus_points:,} ball qo'shildi.",
+                )
+            else:
+                self.message_user(request, f"✅ '{obj.name}' batch yaratildi.")
             try:
                 generate_batch_zip.delay(obj.id)
-                self.message_user(request, f"✅ '{obj.name}' batch yaratildi. ZIP Celery orqali generatsiya boshlanadi.")
             except Exception:
                 import threading
                 t = threading.Thread(target=_do_generate_batch_zip, args=(obj,), daemon=True)
                 t.start()
-                self.message_user(request, f"✅ '{obj.name}' batch yaratildi. ZIP fon rejimida generatsiya boshlanadi.")
 
 
 @admin.register(SellerPointsTransaction)
