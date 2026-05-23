@@ -629,26 +629,16 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     update_locations_action.short_description = 'Обновить вилоят/туман через Nominatim (OSM)'
 
     def delete_users_action(self, request, queryset):
-        """Tanlangan foydalanuvchilarni o'chirish."""
-        deleted = 0
-        skipped = []
-        for user in queryset:
-            try:
-                user.delete()
-                deleted += 1
-            except ProtectedError:
-                name = user.first_name or user.username or str(user.telegram_id)
-                skipped.append(name)
-
-        if deleted:
-            self.message_user(request, f'✅ {deleted} ta foydalanuvchi o\'chirildi.', messages.SUCCESS)
-        if skipped:
-            self.message_user(
-                request,
-                f'⚠️ {len(skipped)} ta o\'chirilmadi (do\'kon egasi yoki tranzaksiyalari bor): '
-                + ', '.join(skipped[:5]) + ('...' if len(skipped) > 5 else ''),
-                messages.WARNING,
-            )
+        """Tanlangan foydalanuvchilarni o'chirish (bog'liq yozuvlar tozalanadi)."""
+        ids = list(queryset.values_list('id', flat=True))
+        # Do'kon egasi → NULL (do'kon o'chirilamaydi, faqat egasiz qoladi)
+        Store.objects.filter(owner_id__in=ids).update(owner=None)
+        # Tranzaksiyalar va g'olib yozuvlari — user bilan birga o'chiriladi
+        SellerPointsTransaction.objects.filter(seller_id__in=ids).delete()
+        LiveStreamWinner.objects.filter(user_id__in=ids).delete()
+        # Endi xavfsiz o'chirish
+        count, _ = TelegramUser.objects.filter(id__in=ids).delete()
+        self.message_user(request, f'✅ {count} ta foydalanuvchi o\'chirildi.', messages.SUCCESS)
 
     delete_users_action.short_description = '🗑️ Tanlangan foydalanuvchilarni o\'chirish'
 
