@@ -137,8 +137,9 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     ordering = ['region__code', 'district__code', '-created_at']
     actions = [
         'send_personal_message_action', 'update_locations_action',
-        'change_user_type_to_electrician', 'change_user_type_to_seller',
+        'change_user_type_to_seller',
         'approve_sellers_action', 'reject_sellers_action',
+        'delete_users_action',
     ]
     list_per_page = 50
     date_hierarchy = 'created_at'
@@ -626,16 +627,13 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     update_locations_action.short_description = 'Обновить вилоят/туман через Nominatim (OSM)'
 
-    def change_user_type_to_electrician(self, request, queryset):
-        """Массовое изменение типа пользователя на Электрик."""
-        updated = queryset.update(user_type='santenik')
-        self.message_user(
-            request,
-            f'Тип пользователя изменен на "Электрик" для {updated} пользователей.',
-            messages.SUCCESS
-        )
+    def delete_users_action(self, request, queryset):
+        """Tanlangan foydalanuvchilarni o'chirish."""
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f'{count} ta foydalanuvchi o\'chirildi.', messages.SUCCESS)
 
-    change_user_type_to_electrician.short_description = 'Изменить тип на: ⚡ Электрик'
+    delete_users_action.short_description = '🗑️ Tanlangan foydalanuvchilarni o\'chirish'
 
     def change_user_type_to_seller(self, request, queryset):
         """Массовое изменение типа пользователя на Продавец (Предприниматель)."""
@@ -1608,7 +1606,7 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             ws.title = 'Продавцы'
             fill_sheet(ws, base_qs.filter(scanned_by__user_type='sotuvchi'), 'D6F0D6')
 
-        type_suffix = {'electrician': '_elektriklar', 'seller': '_sotuvchilar'}.get(user_type, '')
+        type_suffix = {'santenik': '_santenikar', 'seller': '_sotuvchilar'}.get(user_type, '')
         filename = f'promokody_{month_name}_{year}{type_suffix}.xlsx'
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1805,7 +1803,7 @@ class GiftAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         if obj.user_type == 'santenik':
             return format_html(
                 '<span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; '
-                'font-size: 12px; font-weight: 600;">⚡ Elektrik</span>'
+                'font-size: 12px; font-weight: 600;">🔧 Santenik</span>'
             )
         elif obj.user_type == 'sotuvchi':
             return format_html(
@@ -2603,21 +2601,18 @@ class AdminContactSettingsAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 @admin.register(VideoInstruction)
 class VideoInstructionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     """Админка для видео инструкций. 4 видео: электрики (UZ/RU) и предприниматели (UZ/RU)."""
-    list_display = ['video_electrician_preview', 'video_seller_preview', 'file_id_status', 'is_active', 'updated_at']
+    list_display = ['video_seller_preview', 'file_id_status', 'is_active', 'updated_at']
     list_filter = [
         'is_active',
         ('updated_at', DateTimeRangeFilterBuilder(title='Дата обновления (диапазон)')),
     ]
     fieldsets = (
-        ('Video — Elektriklar', {
-            'fields': ('video_electrician_uz', 'thumb_electrician_uz', 'video_electrician_ru', 'thumb_electrician_ru')
-        }),
-        ('Video — Tadbirkorlar', {
+        ('Video — Santeniklarlar', {
             'fields': ('video_seller_uz', 'thumb_seller_uz', 'video_seller_ru', 'thumb_seller_ru')
         }),
         ('Telegram file_id (avtomatik)', {
-            'fields': ('file_id_electrician_uz', 'file_id_electrician_ru', 'file_id_seller_uz', 'file_id_seller_ru'),
-            'description': 'File_id avtomatik to\'ldiriladi. Thumbnail — JPEG max 320x320, 200KB (oldindan ko\'rinish uchun).'
+            'fields': ('file_id_seller_uz', 'file_id_seller_ru'),
+            'description': 'File_id avtomatik to\'ldiriladi. Thumbnail — JPEG max 320x320, 200KB.'
         }),
         ('Sozlamalar', {
             'fields': ('is_active',)
@@ -2626,28 +2621,18 @@ class VideoInstructionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
-    readonly_fields = ['created_at', 'updated_at', 'file_id_electrician_uz', 'file_id_electrician_ru',
-                       'file_id_seller_uz', 'file_id_seller_ru']
-
-    def video_electrician_preview(self, obj):
-        uz = '✅' if obj.video_electrician_uz else '❌'
-        ru = '✅' if obj.video_electrician_ru else '❌'
-        return format_html('<span>⚡ Elektrik: UZ {} | RU {}</span>', uz, ru)
-
-    video_electrician_preview.short_description = 'Video (Elektrik)'
+    readonly_fields = ['created_at', 'updated_at', 'file_id_seller_uz', 'file_id_seller_ru']
 
     def video_seller_preview(self, obj):
         uz = '✅' if obj.video_seller_uz else '❌'
         ru = '✅' if obj.video_seller_ru else '❌'
-        return format_html('<span>🛒 Tadbirkor: UZ {} | RU {}</span>', uz, ru)
+        return format_html('<span>🛒 Santenik: UZ {} | RU {}</span>', uz, ru)
 
-    video_seller_preview.short_description = 'Video (Tadbirkor)'
+    video_seller_preview.short_description = 'Video'
 
     def file_id_status(self, obj):
         return format_html(
-            '⚡ UZ{} RU{} | 🛒 UZ{} RU{}',
-            '✅' if obj.file_id_electrician_uz else '❌',
-            '✅' if obj.file_id_electrician_ru else '❌',
+            '🛒 UZ{} RU{}',
             '✅' if obj.file_id_seller_uz else '❌',
             '✅' if obj.file_id_seller_ru else '❌',
         )
