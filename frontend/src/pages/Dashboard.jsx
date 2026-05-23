@@ -33,17 +33,24 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     api.get('dashboard/').then(r => {
       setStats(r.data)
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(() => { setLoading(false); setError(true) })
   }, [])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  if (error) return (
+    <div className="flex items-center justify-center h-64 text-[#555]">
+      Ma'lumotlarni yuklab bo'lmadi. Sahifani yangilang.
     </div>
   )
 

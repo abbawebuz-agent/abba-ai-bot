@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Search, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import api from '../api/client'
 
@@ -18,7 +18,7 @@ export default function Users() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
 
-  function load() {
+  const load = useCallback(() => {
     setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set('search', search)
@@ -29,9 +29,9 @@ export default function Users() {
       setTotal(r.data.count || r.data.length)
       setLoading(false)
     }).catch(() => setLoading(false))
-  }
+  }, [search, filter, page])
 
-  useEffect(() => { load() }, [search, filter, page])
+  useEffect(() => { load() }, [load])
 
   function toggleSelect(id) {
     setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
