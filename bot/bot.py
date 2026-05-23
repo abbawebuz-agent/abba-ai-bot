@@ -228,7 +228,6 @@ def get_or_create_user(telegram_id: int, username: str = None, first_name: str =
     return user, created
 
 
-@sync_to_async
 async def is_registration_complete(user):
     """Проверяет, завершена ли регистрация пользователя."""
     base_checks = bool(
