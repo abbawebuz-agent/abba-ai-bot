@@ -204,6 +204,18 @@ class TelegramUser(models.Model):
         blank=True,
         verbose_name='Promokod kiritishni bloklash tugash vaqti'
     )
+    # Sotuvchi tasdiqlash tizimi
+    seller_approved = models.BooleanField(
+        default=False,
+        verbose_name='Sotuvchi tasdiqlangan',
+        db_index=True,
+        help_text='Faqat sotuvchilar uchun. Admin tasdiqlagunicha False.'
+    )
+    seller_approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Tasdiqlangan vaqt'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

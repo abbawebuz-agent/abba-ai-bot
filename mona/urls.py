@@ -354,6 +354,8 @@ def dashboard_view(request):
     selected_users = []
     selected_scope_label = ''
     promo_codes_page = None
+    # Tasdiqlanmagan sotuvchilar soni
+    pending_sellers_count = TelegramUser.objects.filter(user_type='sotuvchi', seller_approved=False).count()
     promo_qr_detail = None
     promo_winner = None
     promocodes_back_query = ''
@@ -679,6 +681,7 @@ def dashboard_view(request):
         'is_cc': is_cc,
         'store_rows': store_rows,
         'store_totals': store_totals,
+        'pending_sellers_count': pending_sellers_count,
     }
 
     # For AJAX infinite-scroll requests, return only the rows partial

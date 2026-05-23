@@ -35,6 +35,27 @@ TRANSLATIONS = {
         'SELLER_STORE_CONFIRM': "🏪 Sizning do'koningiz: <b>{store_name}</b>\n\nManzil: {address}\n\nTo'g'rimi?",
         'SELLER_STORE_CONFIRMED': "✅ Do'konga biriktirildingiz: <b>{store_name}</b>",
         'SELLER_STORE_REJECTED': "❌ Iltimos, admin bilan bog'laning: {admin_contact}",
+        # Sotuvchi tasdiqlash tizimi
+        'SELLER_PENDING_APPROVAL': (
+            "⏳ <b>Arizangiz yuborildi!</b>\n\n"
+            "Sizning so'rovingiz admin ko'rib chiqmoqda.\n"
+            "Tasdiqlangandan so'ng sizga xabar yuboriladi.\n\n"
+            "Savollar uchun: {admin_contact}"
+        ),
+        'SELLER_APPROVED': (
+            "✅ <b>Tabriklaymiz! Arizangiz tasdiqlandi!</b>\n\n"
+            "Endi JIP sodiqlik dasturidan foydalanishingiz mumkin.\n"
+            "Quyidagi menyudan kerakli bo'limni tanlang."
+        ),
+        'SELLER_REJECTED': (
+            "❌ <b>Arizangiz rad etildi.</b>\n\n"
+            "Sabab: {reason}\n\n"
+            "Qo'shimcha ma'lumot uchun: {admin_contact}"
+        ),
+        'SELLER_NOT_APPROVED_YET': (
+            "⏳ Arizangiz hali ko'rib chiqilmoqda.\n"
+            "Admin tasdiqlashini kuting. Savollar uchun: {admin_contact}"
+        ),
         'PRIVACY_POLICY_TEXT': "📄 Iltimos, aksiya shartlari hamda shaxsiy ma’lumotlaringizni qayta ishlash qoidalari bilan tanishing va roziligingizni tasdiqlang.",
         'ACCEPT_PRIVACY': "✅ Shartlar bilan tanishdim va roziman",
         'DECLINE_PRIVACY': "❌ Rad etish",
@@ -366,6 +387,31 @@ TRANSLATIONS = {
         'PRIVACY_ACCEPTED': "✅ Согласие на политику конфиденциальности получено!",
         'PRIVACY_DECLINED': "❌ Согласие на политику конфиденциальности не получено",
         'PRIVACY_REQUIRED': "❌ Для регистрации необходимо согласие с политикой конфиденциальности.",
+        'SELLER_STORE_NOT_FOUND': "❗ Ваш номер телефона не привязан ни к одному магазину. Пожалуйста, свяжитесь с администратором: {admin_contact}",
+        'SELLER_STORE_CONFIRM': "🏪 Ваш магазин: <b>{store_name}</b>\n\nАдрес: {address}\n\nВерно?",
+        'SELLER_STORE_CONFIRMED': "✅ Вы привязаны к магазину: <b>{store_name}</b>",
+        'SELLER_STORE_REJECTED': "❌ Пожалуйста, свяжитесь с администратором: {admin_contact}",
+        # Sotuvchi tasdiqlash tizimi
+        'SELLER_PENDING_APPROVAL': (
+            "⏳ <b>Ваша заявка отправлена!</b>\n\n"
+            "Администратор рассматривает вашу заявку.\n"
+            "После одобрения вам придёт уведомление.\n\n"
+            "По вопросам: {admin_contact}"
+        ),
+        'SELLER_APPROVED': (
+            "✅ <b>Поздравляем! Ваша заявка одобрена!</b>\n\n"
+            "Теперь вы можете пользоваться программой лояльности JIP.\n"
+            "Выберите нужный раздел в меню."
+        ),
+        'SELLER_REJECTED': (
+            "❌ <b>Ваша заявка отклонена.</b>\n\n"
+            "Причина: {reason}\n\n"
+            "По вопросам: {admin_contact}"
+        ),
+        'SELLER_NOT_APPROVED_YET': (
+            "⏳ Ваша заявка ещё рассматривается.\n"
+            "Ожидайте одобрения администратора. По вопросам: {admin_contact}"
+        ),
         'SEND_PHONE_BUTTON': "📱 Отправить номер телефона",
         'REGISTRATION_COMPLETE_MESSAGE': "✅ Регистрация успешно завершена! Теперь вы можете пользоваться ботом.",
         'SEND_PROMO_CODE': "Пожалуйста, введите ваш промокод.",

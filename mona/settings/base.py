@@ -235,6 +235,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
 TELEGRAM_BOT_USERNAME = env('TELEGRAM_BOT_USERNAME', default='')  # @username бота (без @)
 TELEGRAM_BOT_ADMIN_USERNAME = env('TELEGRAM_BOT_ADMIN_USERNAME', default='')  # @username администратора (без @)
+# Admin Telegram IDs — sotuvchi ro'yxatdan o'tganda bildirishnoma yuboriladi
+# Bir nechta ID vergul bilan: "123456789,987654321"
+ADMIN_TELEGRAM_IDS = [
+    int(x.strip()) for x in env('ADMIN_TELEGRAM_IDS', default='').split(',')
+    if x.strip().isdigit()
+]
 
 # Webhook Settings (для production)
 WEBHOOK_URL = env('WEBHOOK_URL', default='')

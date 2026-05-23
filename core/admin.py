@@ -116,10 +116,11 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     inlines = [ScannedQRCodeInline, PromoCodeAttemptInline]
     list_display = [
         'user_display', 'phone_number', 'region_display', 'district_display',
-        'user_type_badge', 'points_display', 'language_badge', 'status_badge', 'created_at', 'send_message_button'
+        'user_type_badge', 'seller_approval_badge', 'points_display', 'language_badge',
+        'status_badge', 'created_at', 'send_message_button'
     ]
     list_filter = [
-        'user_type', 'is_active', 'language', 'region', 'district',
+        'user_type', 'is_active', 'seller_approved', 'language', 'region', 'district',
         StoreAttachedFilter,
         ('created_at', DateTimeRangeFilterBuilder(title='Дата регистрации (диапазон)')),
     ]
@@ -129,11 +130,15 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         'last_message_sent_at', 'blocked_bot_at',
         'points_display', 'total_earned_points', 'open_in_yandex_maps',
         'scan_attempt_count', 'scan_attempt_success_count', 'scan_attempt_unsuccess_count',
+        'seller_approved_at',
     ]
     autocomplete_fields = ['region', 'district']
     ordering = ['region__code', 'district__code', '-created_at']
-    actions = ['send_personal_message_action', 'update_locations_action', 'change_user_type_to_electrician',
-               'change_user_type_to_seller']
+    actions = [
+        'send_personal_message_action', 'update_locations_action',
+        'change_user_type_to_electrician', 'change_user_type_to_seller',
+        'approve_sellers_action', 'reject_sellers_action',
+    ]
     list_per_page = 50
     date_hierarchy = 'created_at'
     change_list_template = 'admin/core/telegramuser/change_list.html'
@@ -179,6 +184,91 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     user_type_badge.short_description = 'Тип'
     user_type_badge.admin_order_field = 'user_type'
+
+    def seller_approval_badge(self, obj):
+        """Sotuvchi tasdiqlash holati."""
+        if obj.user_type != 'sotuvchi':
+            return '—'
+        if obj.seller_approved:
+            return format_html(
+                '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;'
+                'border-radius:12px;font-size:11px;font-weight:700;">✅ Tasdiqlangan</span>'
+            )
+        return format_html(
+            '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;'
+            'border-radius:12px;font-size:11px;font-weight:700;">⏳ Kutilmoqda</span>'
+        )
+    seller_approval_badge.short_description = 'Tasdiqlash'
+    seller_approval_badge.admin_order_field = 'seller_approved'
+
+    @admin.action(description='✅ Tanlangan sotuvchilarni TASDIQLASH (bot xabari yuboriladi)')
+    def approve_sellers_action(self, request, queryset):
+        sellers = queryset.filter(user_type='sotuvchi', seller_approved=False)
+        if not sellers.exists():
+            self.message_user(request, "Tasdiqlanmagan sotuvchi tanlanmagan.", level='warning')
+            return
+        from django.utils import timezone as tz
+        now = tz.now()
+        approved_ids = list(sellers.values_list('id', flat=True))
+        sellers.update(seller_approved=True, seller_approved_at=now)
+        # Bot orqali har bir sotuvchiga xabar yuborish
+        self._send_approval_notifications(approved_ids, approved=True, reason='')
+        self.message_user(request, f"{len(approved_ids)} sotuvchi tasdiqlandi va xabarlar yuborildi.")
+
+    @admin.action(description='❌ Tanlangan sotuvchilarni RAD ETISH (bot xabari yuboriladi)')
+    def reject_sellers_action(self, request, queryset):
+        sellers = queryset.filter(user_type='sotuvchi')
+        if not sellers.exists():
+            self.message_user(request, "Sotuvchi tanlanmagan.", level='warning')
+            return
+        rejected_ids = list(sellers.values_list('id', flat=True))
+        sellers.update(seller_approved=False, seller_approved_at=None)
+        self._send_approval_notifications(rejected_ids, approved=False, reason='Admin tomonidan rad etildi')
+        self.message_user(request, f"{len(rejected_ids)} sotuvchi rad etildi.")
+
+    def _send_approval_notifications(self, user_ids: list, approved: bool, reason: str):
+        """Sotuvchilarga tasdiqlash/rad etish xabarlarini yuboradi."""
+        import asyncio, threading
+        from django.conf import settings
+        from core.models import TelegramUser, AdminContactSettings
+
+        bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+        if not bot_token:
+            return
+
+        users = TelegramUser.objects.filter(id__in=user_ids).values('telegram_id', 'language')
+        contact_obj = AdminContactSettings.objects.filter(is_active=True, contact_type='telegram').first()
+        admin_contact = ('@' + contact_obj.contact_value.lstrip('@')) if contact_obj else '@jip_admin'
+
+        from bot.translations import get_text, TRANSLATIONS
+
+        def _send():
+            import requests
+            for u in users:
+                lang = u['language'] or 'uz_latin'
+                fake_user = type('U', (), {'language': lang})()
+                if approved:
+                    text = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
+                        'SELLER_APPROVED',
+                        "✅ Arizangiz tasdiqlandi! Endi botdan foydalanishingiz mumkin."
+                    )
+                else:
+                    tmpl = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
+                        'SELLER_REJECTED',
+                        "❌ Arizangiz rad etildi. Sabab: {reason}. Murojaat: {admin_contact}"
+                    )
+                    text = tmpl.format(reason=reason or '—', admin_contact=admin_contact)
+                try:
+                    requests.post(
+                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                        json={'chat_id': u['telegram_id'], 'text': text, 'parse_mode': 'HTML'},
+                        timeout=5,
+                    )
+                except Exception as exc:
+                    import logging
+                    logging.getLogger(__name__).warning("Telegram xabar yuborilmadi: %s", exc)
+
+        threading.Thread(target=_send, daemon=True).start()
 
     def points_display(self, obj):
         """Отображает баллы с цветом (вычисляются динамически: промокоды − активные заказы)."""
@@ -342,6 +432,14 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 'Sotuvchi: ballarni faqat admin qo\'lda qo\'shadi (SellerPointsTransaction).'
             ),
         }),
+        ('Sotuvchi tasdiqlash', {
+            'fields': ('seller_approved', 'seller_approved_at'),
+            'description': (
+                '⚠️ Faqat sotuvchilar uchun. Tasdiqlangach bot orqali sotuvchiga xabar yuboriladi. '
+                'Yoki ro\'yxatdan "✅ Tasdiqlash" action\'ini ishlating.'
+            ),
+            'classes': ('collapse',),
+        }),
         ('Настройки', {
             'fields': ('language',)
         }),
@@ -359,6 +457,22 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        """seller_approved o'zgarganda bot xabari yuboradi."""
+        if change and 'seller_approved' in form.changed_data:
+            was_approved = obj.seller_approved
+            super().save_model(request, obj, form, change)
+            if was_approved:
+                from django.utils import timezone as tz
+                obj.seller_approved_at = tz.now()
+                obj.save(update_fields=['seller_approved_at'])
+            self._send_approval_notifications(
+                [obj.id], approved=was_approved,
+                reason='Admin tomonidan rad etildi' if not was_approved else ''
+            )
+        else:
+            super().save_model(request, obj, form, change)
 
     def get_readonly_fields(self, request, obj=None):
         """Управляет readonly полями в зависимости от роли пользователя."""

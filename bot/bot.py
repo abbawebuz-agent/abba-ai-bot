@@ -229,36 +229,29 @@ def get_or_create_user(telegram_id: int, username: str = None, first_name: str =
 
 
 @sync_to_async
-def is_registration_complete(user):
+async def is_registration_complete(user):
     """Проверяет, завершена ли регистрация пользователя."""
-    # Базовые проверки
-    base_checks = (
+    base_checks = bool(
         user.language and
-        user.first_name and  # Добавляем проверку имени
+        user.first_name and
         user.user_type and
         user.privacy_accepted and
         user.phone_number and
         user.latitude is not None and
         user.longitude is not None
     )
-    
-    # JIP: SmartUP ID o'rniga — sotuvchi uchun Store biriktirilganligini tekshiramiz
+    # JIP: sotuvchi uchun admin tasdiqlashi kerak
     if user.user_type == 'sotuvchi':
-        # owned_stores reverse relation orqali tekshirish
-        from asgiref.sync import sync_to_async
-        has_store = await sync_to_async(
-            lambda: user.owned_stores.filter(is_active=True).exists()
-        )()
-        result = base_checks and has_store
+        result = base_checks and user.seller_approved
     else:
         result = base_checks
 
-    logger.info(f"[is_registration_complete] Проверка регистрации для user_id={user.id}: "
-                f"language={bool(user.language)}, first_name={bool(user.first_name)}, "
-                f"user_type={bool(user.user_type)}, privacy_accepted={user.privacy_accepted}, "
-                f"phone_number={bool(user.phone_number)}, location={user.latitude is not None and user.longitude is not None}, "
-                f"result={result}")
-
+    logger.info(
+        "[is_registration_complete] user_id=%s base=%s seller_approved=%s result=%s",
+        user.id, base_checks,
+        user.seller_approved if user.user_type == 'sotuvchi' else 'n/a',
+        result,
+    )
     return result
 
 
@@ -379,15 +372,10 @@ async def cmd_start(message: Message, state: FSMContext):
     else:
         logger.info(f"[cmd_start] Локация указана, пропускаем ask_location")
 
-    # JIP Шаг 6: Sotuvchi uchun Store biriktirilganligini tekshirish (SmartUP o'rniga)
-    if user.user_type == 'sotuvchi':
-        from asgiref.sync import sync_to_async
-        has_store = await sync_to_async(
-            lambda: user.owned_stores.filter(is_active=True).exists()
-        )()
-        if not has_store:
-            await try_attach_seller_to_store(message, user, state)
-            return
+    # JIP Шаг 6: Sotuvchi — admin tasdiqlashini tekshir
+    if user.user_type == 'sotuvchi' and not user.seller_approved:
+        await try_attach_seller_to_store(message, user, state)
+        return
 
     # Шаг 7: Промокод (если еще не введен)
     # Промокод не обязателен, поэтому просто завершаем регистрацию
@@ -806,64 +794,89 @@ async def ask_location(message: Message, user, state: FSMContext):
     await state.set_state(RegistrationStates.waiting_for_location)
 
 
-async def try_attach_seller_to_store(message: Message, user, state: FSMContext):
-    """JIP: Sotuvchi telefon raqami orqali Store'ga biriktirilishini tekshiradi.
+async def _get_admin_contact_str() -> str:
+    """AdminContactSettings dan admin kontakt qaytaradi."""
+    @sync_to_async
+    def _fetch():
+        from core.models import AdminContactSettings
+        s = AdminContactSettings.objects.filter(is_active=True, contact_type='telegram').first()
+        if s:
+            return '@' + s.contact_value.lstrip('@')
+        return '@jip_admin'
+    return await _fetch()
 
-    - Telefon raqami `Store.owner.phone_number` orqali topiladi
-    - Topilsa: tasdiqlash so'raydi
-    - Topilmasa: admin kontakti yuboriladi
-    """
-    from core.models import Store, AdminContactSettings
+
+async def _notify_admins_new_seller(user) -> None:
+    """Yangi sotuvchi ro'yxatdan o'tganda admin Telegram ID'lariga xabar yuboradi."""
+    from django.conf import settings
+    admin_ids = getattr(settings, 'ADMIN_TELEGRAM_IDS', [])
+    if not admin_ids or not bot:
+        return
 
     @sync_to_async
-    def find_store_for_seller():
-        return Store.objects.filter(
-            owner=user, is_active=True,
-        ).first()
+    def _get_store_name():
+        store = user.owned_stores.filter(is_active=True).first()
+        return store.name if store else None
 
-    @sync_to_async
-    def get_admin_contact():
-        s = AdminContactSettings.objects.first()
-        return (s.telegram_username if s and s.telegram_username else '@admin')
+    store_name = await _get_store_name()
+    region_name = user.region.name_uz if user.region else '—'
 
-    store = await find_store_for_seller()
-    admin_contact = await get_admin_contact()
-
-    if store is None:
-        # Owner ulanmagan — telefon orqali qidirib ko'ramiz
-        @sync_to_async
-        def find_store_by_phone():
-            return Store.objects.filter(
-                phone=user.phone_number, is_active=True, owner__isnull=True,
-            ).first()
-        store = await find_store_by_phone()
-
-        if store is None:
-            await message.answer(
-                get_text(user, 'SELLER_STORE_NOT_FOUND').format(admin_contact=admin_contact)
-            )
-            await state.clear()
-            return
-
-        # Auto-attach
-        @sync_to_async
-        def attach_owner():
-            store.owner = user
-            store.save(update_fields=['owner'])
-        await attach_owner()
-
-    await message.answer(
-        get_text(user, 'SELLER_STORE_CONFIRM').format(
-            store_name=store.name, address=store.address,
-        ),
-        parse_mode='HTML',
+    text = (
+        f"🆕 <b>Yangi sotuvchi ro'yxatdan o'tdi!</b>\n\n"
+        f"👤 Ism: {user.first_name or '—'}\n"
+        f"📱 Telefon: <code>{user.phone_number or '—'}</code>\n"
+        f"🏪 Do'kon: {store_name or '— biriktirilmagan'}\n"
+        f"🌍 Viloyat: {region_name}\n\n"
+        f"✅ Tasdiqlash uchun admin panel:\n"
+        f"/admin/core/telegramuser/{user.id}/change/"
     )
+
+    for admin_id in admin_ids:
+        try:
+            await bot.send_message(chat_id=admin_id, text=text, parse_mode='HTML')
+        except Exception as exc:
+            logger.warning("Admin %s ga xabar yuborilmadi: %s", admin_id, exc)
+
+
+async def try_attach_seller_to_store(message: Message, user, state: FSMContext):
+    """JIP: Sotuvchi ro'yxatdan o'tishni yakunlaydi.
+
+    Yangi flow:
+    - Agar seller_approved=True → to'g'ridan-to'g'ri menyu
+    - Aks holda → admin tasdiqlashiga yuboradi, xabar ko'rsatadi
+    """
+    admin_contact = await _get_admin_contact_str()
+
+    # Allaqachon tasdiqlangan
+    if user.seller_approved:
+        await state.clear()
+        await show_main_menu(message, user)
+        return
+
+    # Store biriktirish (agar mavjud bo'lsa, silent)
+    @sync_to_async
+    def _find_and_attach():
+        from core.models import Store
+        store = Store.objects.filter(owner=user, is_active=True).first()
+        if not store:
+            store = Store.objects.filter(
+                phone=user.phone_number, is_active=True, owner__isnull=True
+            ).first()
+            if store:
+                store.owner = user
+                store.save(update_fields=['owner'])
+        return store
+    await _find_and_attach()
+
+    # Adminlarga xabar (background)
+    asyncio.create_task(_notify_admins_new_seller(user))
+
+    # Foydalanuvchiga: kutish xabari
     await message.answer(
-        get_text(user, 'SELLER_STORE_CONFIRMED').format(store_name=store.name),
+        get_text(user, 'SELLER_PENDING_APPROVAL').format(admin_contact=admin_contact),
         parse_mode='HTML',
     )
     await state.clear()
-    await show_main_menu(message, user)
 
 
 async def ask_promo_code(message: Message, user, state: FSMContext):
@@ -1032,7 +1045,7 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
                 user.longitude is not None
             )
             if user.user_type == 'sotuvchi':
-                is_registered = base_checks and user.owned_stores.filter(is_active=True).exists()
+                is_registered = base_checks and user.seller_approved
             else:
                 is_registered = base_checks
             return user, is_registered
@@ -1133,9 +1146,9 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
             elif user.latitude is None or user.longitude is None:
                 logger.info(f"[process_language_selection] Локация не указана, вызываем ask_location")
                 await ask_location(callback.message, user, state)
-            # JIP: Sotuvchi uchun Store biriktirish
-            elif user.user_type == 'sotuvchi' and not user.owned_stores.filter(is_active=True).exists():
-                logger.info(f"[process_language_selection] Sotuvchi uchun Store biriktirilmagan, try_attach_seller_to_store")
+            # JIP: Sotuvchi uchun admin tasdiqlovchi flow
+            elif user.user_type == 'sotuvchi' and not user.seller_approved:
+                logger.info("[process_language_selection] Sotuvchi tasdiqlanmagan, try_attach_seller_to_store")
                 await try_attach_seller_to_store(callback.message, user, state)
             # Шаг 8: Промокод (не обязателен)
             else:
@@ -1506,17 +1519,14 @@ async def handle_message(message: Message, state: FSMContext = None):
             # Пропускаем обработку, пусть обрабатывают соответствующие handlers
             return
 
-    # JIP: Sotuvchi uchun Store biriktirilmagan bo'lsa — qaytaramiz
+    # JIP: Sotuvchi — admin tasdiqlashini tekshir
     if user.user_type == 'sotuvchi':
-        has_store = await sync_to_async(
-            lambda: user.owned_stores.filter(is_active=True).exists()
-        )()
-        if not has_store:
-            logger.info(
-                f"[handle_message] Sotuvchi {user.telegram_id} Store'siz — "
-                "try_attach_seller_to_store"
+        if not user.seller_approved:
+            admin_contact = await _get_admin_contact_str()
+            await message.answer(
+                get_text(user, 'SELLER_NOT_APPROVED_YET').format(admin_contact=admin_contact),
+                parse_mode='HTML',
             )
-            await try_attach_seller_to_store(message, user, state)
             return
 
     # Пользователь не завершил регистрацию, но FSM-состояние могло сброситься (бот перезапуск и т.д.).
@@ -1553,6 +1563,7 @@ async def handle_message(message: Message, state: FSMContext = None):
             if user.user_type == 'sotuvchi':
                 await message.answer(get_text(user, 'LOCATION_SAVED'), reply_markup=remove_kb)
                 await try_attach_seller_to_store(message, user, state)
+                return
             else:
                 await message.answer(get_text(user, 'REGISTRATION_COMPLETE'), reply_markup=remove_kb)
                 if state:
@@ -1571,7 +1582,7 @@ async def handle_message(message: Message, state: FSMContext = None):
                 await ask_phone(message, user, state)
             elif user.latitude is None or user.longitude is None:
                 await ask_location(message, user, state)
-            elif user.user_type == 'sotuvchi' and not user.owned_stores.filter(is_active=True).exists():
+            elif user.user_type == 'sotuvchi' and not user.seller_approved:
                 await try_attach_seller_to_store(message, user, state)
             else:
                 await message.answer(get_text(user, 'SEND_PROMO_CODE'))

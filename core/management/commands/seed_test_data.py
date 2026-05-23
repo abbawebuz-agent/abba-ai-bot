@@ -163,6 +163,7 @@ class Command(BaseCommand):
                     'language': 'uz_latin',
                     'privacy_accepted': True,
                     'is_active': True,
+                    'seller_approved': True,
                 },
             )
             users.append(u)
