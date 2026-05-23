@@ -3000,9 +3000,9 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     ]
     list_filter = ['status', 'delivery_status', 'store__region']
     search_fields = ['name', 'seller__first_name', 'seller__phone_number', 'store__name']
-    autocomplete_fields = ['seller']
+    autocomplete_fields = ['seller', 'store']
     readonly_fields = [
-        'name', 'store', 'points_per_code',
+        'name', 'points_per_code',
         'created_at', 'completed_at', 'zip_file', 'error_message',
         'batch_qr_history_link',
     ]
@@ -3012,7 +3012,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         ("Batch ma'lumotlari", {
             'fields': ('seller', 'store', 'quantity', 'points_per_code'),
             'description': (
-                "Sotuvchini tanlang va miqdorni kiriting. "
+                "Sotuvchi va Do'konni tanlang, miqdorni kiriting. "
                 "Ballar (50 × miqdor) sotuvchiga avtomatik qo'shiladi."
             ),
         }),
@@ -3029,13 +3029,6 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
             'fields': ('created_by',),
         }),
     )
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        if obj is None:
-            if 'seller' in form.base_fields:
-                form.base_fields['seller'].required = True
-        return form
 
     def seller_link(self, obj):
         if obj.seller_id:
@@ -3078,37 +3071,6 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         return format_html('<span style="color:{}; font-weight:600;">{}%</span>', color, rate)
     activation_display.short_description = 'Aktivatsiya'
 
-    def _get_or_create_store_for_seller(self, seller):
-        """Seller's store: owner bo'yicha → eski batch bo'yicha → yangi yaratish."""
-        store = Store.objects.filter(owner=seller).first()
-        if store:
-            return store
-        # Eski batchlar orqali (migration 0071 dan oldin yaratilgan)
-        old = QRCodeBatch.objects.filter(
-            store__owner=seller
-        ).select_related('store').first()
-        if old and old.store_id:
-            return old.store
-        # Yangi store yaratish
-        try:
-            region = seller.region
-        except Exception:
-            region = None
-        if not region:
-            region = UzRegion.objects.first()
-        if not region:
-            raise ValueError(
-                f"Sotuvchi #{seller.id} uchun viloyat topilmadi — "
-                "avval foydalanuvchiga viloyat biriktiring."
-            )
-        return Store.objects.create(
-            name=seller.first_name or f'Sotuvchi #{seller.id}',
-            phone=seller.phone_number or '—',
-            address='—',
-            region=region,
-            owner=seller,
-        )
-
     actions = ['action_generate_zip', 'action_mark_shipped', 'action_mark_delivered']
 
     @admin.action(description="📦 ZIP generatsiya qilish (Celery)")
@@ -3150,8 +3112,6 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         if not obj.created_by_id:
             obj.created_by = request.user
         obj.points_per_code = 50
-        if obj.seller_id:
-            obj.store = self._get_or_create_store_for_seller(obj.seller)
         # Generate name BEFORE first save — avoids (name='', store) UniqueConstraint issue
         if is_new and not obj.name and obj.store_id:
             obj.name = QRCodeBatch.generate_name(obj.store)
