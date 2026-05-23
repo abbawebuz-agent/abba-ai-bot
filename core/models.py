@@ -569,6 +569,29 @@ class PendingSellerRequest(TelegramUser):
         verbose_name_plural = "Zaproslar"
 
 
+class SellerRegistrationCode(models.Model):
+    """Sotuvchi ro'yxatdan o'tishi uchun bir martalik kod."""
+    code = models.CharField(max_length=50, unique=True, verbose_name='Kod')
+    label = models.CharField(max_length=255, blank=True, verbose_name='Tavsif (kim uchun)')
+    is_used = models.BooleanField(default=False, db_index=True, verbose_name='Ishlatilgan')
+    used_by = models.ForeignKey(
+        TelegramUser, null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='seller_codes',
+        verbose_name='Kim ishlatdi',
+    )
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name='Qachon ishlatildi')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Sotuvchi ro'yxatdan o'tish kodi"
+        verbose_name_plural = "Sotuvchi kodlari"
+
+    def __str__(self):
+        status = f'— {self.used_by.first_name or self.used_by.telegram_id}' if self.is_used and self.used_by else ''
+        return f'{self.code} {"✅" if self.is_used else "🔓"} {self.label} {status}'.strip()
+
+
 class QRCodeBatch(models.Model):
     """Skretch-karta partiyasi — JIP loyalty yangi modeli.
 

@@ -145,6 +145,7 @@ class RegistrationStates(StatesGroup):
     waiting_for_language = State()
     waiting_for_name = State()
     waiting_for_user_type = State()
+    waiting_for_seller_id = State()
     waiting_for_privacy = State()
     waiting_for_phone = State()
     waiting_for_location = State()
@@ -1183,18 +1184,79 @@ async def process_user_type_selection(callback: CallbackQuery, state: FSMContext
         return user
     
     user = await update_user_type()
-    
+
     await callback.answer(get_text(user, 'USER_TYPE_SAVED'))
     await _safe_delete_message(callback.message)
-    
-    # Отправляем видео инструкцию для выбранного типа (electrician/seller) и языка
+
+    if user_type == 'sotuvchi':
+        # Sotuvchi ID kiritishni so'raymiz
+        await state.set_state(RegistrationStates.waiting_for_seller_id)
+        await callback.message.answer(
+            get_text(user, 'ENTER_SELLER_ID'),
+            parse_mode='HTML',
+        )
+        return
+
+    # Santenik uchun: video keyin privacy
     try:
         await send_video_instruction(callback.from_user.id, user.language or 'uz_latin', user_type)
     except Exception as e:
         logger.error(f"[process_user_type_selection] Ошибка при отправке видео: {e}", exc_info=True)
-    
-    # Переходим к следующему шагу - согласие на политику конфиденциальности
+
     await ask_privacy_acceptance(callback.message, user, state)
+
+
+@dp.message(RegistrationStates.waiting_for_seller_id)
+async def process_seller_id(message: Message, state: FSMContext):
+    """Sotuvchi ID ni tekshiradi va ro'yxatdan o'tishni davom ettiradi."""
+    from django.utils import timezone as tz
+
+    entered_code = message.text.strip() if message.text else ''
+
+    @sync_to_async
+    def get_user():
+        return TelegramUser.objects.get(telegram_id=message.from_user.id)
+
+    @sync_to_async
+    def validate_and_use_code(code_str, user):
+        from core.models import SellerRegistrationCode
+        try:
+            code_obj = SellerRegistrationCode.objects.get(code=code_str)
+        except SellerRegistrationCode.DoesNotExist:
+            return 'invalid'
+        if code_obj.is_used:
+            return 'used'
+        code_obj.is_used = True
+        code_obj.used_by = user
+        code_obj.used_at = tz.now()
+        code_obj.save(update_fields=['is_used', 'used_by', 'used_at'])
+        return 'ok'
+
+    user = await get_user()
+    result = await validate_and_use_code(entered_code, user)
+    admin_contact = await _get_admin_contact_str()
+
+    if result == 'invalid':
+        await message.answer(
+            get_text(user, 'SELLER_ID_INVALID').format(admin_contact=admin_contact),
+            parse_mode='HTML',
+        )
+        return
+
+    if result == 'used':
+        await message.answer(
+            get_text(user, 'SELLER_ID_ALREADY_USED').format(admin_contact=admin_contact),
+            parse_mode='HTML',
+        )
+        return
+
+    # ID to'g'ri — video yuborib, privacy bosqichiga o'tamiz
+    await message.answer(get_text(user, 'SELLER_ID_ACCEPTED'))
+    try:
+        await send_video_instruction(message.from_user.id, user.language or 'uz_latin', 'sotuvchi')
+    except Exception as e:
+        logger.error(f"[process_seller_id] video xatosi: {e}")
+    await ask_privacy_acceptance(message, user, state)
 
 
 @dp.callback_query(lambda c: c.data in ['hint_phone', 'hint_location'])
@@ -1513,6 +1575,7 @@ async def handle_message(message: Message, state: FSMContext = None):
             RegistrationStates.waiting_for_phone,
             RegistrationStates.waiting_for_location,
             RegistrationStates.waiting_for_user_type,
+            RegistrationStates.waiting_for_seller_id,
             RegistrationStates.waiting_for_store_confirmation,
         ]:
             # Пропускаем обработку, пусть обрабатывают соответствующие handlers

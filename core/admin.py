@@ -39,7 +39,7 @@ from .models import (
     LiveStream, LiveStreamWinner,
     UzRegion, UzDistrict,
     Store, QRCodeBatch, SellerPointsTransaction,
-    PendingSellerRequest,
+    PendingSellerRequest, SellerRegistrationCode,
 )
 from .utils import generate_qr_code_image, generate_qr_codes_batch
 
@@ -2694,7 +2694,7 @@ class QRCodeBatchInline(admin.TabularInline):
 
 @admin.register(Store)
 class StoreAdmin(SimpleHistoryAdmin):
-    """JIP: Do'kon admin."""
+    """JIP: Do'kon admin — admin menyusidan yashirilgan."""
     list_display = [
         'name', 'region', 'district', 'owner_display', 'phone',
         'batches_count', 'qr_codes_stats', 'commission_percent', 'is_active', 'created_at',
@@ -2704,6 +2704,9 @@ class StoreAdmin(SimpleHistoryAdmin):
     autocomplete_fields = ['region', 'district', 'owner']
     readonly_fields = ['created_at', 'updated_at', 'store_statistics']
     list_per_page = 50
+
+    def has_module_permission(self, request):
+        return False
     inlines = [QRCodeBatchInline]
 
     fieldsets = (
@@ -3113,6 +3116,33 @@ class PendingSellerRequestAdmin(admin.ModelAdmin):
             url
         )
     approval_action.short_description = 'Harakat'
+
+
+@admin.register(SellerRegistrationCode)
+class SellerRegistrationCodeAdmin(admin.ModelAdmin):
+    """Sotuvchi ro'yxatdan o'tish kodlari."""
+    list_display = ['code', 'label', 'status_badge', 'used_by_display', 'used_at', 'created_at']
+    list_filter = ['is_used']
+    search_fields = ['code', 'label']
+    readonly_fields = ['is_used', 'used_by', 'used_at', 'created_at']
+    ordering = ['-created_at']
+
+    def status_badge(self, obj):
+        if obj.is_used:
+            return format_html(
+                '<span style="background:#EF4444;color:white;padding:3px 8px;border-radius:4px;font-size:11px;">✅ Ishlatilgan</span>'
+            )
+        return format_html(
+            '<span style="background:#10B981;color:white;padding:3px 8px;border-radius:4px;font-size:11px;">🔓 Faol</span>'
+        )
+    status_badge.short_description = 'Holat'
+
+    def used_by_display(self, obj):
+        if not obj.used_by:
+            return '—'
+        name = obj.used_by.first_name or obj.used_by.username or str(obj.used_by.telegram_id)
+        return format_html('<a href="/admin/core/telegramuser/{}/change/">{}</a>', obj.used_by_id, name)
+    used_by_display.short_description = 'Kim ishlatdi'
 
     def save_model(self, request, obj, form, change):
         was_approved = obj.seller_approved
