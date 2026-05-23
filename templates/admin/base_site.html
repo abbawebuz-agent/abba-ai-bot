@@ -35,16 +35,9 @@
     + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>'
     + ' Dashboard</a>';
 
-  var li2 = document.createElement('li');
-  li2.className = 'nav-item';
-  li2.innerHTML = '<a href="/panel/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin:0 8px;padding:5px 14px;background:#4f46e5;color:#fff;border-radius:4px;font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.background=\'#3730a3\'" onmouseout="this.style.background=\'#4f46e5\'">'
-    + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
-    + ' New Panel</a>';
-
   var navbar = document.querySelector('ul.navbar-nav.ml-auto');
   if (navbar) {
     navbar.insertBefore(li, navbar.firstChild);
-    navbar.insertBefore(li2, navbar.firstChild);
   }
 })();
 </script>

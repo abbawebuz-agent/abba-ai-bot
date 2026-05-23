@@ -716,22 +716,6 @@ def admin_logout_view(request):
 from core.bot_webhook import telegram_webhook_view
 
 
-def panel_view(request, subpath=''):
-    """React admin panel uchun index.html ni serve qiladi."""
-    # Production: staticfiles/panel/index.html, Dev: core/static/panel/index.html
-    candidates = [
-        os.path.join(settings.STATIC_ROOT, 'panel', 'index.html'),
-        os.path.join(settings.BASE_DIR, 'core', 'static', 'panel', 'index.html'),
-    ]
-    for index_path in candidates:
-        if os.path.exists(index_path):
-            with open(index_path, 'rb') as f:
-                return HttpResponse(f.read(), content_type='text/html')
-    return HttpResponse(
-        '<h1>Panel hali build qilinmagan.</h1><p><code>cd frontend && npm run build</code></p>',
-        status=503,
-    )
-
 
 urlpatterns = [
     path('i18n/', include('django.conf.urls.i18n')),
@@ -742,9 +726,6 @@ urlpatterns = [
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
-    path('api/v2/', include('core.api.urls')),
-    path('panel/', panel_view),
-    path('panel/<path:subpath>', panel_view),
 ]
 
 # WhiteNoise обрабатывает статические файлы автоматически через middleware
