@@ -3317,20 +3317,66 @@ class PendingSellerRequestAdmin(admin.ModelAdmin):
 
 @admin.register(SellerRegistrationCode)
 class SellerRegistrationCodeAdmin(admin.ModelAdmin):
-    """Sotuvchi ro'yxatdan o'tish kodlari."""
-    list_display = ['code', 'label', 'status_badge', 'used_by_display', 'used_at', 'created_at']
+    """Sotuvchi IDlari — 8 raqamli auto-generated."""
+    list_display = ['code_display', 'label', 'status_badge', 'used_by_display', 'used_at', 'created_at']
     list_filter = ['is_used']
     search_fields = ['code', 'label']
-    readonly_fields = ['is_used', 'used_by', 'used_at', 'created_at']
+    readonly_fields = ['code', 'is_used', 'used_by', 'used_at', 'created_at']
+    fields = ['code', 'label', 'is_used', 'used_by', 'used_at', 'created_at']
     ordering = ['-created_at']
+    change_list_template = 'admin/core/sellerregistrationcode/change_list.html'
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['generate_url'] = reverse('admin:core_sellerregistrationcode_generate')
+        extra_context['total_active'] = SellerRegistrationCode.objects.filter(is_used=False).count()
+        extra_context['total_used'] = SellerRegistrationCode.objects.filter(is_used=True).count()
+        return super().changelist_view(request, extra_context)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        extra = [
+            path('generate/', self.admin_site.admin_view(self.generate_id_view),
+                 name='core_sellerregistrationcode_generate'),
+        ]
+        return extra + urls
+
+    def generate_id_view(self, request):
+        try:
+            code_str = SellerRegistrationCode.generate_unique_code()
+            obj = SellerRegistrationCode.objects.create(code=code_str)
+            self.message_user(
+                request,
+                format_html('✅ Yangi ID yaratildi: <strong style="font-size:16px;letter-spacing:2px;">{}</strong>', obj.code),
+                messages.SUCCESS,
+            )
+        except Exception as e:
+            self.message_user(request, f'Xato: {e}', messages.ERROR)
+        return redirect(reverse('admin:core_sellerregistrationcode_changelist'))
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return obj is not None and not obj.is_used
+
+    def code_display(self, obj):
+        color = '#888' if obj.is_used else '#fff'
+        bg = '#1e1e2e' if not obj.is_used else '#2a2a2a'
+        return format_html(
+            '<code style="background:{};color:{};padding:4px 10px;border-radius:6px;'
+            'font-size:15px;letter-spacing:3px;font-weight:700;">{}</code>',
+            bg, color, obj.code
+        )
+    code_display.short_description = 'ID (8 raqam)'
 
     def status_badge(self, obj):
         if obj.is_used:
             return format_html(
-                '<span style="background:#EF4444;color:white;padding:3px 8px;border-radius:4px;font-size:11px;">✅ Ishlatilgan</span>'
+                '<span style="background:#dc2626;color:white;padding:3px 10px;border-radius:12px;font-size:11px;">✅ Ishlatilgan</span>'
             )
         return format_html(
-            '<span style="background:#10B981;color:white;padding:3px 8px;border-radius:4px;font-size:11px;">🔓 Faol</span>'
+            '<span style="background:#16a34a;color:white;padding:3px 10px;border-radius:12px;font-size:11px;">🔓 Faol</span>'
         )
     status_badge.short_description = 'Holat'
 
@@ -3340,74 +3386,3 @@ class SellerRegistrationCodeAdmin(admin.ModelAdmin):
         name = obj.used_by.first_name or obj.used_by.username or str(obj.used_by.telegram_id)
         return format_html('<a href="/admin/core/telegramuser/{}/change/">{}</a>', obj.used_by_id, name)
     used_by_display.short_description = 'Kim ishlatdi'
-
-    def save_model(self, request, obj, form, change):
-        was_approved = obj.seller_approved
-        old_approved = False
-        if obj.pk:
-            try:
-                old_approved = TelegramUser.objects.filter(pk=obj.pk).values_list('seller_approved', flat=True).first()
-            except Exception:
-                pass
-
-        super().save_model(request, obj, form, change)
-
-        if was_approved and not old_approved:
-            from django.utils import timezone as tz
-            obj.seller_approved_at = tz.now()
-            obj.save(update_fields=['seller_approved_at'])
-            self._send_approval_notification(obj, approved=True)
-        elif not was_approved and old_approved:
-            self._send_approval_notification(obj, approved=False)
-
-    def _send_approval_notification(self, obj, approved: bool):
-        import threading
-        from django.conf import settings
-        bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
-        if not bot_token or not obj.telegram_id:
-            return
-
-        try:
-            from bot.translations import TRANSLATIONS
-            lang = obj.language or 'uz_latin'
-            if approved:
-                text = TRANSLATIONS.get(lang, TRANSLATIONS.get('uz_latin', {})).get(
-                    'SELLER_APPROVED',
-                    "✅ Tabriklaymiz! Arizangiz tasdiqlandi. Endi botdan foydalanishingiz mumkin."
-                )
-            else:
-                text = TRANSLATIONS.get(lang, TRANSLATIONS.get('uz_latin', {})).get(
-                    'SELLER_REJECTED',
-                    "❌ Arizangiz rad etildi. Murojaat: @jip_admin"
-                )
-        except Exception:
-            text = ("✅ Arizangiz tasdiqlandi!" if approved else "❌ Arizangiz rad etildi.")
-
-        chat_id = obj.telegram_id
-
-        def _send():
-            import urllib.request, urllib.parse, json as _json, logging
-            try:
-                data = _json.dumps({
-                    'chat_id': chat_id,
-                    'text': text,
-                    'parse_mode': 'HTML',
-                }).encode('utf-8')
-                req = urllib.request.Request(
-                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    data=data,
-                    headers={'Content-Type': 'application/json'},
-                    method='POST',
-                )
-                with urllib.request.urlopen(req, timeout=5):
-                    pass
-            except Exception as e:
-                logging.getLogger(__name__).warning("Zapros notification xatolik: %s", e)
-
-        threading.Thread(target=_send, daemon=True).start()
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False

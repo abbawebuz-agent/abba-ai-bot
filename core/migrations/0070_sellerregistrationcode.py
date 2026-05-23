@@ -13,10 +13,10 @@ class Migration(migrations.Migration):
             name='SellerRegistrationCode',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=50, unique=True, verbose_name='Kod')),
-                ('label', models.CharField(blank=True, max_length=255, verbose_name='Tavsif (kim uchun)')),
+                ('code', models.CharField(max_length=8, unique=True, verbose_name='ID (8 raqam)')),
+                ('label', models.CharField(blank=True, max_length=255, verbose_name='Izoh (ixtiyoriy)')),
                 ('is_used', models.BooleanField(db_index=True, default=False, verbose_name='Ishlatilgan')),
-                ('used_at', models.DateTimeField(blank=True, null=True, verbose_name='Qachon ishlatildi')),
+                ('used_at', models.DateTimeField(blank=True, null=True, verbose_name='Ishlatilgan vaqt')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('used_by', models.ForeignKey(
                     blank=True, null=True,
@@ -27,8 +27,9 @@ class Migration(migrations.Migration):
                 )),
             ],
             options={
-                'verbose_name': "Sotuvchi ro'yxatdan o'tish kodi",
-                'verbose_name_plural': 'Sotuvchi kodlari',
+                'verbose_name': 'Sotuvchi ID',
+                'verbose_name_plural': 'Sotuvchi IDlari',
+                'ordering': ['-created_at'],
             },
         ),
     ]

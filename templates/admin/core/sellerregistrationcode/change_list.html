@@ -1,0 +1,30 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{{ generate_url }}"
+       style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;
+              background:#4f46e5;color:#fff;border-radius:6px;font-weight:600;
+              font-size:13px;text-decoration:none;"
+       onmouseover="this.style.background='#3730a3'"
+       onmouseout="this.style.background='#4f46e5'">
+      🎲 Yangi ID yaratish
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}
+
+{% block content %}
+  <div style="display:flex;gap:16px;margin-bottom:20px;">
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px 24px;min-width:140px;">
+      <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Faol IDlar</div>
+      <div style="color:#4ade80;font-size:28px;font-weight:700;margin-top:4px;">{{ total_active }}</div>
+    </div>
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px 24px;min-width:140px;">
+      <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Ishlatilgan</div>
+      <div style="color:#f87171;font-size:28px;font-weight:700;margin-top:4px;">{{ total_used }}</div>
+    </div>
+  </div>
+  {{ block.super }}
+{% endblock %}

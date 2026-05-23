@@ -570,9 +570,9 @@ class PendingSellerRequest(TelegramUser):
 
 
 class SellerRegistrationCode(models.Model):
-    """Sotuvchi ro'yxatdan o'tishi uchun bir martalik kod."""
-    code = models.CharField(max_length=50, unique=True, verbose_name='Kod')
-    label = models.CharField(max_length=255, blank=True, verbose_name='Tavsif (kim uchun)')
+    """Sotuvchi ro'yxatdan o'tishi uchun bir martalik 8 raqamli unikal ID."""
+    code = models.CharField(max_length=8, unique=True, verbose_name='ID (8 raqam)')
+    label = models.CharField(max_length=255, blank=True, verbose_name='Izoh (ixtiyoriy)')
     is_used = models.BooleanField(default=False, db_index=True, verbose_name='Ishlatilgan')
     used_by = models.ForeignKey(
         TelegramUser, null=True, blank=True,
@@ -580,16 +580,26 @@ class SellerRegistrationCode(models.Model):
         related_name='seller_codes',
         verbose_name='Kim ishlatdi',
     )
-    used_at = models.DateTimeField(null=True, blank=True, verbose_name='Qachon ishlatildi')
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name='Ishlatilgan vaqt')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Sotuvchi ro'yxatdan o'tish kodi"
-        verbose_name_plural = "Sotuvchi kodlari"
+        verbose_name = "Sotuvchi ID"
+        verbose_name_plural = "Sotuvchi IDlari"
+        ordering = ['-created_at']
 
     def __str__(self):
-        status = f'— {self.used_by.first_name or self.used_by.telegram_id}' if self.is_used and self.used_by else ''
-        return f'{self.code} {"✅" if self.is_used else "🔓"} {self.label} {status}'.strip()
+        used_info = f' — {self.used_by.first_name or self.used_by.telegram_id}' if self.is_used and self.used_by else ''
+        return f'{self.code}{used_info}'
+
+    @classmethod
+    def generate_unique_code(cls):
+        import random
+        for _ in range(20):
+            code = str(random.randint(10000000, 99999999))
+            if not cls.objects.filter(code=code).exists():
+                return code
+        raise ValueError('Unikal ID yaratib bo\'lmadi — qayta urinib ko\'ring')
 
 
 class QRCodeBatch(models.Model):
