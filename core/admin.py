@@ -133,6 +133,8 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         'points_display', 'total_earned_points', 'open_in_yandex_maps',
         'scan_attempt_count', 'scan_attempt_success_count', 'scan_attempt_unsuccess_count',
         'seller_approved_at',
+        'seller_code_display', 'store_id_display',
+        'batch_history_html', 'sotuvchi_stats_html',
     ]
     autocomplete_fields = ['region', 'district']
     ordering = ['region__code', 'district__code', '-created_at']
@@ -653,6 +655,200 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     change_user_type_to_seller.short_description = 'Изменить тип на: 🛒 Продавец (Предприниматель)'
 
+    # ── Sotuvchi profili: 4 blok ────────────────────────────────────────────
+
+    def get_fieldsets(self, request, obj=None):
+        if obj and obj.user_type == 'sotuvchi':
+            return [
+                ('📊 Blok 1 — Asosiy ma\'lumotlar', {
+                    'fields': (
+                        'first_name', 'last_name', 'username', 'telegram_id',
+                        'phone_number', 'user_type', 'language',
+                        'points_display', 'seller_code_display', 'store_id_display',
+                        'is_active', 'seller_approved', 'seller_approved_at',
+                    )
+                }),
+                ('📍 Blok 2 — Manzil va lokatsiya', {
+                    'fields': ('region', 'district', 'latitude', 'longitude', 'open_in_yandex_maps'),
+                }),
+                ('📦 Blok 3 — Batch tarixi', {
+                    'fields': ('batch_history_html',),
+                }),
+                ('📈 Blok 4 — Statistika', {
+                    'fields': ('sotuvchi_stats_html',),
+                }),
+            ]
+        return super().get_fieldsets(request, obj)
+
+    def seller_code_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        code = obj.seller_codes.select_related().first()
+        if not code:
+            return format_html('<span style="color:#999;">Kod ishlatilmagan</span>')
+        return format_html(
+            '<code style="background:#1e1e2e;color:#a6e3a1;padding:3px 8px;border-radius:4px;font-size:13px;">{}</code>'
+            ' <span style="color:#888;font-size:12px;">{}</span>',
+            code.code, code.label or ''
+        )
+    seller_code_display.short_description = 'Sotuvchi ID (kodi)'
+
+    def store_id_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        store = obj.owned_stores.filter(is_active=True).first()
+        if not store:
+            return format_html('<span style="color:#999;">Do\'kon biriktirilmagan</span>')
+        url = reverse('admin:core_store_change', args=[store.pk])
+        return format_html(
+            '<strong>#{}</strong> — <a href="{}">{}</a>',
+            store.pk, url, store.name
+        )
+    store_id_display.short_description = "Do'kon ID"
+
+    def batch_history_html(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        store = obj.owned_stores.filter(is_active=True).first()
+        if not store:
+            return format_html('<p style="color:#999;">Do\'kon yo\'q — batch\'lar ham yo\'q</p>')
+
+        batches = store.batches.order_by('-created_at')
+        if not batches.exists():
+            return format_html('<p style="color:#999;">Hali batch yaratilmagan</p>')
+
+        export_url = reverse('admin:core_telegramuser_seller_batches_xlsx', args=[obj.pk])
+        rows = ''
+        for b in batches:
+            scanned = b.qr_codes.filter(is_scanned=True).count()
+            total = b.quantity or 1
+            pct = round(scanned / total * 100)
+            color = '#16a34a' if pct >= 50 else ('#ca8a04' if pct >= 20 else '#dc2626')
+            zip_link = (
+                f'<a href="{b.zip_file.url}" target="_blank">⬇ ZIP</a>'
+                if b.zip_file else '—'
+            )
+            rows += (
+                f'<tr>'
+                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.name or f"Batch #{b.pk}"}</td>'
+                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.quantity}</td>'
+                f'<td style="padding:6px 10px;border-bottom:1px solid #333;color:{color};font-weight:700;">'
+                f'{scanned} ({pct}%)</td>'
+                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.created_at.strftime("%d.%m.%Y")}</td>'
+                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{zip_link}</td>'
+                f'</tr>'
+            )
+
+        return format_html(
+            '<div style="margin-bottom:8px;">'
+            '<a href="{}" style="background:#1d4ed8;color:#fff;padding:6px 14px;border-radius:4px;'
+            'text-decoration:none;font-size:12px;">📥 Barcha promo Excel eksport</a>'
+            '</div>'
+            '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+            '<thead><tr style="background:#1e1e2e;color:#cdd6f4;">'
+            '<th style="padding:8px 10px;text-align:left;">Batch nomi</th>'
+            '<th style="padding:8px 10px;text-align:left;">Jami</th>'
+            '<th style="padding:8px 10px;text-align:left;">Ishlatilgan</th>'
+            '<th style="padding:8px 10px;text-align:left;">Sana</th>'
+            '<th style="padding:8px 10px;text-align:left;">ZIP</th>'
+            '</tr></thead>'
+            '<tbody>{}</tbody>'
+            '</table>',
+            export_url, format_html(rows)
+        )
+    batch_history_html.short_description = "Batch tarixi"
+
+    def sotuvchi_stats_html(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        store = obj.owned_stores.filter(is_active=True).first()
+        total_batches = store.batches.count() if store else 0
+        total_qr = store.total_qr_codes() if store else 0
+        scanned_qr = store.scanned_qr_codes() if store else 0
+        activation_rate = store.activation_rate() if store else 0
+
+        from core.models import GiftRedemption
+        redemptions = GiftRedemption.objects.filter(user=obj).count()
+
+        reg_date = obj.created_at.strftime('%d.%m.%Y') if obj.created_at else '—'
+        approved_date = obj.seller_approved_at.strftime('%d.%m.%Y') if obj.seller_approved_at else '—'
+
+        def stat_row(label, value, color='#e2e8f0'):
+            return (
+                f'<tr><td style="padding:8px 12px;color:#888;width:220px;">{label}</td>'
+                f'<td style="padding:8px 12px;font-weight:700;color:{color};">{value}</td></tr>'
+            )
+
+        rows = (
+            stat_row('📅 Ro\'yxatdan o\'tgan', reg_date) +
+            stat_row('✅ Tasdiqlangan', approved_date, '#4ade80') +
+            stat_row('🏪 Batch\'lar soni', total_batches) +
+            stat_row('🎴 Jami QR kodlar', f'{total_qr:,}') +
+            stat_row('✅ Skanlanganlar', f'{scanned_qr:,}', '#4ade80') +
+            stat_row('📊 Aktivatsiya darajasi', f'{activation_rate}%',
+                     '#4ade80' if activation_rate >= 50 else '#facc15' if activation_rate >= 20 else '#f87171') +
+            stat_row('💰 Joriy ballar', f'{obj.points:,}', '#818cf8') +
+            stat_row('🎁 Sovg\'a so\'rovlari', redemptions)
+        )
+        return format_html(
+            '<table style="border-collapse:collapse;font-size:13px;min-width:400px;">'
+            '<tbody>{}</tbody></table>',
+            format_html(rows)
+        )
+    sotuvchi_stats_html.short_description = 'Statistika'
+
+    def seller_batches_xlsx_view(self, request, user_id):
+        """Sotuvchining barcha batch promokodlari — Excel eksport."""
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from io import BytesIO
+
+        try:
+            user = TelegramUser.objects.get(pk=user_id)
+        except TelegramUser.DoesNotExist:
+            return HttpResponse('User topilmadi', status=404)
+
+        store = user.owned_stores.filter(is_active=True).first()
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Promokodlar'
+
+        header_fill = PatternFill('solid', fgColor='1d4ed8')
+        header_font = Font(bold=True, color='FFFFFF')
+        headers = ['Batch nomi', 'Promokod', 'Skanlanganmi', 'Skanlanish vaqti', 'Kim skanladi']
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        row = 2
+        if store:
+            for batch in store.batches.order_by('-created_at'):
+                for qr in batch.qr_codes.filter(is_deleted=False).order_by('serial_number'):
+                    scanned_by = ''
+                    if qr.scanned_by:
+                        scanned_by = qr.scanned_by.first_name or qr.scanned_by.username or str(qr.scanned_by.telegram_id)
+                    ws.append([
+                        batch.name or f'Batch #{batch.pk}',
+                        qr.code,
+                        'Ha' if qr.is_scanned else 'Yo\'q',
+                        qr.scanned_at.strftime('%d.%m.%Y %H:%M') if qr.scanned_at else '',
+                        scanned_by,
+                    ])
+                    row += 1
+
+        for col in ws.columns:
+            ws.column_dimensions[col[0].column_letter].width = 22
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        fname = f'sotuvchi_{user_id}_promokodlar.xlsx'
+        resp = HttpResponse(buf.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+        return resp
+
     def send_message_button(self, obj):
         """Кнопка отправки сообщения в списке."""
         from django.urls import reverse
@@ -670,6 +866,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('<int:user_id>/send_message/', self.admin_site.admin_view(self.send_single_message_view), name='core_telegramuser_send_single_message'),
+            path('<int:user_id>/seller-batches-xlsx/', self.admin_site.admin_view(self.seller_batches_xlsx_view), name='core_telegramuser_seller_batches_xlsx'),
             path('send_region_message/', self.admin_site.admin_view(self.send_region_message_view), name='core_telegramuser_send_region_message'),
             path(
                 'send_region_message/users_autocomplete/',

@@ -1226,10 +1226,15 @@ async def process_seller_id(message: Message, state: FSMContext):
             return 'invalid'
         if code_obj.is_used:
             return 'used'
+        now = tz.now()
         code_obj.is_used = True
         code_obj.used_by = user
-        code_obj.used_at = tz.now()
+        code_obj.used_at = now
         code_obj.save(update_fields=['is_used', 'used_by', 'used_at'])
+        # Sotuvchi avtomatik tasdiqlanadi
+        user.seller_approved = True
+        user.seller_approved_at = now
+        user.save(update_fields=['seller_approved', 'seller_approved_at'])
         return 'ok'
 
     user = await get_user()
