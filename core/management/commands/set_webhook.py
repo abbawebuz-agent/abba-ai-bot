@@ -22,7 +22,7 @@ class Command(BaseCommand):
             self.stderr.write('WEBHOOK_URL o\'rnatilmagan — o\'tkazildi')
             return
 
-        desired = f"{webhook_url.rstrip('/')}/webhook/{token}"
+        desired = f"{webhook_url.rstrip('/')}/webhook/{token}/"
 
         async def _set():
             from bot.bot import bot
