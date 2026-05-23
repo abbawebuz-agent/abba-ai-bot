@@ -29,6 +29,7 @@ from django.template.response import TemplateResponse
 from django.contrib import messages
 from django.conf import settings
 from django.db import models
+from django.db.models import ProtectedError
 from simple_history.admin import SimpleHistoryAdmin
 from .models import (
     TelegramUser, QRCode, QRCodeScanAttempt, PromoCodeAttempt,
@@ -629,9 +630,25 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     def delete_users_action(self, request, queryset):
         """Tanlangan foydalanuvchilarni o'chirish."""
-        count = queryset.count()
-        queryset.delete()
-        self.message_user(request, f'{count} ta foydalanuvchi o\'chirildi.', messages.SUCCESS)
+        deleted = 0
+        skipped = []
+        for user in queryset:
+            try:
+                user.delete()
+                deleted += 1
+            except ProtectedError:
+                name = user.first_name or user.username or str(user.telegram_id)
+                skipped.append(name)
+
+        if deleted:
+            self.message_user(request, f'✅ {deleted} ta foydalanuvchi o\'chirildi.', messages.SUCCESS)
+        if skipped:
+            self.message_user(
+                request,
+                f'⚠️ {len(skipped)} ta o\'chirilmadi (do\'kon egasi yoki tranzaksiyalari bor): '
+                + ', '.join(skipped[:5]) + ('...' if len(skipped) > 5 else ''),
+                messages.WARNING,
+            )
 
     delete_users_action.short_description = '🗑️ Tanlangan foydalanuvchilarni o\'chirish'
 
