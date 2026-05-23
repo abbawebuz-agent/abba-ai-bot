@@ -93,7 +93,7 @@ export default function Dashboard() {
             <h2 className="text-white font-semibold">Yangi foydalanuvchilar (30 kun)</h2>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={stats?.users_chart?.filter((_, i) => i % 3 === 0)}>
+            <BarChart data={stats?.users_chart}>
               <XAxis dataKey="date" tick={{ fill: '#555', fontSize: 11 }} tickFormatter={d => d.slice(5)} />
               <YAxis tick={{ fill: '#555', fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />

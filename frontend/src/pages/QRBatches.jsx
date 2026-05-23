@@ -24,6 +24,12 @@ export default function QRBatches() {
         <div className="flex justify-center py-20">
           <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : batches.length === 0 ? (
+        <div className="bg-[#161616] border border-[#2a2a2a] rounded-2xl p-12 text-center">
+          <QrCode size={40} className="text-[#333] mx-auto mb-3" />
+          <p className="text-white font-medium">QR batch'lar yo'q</p>
+          <p className="text-[#555] text-sm mt-1">Django admin orqali batch yarating</p>
+        </div>
       ) : (
         <div className="bg-[#161616] border border-[#2a2a2a] rounded-2xl overflow-hidden">
           <table className="w-full">

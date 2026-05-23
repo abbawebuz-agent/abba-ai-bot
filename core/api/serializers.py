@@ -57,4 +57,4 @@ class QRBatchSerializer(serializers.ModelSerializer):
         return obj.quantity
 
     def get_activated_count(self, obj):
-        return obj.qr_codes.filter(is_scanned=True).count()
+        return getattr(obj, '_activated', obj.qr_codes.filter(is_scanned=True).count())

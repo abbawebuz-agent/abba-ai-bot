@@ -4,11 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
-from core.models import TelegramUser, QRCodeBatch, QRCode, Gift, GiftRedemption, Store
+from core.models import TelegramUser, QRCodeBatch, QRCode
 from .serializers import UserSerializer, QRBatchSerializer
 
 
@@ -141,7 +140,9 @@ def bulk_delete_users(request):
 class QRBatchListView(generics.ListAPIView):
     serializer_class = QRBatchSerializer
     permission_classes = [IsAuthenticated]
-    queryset = QRCodeBatch.objects.select_related('store').order_by('-created_at')
+    queryset = QRCodeBatch.objects.select_related('store').annotate(
+        _activated=Count('qr_codes', filter=Q(qr_codes__is_scanned=True))
+    ).order_by('-created_at')
 
 
 def _notify_seller(user, approved: bool):
