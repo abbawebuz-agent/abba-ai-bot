@@ -22,6 +22,7 @@ from core.dashboard_stats import (
     compute_dashboard_charts,
     compute_intelligence_stats,
     get_user_crm_details,
+    compute_store_analytics,
 )
 from core.dashboard_exports import generate_full_dashboard_excel, generate_module_excel, generate_regional_excel
 from core.models import UzRegion, TelegramUser, QRCode, Gift, GiftRedemption, UzDistrict
@@ -377,6 +378,8 @@ def dashboard_view(request):
     redemptions_page = None
     redemption_stats = {}
     regions_list = []
+    store_rows = []
+    store_totals = {}
     crm_search_q = (request.GET.get('q') or '').strip()
     crm_ut = request.GET.get('user_type', '')
     crm_reg = request.GET.get('region', '')
@@ -482,11 +485,14 @@ def dashboard_view(request):
         charts = compute_dashboard_charts(date_from, date_to, drill_region=drill_region)
         intelligence_stats = compute_intelligence_stats(date_from, date_to)
         promo_rows = build_promo_table_rows('seller', date_from, date_to, drill_region, global_stats=general_stats)
+        store_rows, store_totals = compute_store_analytics(date_from, date_to)
         if crm_sort:
             reverse = crm_sort.startswith('-')
             field = crm_sort.lstrip('-')
             if field in ['users', 'cards', 'points', 'spent', 'name']:
                 promo_rows.sort(key=lambda x: (x.get('is_total', False), x.get(field, 0) if field != 'name' else x.get(field, '')), reverse=reverse)
+            if field in ['total_qr', 'scanned_life', 'scanned_period', 'act_rate_life', 'batch_count', 'name']:
+                store_rows.sort(key=lambda x: x.get(field, 0) if field != 'name' else x.get(field, ''), reverse=reverse)
     elif tab == 'electricians':
         general_stats = compute_general_stats(date_from, date_to)
         charts = compute_dashboard_charts(date_from, date_to, drill_region=drill_region)
@@ -671,6 +677,8 @@ def dashboard_view(request):
         'redemption_status_choices': GiftRedemption.STATUS_CHOICES,
         'filter_labels': filter_labels,
         'is_cc': is_cc,
+        'store_rows': store_rows,
+        'store_totals': store_totals,
     }
 
     # For AJAX infinite-scroll requests, return only the rows partial

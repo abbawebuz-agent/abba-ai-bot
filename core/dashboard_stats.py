@@ -12,7 +12,7 @@ from django.db.models.functions import TruncDay
 from django.utils import timezone
 from django.utils.translation import get_language, gettext as _
 
-from core.models import GiftRedemption, QRCode, TelegramUser, UzDistrict, UzRegion, PromoCodeAttempt
+from core.models import GiftRedemption, QRCode, TelegramUser, UzDistrict, UzRegion, PromoCodeAttempt, Store, QRCodeBatch
 from core.regions import UZBEKISTAN_REGIONS
 
 # Порядок строк как в ТЗ (коды как в core.regions / UzRegion)
@@ -1141,3 +1141,86 @@ def get_user_crm_details(user_id: int) -> dict[str, Any] | None:
             } for f in recent_failed
         ]
     }
+
+
+def compute_store_analytics(date_from, date_to) -> list[dict[str, Any]]:
+    """Har bir do'kon uchun QR, batch, aktivatsiya statistikasi."""
+    lang = get_language()[:2]
+
+    stores = (
+        Store.objects.filter(is_active=True)
+        .select_related('region', 'owner')
+        .prefetch_related('batches', 'qr_codes')
+        .order_by('region__code', 'name')
+    )
+
+    # Skanerlanish davri filtri
+    scan_q = Q(is_scanned=True, is_deleted=False)
+    if date_from:
+        scan_q &= Q(scanned_at__date__gte=date_from)
+    if date_to:
+        scan_q &= Q(scanned_at__date__lte=date_to)
+
+    rows = []
+    totals = dict(total_qr=0, scanned_life=0, scanned_period=0,
+                  batches=0, delivered=0, points_period=0)
+
+    for store in stores:
+        qr_qs = QRCode.objects.filter(store=store, is_deleted=False)
+
+        total_qr      = qr_qs.count()
+        scanned_life  = qr_qs.filter(is_scanned=True).count()
+        scanned_period = qr_qs.filter(scan_q).count()
+        points_period  = qr_qs.filter(scan_q).aggregate(p=Sum('points'))['p'] or 0
+
+        batch_qs       = QRCodeBatch.objects.filter(store=store)
+        batch_count    = batch_qs.count()
+        delivered      = batch_qs.filter(delivery_status='delivered').count()
+        pending_batch  = batch_qs.filter(status__in=['pending', 'processing']).count()
+
+        act_rate_life = round(scanned_life / total_qr * 100, 1) if total_qr else 0
+        act_rate_period = round(scanned_period / total_qr * 100, 1) if total_qr else 0
+
+        region_name = ''
+        if store.region_id:
+            region_name = (store.region.name_ru if lang == 'ru' and store.region.name_ru
+                           else store.region.name_uz) if store.region else ''
+
+        owner_name = ''
+        if store.owner_id and store.owner:
+            owner_name = ' '.join(filter(None, [
+                store.owner.first_name, store.owner.last_name
+            ])) or store.owner.username or str(store.owner.telegram_id)
+
+        rows.append({
+            'id': store.id,
+            'name': store.name,
+            'region': region_name,
+            'owner': owner_name,
+            'total_qr': total_qr,
+            'scanned_life': scanned_life,
+            'scanned_period': scanned_period,
+            'points_period': points_period,
+            'act_rate_life': act_rate_life,
+            'act_rate_period': act_rate_period,
+            'batch_count': batch_count,
+            'delivered': delivered,
+            'pending_batch': pending_batch,
+            'is_filtered': bool(date_from or date_to),
+        })
+
+        totals['total_qr']       += total_qr
+        totals['scanned_life']   += scanned_life
+        totals['scanned_period'] += scanned_period
+        totals['batches']        += batch_count
+        totals['delivered']      += delivered
+        totals['points_period']  += points_period
+
+    totals['act_rate_life'] = round(
+        totals['scanned_life'] / totals['total_qr'] * 100, 1
+    ) if totals['total_qr'] else 0
+    totals['act_rate_period'] = round(
+        totals['scanned_period'] / totals['total_qr'] * 100, 1
+    ) if totals['total_qr'] else 0
+
+    return rows, totals
