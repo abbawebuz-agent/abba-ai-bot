@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     libu2f-udev \
     libvulkan1 \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируем requirements
@@ -44,8 +46,15 @@ RUN pip install --no-cache-dir -r requirements-prod.txt
 # Зависимости уже установлены выше, поэтому install-deps не нужен
 # RUN python -m playwright install chromium
 
+# Node.js: dependency layer (cache-friendly)
+COPY frontend/package.json frontend/package.json
+RUN cd frontend && npm install
+
 # Копируем проект
 COPY . .
+
+# React build
+RUN cd frontend && npm run build
 
 # Создаем директории
 RUN mkdir -p /app/media /app/staticfiles

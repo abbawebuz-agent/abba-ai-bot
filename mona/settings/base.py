@@ -32,12 +32,15 @@ INSTALLED_APPS = [
     'channels',
     'simple_history',  # История изменений моделей
     'rangefilter',  # Фильтр по диапазону дат в админке
+    'corsheaders',
+    'rest_framework_simplejwt',
     'core',
     'bot',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise для статических файлов
     'core.middleware.NoCacheMiddleware',  # Отключение кеша для Telegram Web App
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -272,11 +275,14 @@ QR_CODE_BATCH_SIZE = 200  # Размер батча для генерации QR
 
 # REST Framework
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20
+    'PAGE_SIZE': 50,
 }
 
 # ──────────────────────────────────────────────
@@ -310,11 +316,21 @@ if SENTRY_DSN:
         release=env('APP_VERSION', default=None),
     )
 
-# CORS для Web App (если нужно)
+# CORS
 CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:3000',
     "https://web.telegram.org",
     "https://telegram.org",
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+# Simple JWT
+from datetime import timedelta as _timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': _timedelta(hours=12),
+    'REFRESH_TOKEN_LIFETIME': _timedelta(days=7),
+}
 
 # CSRF для Telegram Web App
 CSRF_TRUSTED_ORIGINS = [
