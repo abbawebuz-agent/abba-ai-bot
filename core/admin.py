@@ -38,6 +38,7 @@ from .models import (
     LiveStream, LiveStreamWinner,
     UzRegion, UzDistrict,
     Store, QRCodeBatch, SellerPointsTransaction,
+    PendingSellerRequest,
 )
 from .utils import generate_qr_code_image, generate_qr_codes_batch
 
@@ -3065,4 +3066,109 @@ class LiveStreamAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     def winners_count(self, obj):
         return obj.winners.count()
-    winners_count.short_description = 'G‘oliblar'
+    winners_count.short_description = ‘G’oliblar’
+
+
+@admin.register(PendingSellerRequest)
+class PendingSellerRequestAdmin(admin.ModelAdmin):
+    """Tasdiqlanmagan sotuvchi arizalari — alohida admin bo’limi."""
+
+    list_display = (‘user_info’, ‘phone_number’, ‘region_name’, ‘district_name’, ‘registered_at’, ‘approval_action’)
+    list_display_links = (‘user_info’,)
+    readonly_fields = (‘telegram_id’, ‘username’, ‘first_name’, ‘last_name’, ‘phone_number’,
+                       ‘latitude’, ‘longitude’, ‘language’, ‘user_type’, ‘created_at’)
+    ordering = (‘-created_at’,)
+    search_fields = (‘first_name’, ‘last_name’, ‘username’, ‘phone_number’)
+
+    fields = (‘telegram_id’, ‘username’, ‘first_name’, ‘last_name’, ‘phone_number’,
+              ‘language’, ‘seller_approved’, ‘created_at’)
+
+    def get_queryset(self, request):
+        return TelegramUser.objects.filter(user_type=’sotuvchi’, seller_approved=False)
+
+    def user_info(self, obj):
+        name = f"{obj.first_name or ‘’} {obj.last_name or ‘’}".strip() or ‘Nomsiz’
+        username = f"@{obj.username}" if obj.username else ‘’
+        return format_html(
+            ‘<strong>{}</strong><br><span style="color:#888;font-size:11px">{}</span>’,
+            name, username
+        )
+    user_info.short_description = ‘Foydalanuvchi’
+
+    def region_name(self, obj):
+        return obj.region.name if obj.region else ‘—‘
+    region_name.short_description = ‘Viloyat’
+
+    def district_name(self, obj):
+        return obj.district.name if obj.district else ‘—‘
+    district_name.short_description = ‘Tuman’
+
+    def registered_at(self, obj):
+        return obj.created_at.strftime(‘%d.%m.%Y %H:%M’) if obj.created_at else ‘—‘
+    registered_at.short_description = ‘Ariza sanasi’
+
+    def approval_action(self, obj):
+        url = f’/admin/core/pendingsellerrequest/{obj.pk}/change/’
+        return format_html(
+            ‘<a href="{}" style="background:#10B981;color:white;padding:4px 10px;border-radius:4px;font-size:11px;text-decoration:none">✅ Ko\’rib chiqish</a>’,
+            url
+        )
+    approval_action.short_description = ‘Harakat’
+
+    def save_model(self, request, obj, form, change):
+        was_approved = obj.seller_approved
+        old_approved = False
+        if obj.pk:
+            try:
+                old_approved = TelegramUser.objects.filter(pk=obj.pk).values_list(‘seller_approved’, flat=True).first()
+            except Exception:
+                pass
+
+        super().save_model(request, obj, form, change)
+
+        if was_approved and not old_approved:
+            from django.utils import timezone as tz
+            obj.seller_approved_at = tz.now()
+            obj.save(update_fields=[‘seller_approved_at’])
+            self._send_approval_notification(obj, approved=True)
+        elif not was_approved and old_approved:
+            self._send_approval_notification(obj, approved=False)
+
+    def _send_approval_notification(self, obj, approved: bool):
+        import threading, requests as req_lib
+        from django.conf import settings
+        bot_token = getattr(settings, ‘TELEGRAM_BOT_TOKEN’, ‘’)
+        if not bot_token or not obj.telegram_id:
+            return
+
+        from bot.translations import TRANSLATIONS
+        lang = obj.language or ‘uz_latin’
+        if approved:
+            text = TRANSLATIONS.get(lang, TRANSLATIONS[‘uz_latin’]).get(
+                ‘SELLER_APPROVED’,
+                "✅ Tabriklaymiz! Arizangiz tasdiqlandi. Endi botdan foydalanishingiz mumkin."
+            )
+        else:
+            text = TRANSLATIONS.get(lang, TRANSLATIONS[‘uz_latin’]).get(
+                ‘SELLER_REJECTED’,
+                "❌ Arizangiz rad etildi. Murojaat: @jip_admin"
+            )
+
+        def _send():
+            try:
+                req_lib.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={‘chat_id’: obj.telegram_id, ‘text’: text, ‘parse_mode’: ‘HTML’},
+                    timeout=5,
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning("Zapros notification xatolik: %s", e)
+
+        threading.Thread(target=_send, daemon=True).start()
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

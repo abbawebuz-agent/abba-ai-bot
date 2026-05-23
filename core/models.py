@@ -553,6 +553,22 @@ class TelegramUser(models.Model):
         return f"{self.first_name or 'Unknown'} (@{self.username or 'no_username'})"
 
 
+class PendingSellerManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(user_type='sotuvchi', seller_approved=False)
+
+
+class PendingSellerRequest(TelegramUser):
+    """Tasdiqlanmagan sotuvchi arizalari — proxy model (alohida admin menyusi uchun)."""
+
+    objects = PendingSellerManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = "Zapros (sotuvchi arizasi)"
+        verbose_name_plural = "Zaproslar"
+
+
 class QRCodeBatch(models.Model):
     """Skretch-karta partiyasi — JIP loyalty yangi modeli.
 

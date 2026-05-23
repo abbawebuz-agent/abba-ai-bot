@@ -356,6 +356,7 @@ JAZZMIN_SETTINGS = {
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "core.TelegramUser": "fas fa-user-tie",
+        "core.PendingSellerRequest": "fas fa-user-clock",
         "core.QRCode": "fas fa-qrcode",
         "core.Gift": "fas fa-gift",
         "core.GiftRedemption": "fas fa-shopping-cart",
