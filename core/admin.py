@@ -244,10 +244,10 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         from bot.translations import get_text, TRANSLATIONS
 
         def _send():
-            import requests
+            import urllib.request, urllib.parse, json as _json, logging
+            _log = logging.getLogger(__name__)
             for u in users:
                 lang = u['language'] or 'uz_latin'
-                fake_user = type('U', (), {'language': lang})()
                 if approved:
                     text = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
                         'SELLER_APPROVED',
@@ -260,14 +260,21 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                     )
                     text = tmpl.format(reason=reason or '—', admin_contact=admin_contact)
                 try:
-                    requests.post(
+                    data = _json.dumps({
+                        'chat_id': u['telegram_id'],
+                        'text': text,
+                        'parse_mode': 'HTML',
+                    }).encode('utf-8')
+                    req = urllib.request.Request(
                         f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                        json={'chat_id': u['telegram_id'], 'text': text, 'parse_mode': 'HTML'},
-                        timeout=5,
+                        data=data,
+                        headers={'Content-Type': 'application/json'},
+                        method='POST',
                     )
+                    with urllib.request.urlopen(req, timeout=5):
+                        pass
                 except Exception as exc:
-                    import logging
-                    logging.getLogger(__name__).warning("Telegram xabar yuborilmadi: %s", exc)
+                    _log.warning("Telegram xabar yuborilmadi: %s", exc)
 
         threading.Thread(target=_send, daemon=True).start()
 
@@ -3135,34 +3142,47 @@ class PendingSellerRequestAdmin(admin.ModelAdmin):
             self._send_approval_notification(obj, approved=False)
 
     def _send_approval_notification(self, obj, approved: bool):
-        import threading, requests as req_lib
+        import threading
         from django.conf import settings
         bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
         if not bot_token or not obj.telegram_id:
             return
 
-        from bot.translations import TRANSLATIONS
-        lang = obj.language or 'uz_latin'
-        if approved:
-            text = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
-                'SELLER_APPROVED',
-                "✅ Tabriklaymiz! Arizangiz tasdiqlandi. Endi botdan foydalanishingiz mumkin."
-            )
-        else:
-            text = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
-                'SELLER_REJECTED',
-                "❌ Arizangiz rad etildi. Murojaat: @jip_admin"
-            )
+        try:
+            from bot.translations import TRANSLATIONS
+            lang = obj.language or 'uz_latin'
+            if approved:
+                text = TRANSLATIONS.get(lang, TRANSLATIONS.get('uz_latin', {})).get(
+                    'SELLER_APPROVED',
+                    "✅ Tabriklaymiz! Arizangiz tasdiqlandi. Endi botdan foydalanishingiz mumkin."
+                )
+            else:
+                text = TRANSLATIONS.get(lang, TRANSLATIONS.get('uz_latin', {})).get(
+                    'SELLER_REJECTED',
+                    "❌ Arizangiz rad etildi. Murojaat: @jip_admin"
+                )
+        except Exception:
+            text = ("✅ Arizangiz tasdiqlandi!" if approved else "❌ Arizangiz rad etildi.")
+
+        chat_id = obj.telegram_id
 
         def _send():
+            import urllib.request, urllib.parse, json as _json, logging
             try:
-                req_lib.post(
+                data = _json.dumps({
+                    'chat_id': chat_id,
+                    'text': text,
+                    'parse_mode': 'HTML',
+                }).encode('utf-8')
+                req = urllib.request.Request(
                     f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    json={'chat_id': obj.telegram_id, 'text': text, 'parse_mode': 'HTML'},
-                    timeout=5,
+                    data=data,
+                    headers={'Content-Type': 'application/json'},
+                    method='POST',
                 )
+                with urllib.request.urlopen(req, timeout=5):
+                    pass
             except Exception as e:
-                import logging
                 logging.getLogger(__name__).warning("Zapros notification xatolik: %s", e)
 
         threading.Thread(target=_send, daemon=True).start()
