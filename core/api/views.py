@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.utils.timezone import localtime, localdate
 from datetime import timedelta
 from core.models import TelegramUser, QRCodeBatch, QRCode
 from .serializers import UserSerializer, QRBatchSerializer
@@ -26,7 +27,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_stats(request):
-    now = timezone.now()
+    now = localtime(timezone.now())
     today = now.date()
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)

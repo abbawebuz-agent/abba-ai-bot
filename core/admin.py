@@ -706,11 +706,17 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         )
     store_id_display.short_description = "Do'kon ID"
 
+    def _all_seller_batches(self, obj):
+        """seller_batches (yangi FK) + store.owner batches (eski) — combined."""
+        return QRCodeBatch.objects.filter(
+            Q(seller=obj) | Q(store__owner=obj)
+        ).distinct().order_by('-created_at')
+
     def batch_history_html(self, obj):
         if not obj or not obj.pk:
             return '—'
 
-        batches = obj.seller_batches.order_by('-created_at')
+        batches = self._all_seller_batches(obj)
         if not batches.exists():
             return format_html('<p style="color:#999;">Hali batch yaratilmagan</p>')
 
@@ -759,7 +765,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         if not obj or not obj.pk:
             return '—'
         store = obj.owned_stores.filter(is_active=True).first()
-        total_batches = obj.seller_batches.count()
+        total_batches = self._all_seller_batches(obj).count()
         total_qr = store.total_qr_codes() if store else 0
         scanned_qr = store.scanned_qr_codes() if store else 0
         activation_rate = store.activation_rate() if store else 0
@@ -819,7 +825,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             cell.alignment = Alignment(horizontal='center')
 
         row = 2
-        for batch in user.seller_batches.order_by('-created_at'):
+        for batch in self._all_seller_batches(user):
             for qr in batch.qr_codes.filter(is_deleted=False).order_by('serial_number'):
                 scanned_by = ''
                 if qr.scanned_by:
@@ -3073,19 +3079,35 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     activation_display.short_description = 'Aktivatsiya'
 
     def _get_or_create_store_for_seller(self, seller):
-        """Seller's store topilsa qaytaradi, aks holda minimal store yaratadi."""
+        """Seller's store: owner bo'yicha → eski batch bo'yicha → yangi yaratish."""
         store = Store.objects.filter(owner=seller).first()
         if store:
             return store
-        region = seller.region or UzRegion.objects.first()
-        store = Store.objects.create(
+        # Eski batchlar orqali (migration 0071 dan oldin yaratilgan)
+        old = QRCodeBatch.objects.filter(
+            store__owner=seller
+        ).select_related('store').first()
+        if old and old.store_id:
+            return old.store
+        # Yangi store yaratish
+        try:
+            region = seller.region
+        except Exception:
+            region = None
+        if not region:
+            region = UzRegion.objects.first()
+        if not region:
+            raise ValueError(
+                f"Sotuvchi #{seller.id} uchun viloyat topilmadi — "
+                "avval foydalanuvchiga viloyat biriktiring."
+            )
+        return Store.objects.create(
             name=seller.first_name or f'Sotuvchi #{seller.id}',
             phone=seller.phone_number or '—',
             address='—',
             region=region,
             owner=seller,
         )
-        return store
 
     actions = ['action_generate_zip', 'action_mark_shipped', 'action_mark_delivered']
 
@@ -3122,24 +3144,23 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
 
     def save_model(self, request, obj, form, change):
         from .tasks import generate_batch_zip, _do_generate_batch_zip
+        import logging
+        logger = logging.getLogger(__name__)
         is_new = not obj.pk
         if not obj.created_by_id:
             obj.created_by = request.user
-        # Always enforce fixed points_per_code
         obj.points_per_code = 50
-        # Auto-assign store from seller
         if obj.seller_id:
             obj.store = self._get_or_create_store_for_seller(obj.seller)
+        # Generate name BEFORE first save — avoids (name='', store) UniqueConstraint issue
+        if is_new and not obj.name and obj.store_id:
+            obj.name = QRCodeBatch.generate_name(obj.store)
         super().save_model(request, obj, form, change)
-        if is_new:
-            if not obj.name:
-                obj.name = QRCodeBatch.generate_name(obj.store)
-                obj.save(update_fields=['name'])
-            # Credit bonus points to seller
-            if obj.seller_id:
-                bonus_points = obj.quantity * 50
-                from django.db.models import F as DbF
-                TelegramUser.objects.filter(pk=obj.seller_id).update(points=DbF('points') + bonus_points)
+        if is_new and obj.seller_id:
+            bonus_points = obj.quantity * 50
+            from django.db.models import F as DbF
+            TelegramUser.objects.filter(pk=obj.seller_id).update(points=DbF('points') + bonus_points)
+            try:
                 SellerPointsTransaction.objects.create(
                     seller=obj.seller,
                     store=obj.store,
@@ -3148,13 +3169,16 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
                     note=f"Batch '{obj.name}' yaratildi ({obj.quantity} ta × 50 ball)",
                     created_by=request.user,
                 )
-                obj.seller.invalidate_points_cache()
-                self.message_user(
-                    request,
-                    f"✅ '{obj.name}' batch yaratildi. Sotuvchiga {bonus_points:,} ball qo'shildi.",
-                )
-            else:
-                self.message_user(request, f"✅ '{obj.name}' batch yaratildi.")
+            except Exception as exc:
+                logger.error("SellerPointsTransaction yaratishda xato: %s", exc)
+            obj.seller.invalidate_points_cache()
+            self.message_user(
+                request,
+                f"✅ '{obj.name}' batch yaratildi. Sotuvchiga {bonus_points:,} ball qo'shildi.",
+            )
+        elif is_new:
+            self.message_user(request, f"✅ '{obj.name}' batch yaratildi.")
+        if is_new:
             try:
                 generate_batch_zip.delay(obj.id)
             except Exception:
