@@ -2292,6 +2292,26 @@
         </div>
         {% endif %}
 
+        {# Per-store aktivatsiya grafigi #}
+        {% if store_rows|length > 1 %}
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 2px 12px rgba(37,99,235,.07);">
+            <div style="font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.8px; margin-bottom:14px;">
+                Do'konlar bo'yicha aktivatsiya darajasi
+            </div>
+            <div style="height:220px; position:relative;">
+                <canvas id="storeActivationChart"></canvas>
+            </div>
+        </div>
+        <script>
+        window._storeChartData = {
+            labels: [{% for row in store_rows %}"{{ row.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+            rates:  [{% for row in store_rows %}{{ row.act_rate_life }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            scanned:[{% for row in store_rows %}{{ row.scanned_life }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            total:  [{% for row in store_rows %}{{ row.total_qr }}{% if not forloop.last %},{% endif %}{% endfor %}]
+        };
+        </script>
+        {% endif %}
+
         {# Per-store jadval #}
         <div style="overflow-x:auto; border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 2px 12px rgba(37,99,235,.07);">
             <table style="width:100%; border-collapse:collapse; font-size:13px;">
@@ -3247,6 +3267,48 @@
                     type: 'bar',
                     data: { labels: [I18N_LABELS.electricians, I18N_LABELS.stores], datasets: [{ label: I18N_LABELS.scanned, data: [kpis.pool_e_scan, kpis.pool_s_scan], backgroundColor: '#0f172a', borderRadius: 4 }, { label: I18N_LABELS.spent, data: [kpis.pool_e_spent, kpis.pool_s_spent], backgroundColor: '#6366f1', borderRadius: 4 }] },
                     options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+                });
+            }
+
+            // STORES TAB — Per-store activation rate bar chart
+            const storeActCtx = document.getElementById('storeActivationChart');
+            if (storeActCtx && window._storeChartData) {
+                const sd = window._storeChartData;
+                const colors = sd.rates.map(r => r >= 50 ? '#10b981' : r >= 20 ? '#f59e0b' : '#ef4444');
+                new Chart(storeActCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sd.labels,
+                        datasets: [{
+                            label: "Aktivatsiya %",
+                            data: sd.rates,
+                            backgroundColor: colors,
+                            borderRadius: 6,
+                            maxBarThickness: 40
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(15,23,42,.92)',
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const i = ctx.dataIndex;
+                                        return ` ${sd.rates[i]}%  (${sd.scanned[i]} / ${sd.total[i]} QR)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { borderDash: [4,4] } },
+                            x: { grid: { display: false }, ticks: { maxRotation: 35, font: { size: 11 } } }
+                        }
+                    }
                 });
             }
         }
