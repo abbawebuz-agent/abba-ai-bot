@@ -172,18 +172,21 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
     def _create_stores(self, regions, sotuvchilar, count=5):
         store_data = [
-            ('[TEST] Toshkent Santexnika Plus',   'tashkent',    '+998712345678', 'Yunusobod, 19-mavze'),
-            ('[TEST] Samarqand Suvchilar Markazi','samarkand',   '+998662345678', 'Registon ko\'chasi 5'),
-            ('[TEST] Farg\'ona Suvchi Bozori',    'fergana',     '+998732345678', 'Markaziy bozor'),
-            ('[TEST] Andijon Santexnika Hub',      'andijan',     '+998742345678', 'Asaka ko\'chasi 12'),
-            ('[TEST] Namangan Tr Markazi',         'namangan',    '+998692345678', 'Do\'stlik 45'),
+            ('[TEST] Toshkent Santexnika Plus',   'tashkent',    'yunusabad',       '+998712345678', 'Yunusobod, 19-mavze'),
+            ('[TEST] Samarqand Suvchilar Markazi','samarkand',   'samarkand_city',  '+998662345678', 'Registon ko\'chasi 5'),
+            ('[TEST] Farg\'ona Suvchi Bozori',    'fergana',     'fergana_city',    '+998732345678', 'Markaziy bozor'),
+            ('[TEST] Andijon Santexnika Hub',      'andijan',     'andijan_city',    '+998742345678', 'Asaka ko\'chasi 12'),
+            ('[TEST] Namangan Tr Markazi',         'namangan',    None,              '+998692345678', 'Do\'stlik 45'),
         ]
         stores = []
-        for i, (name, r_code, phone, addr) in enumerate(store_data[:count]):
+        for i, (name, r_code, d_code, phone, addr) in enumerate(store_data[:count]):
             try:
                 region = UzRegion.objects.get(code=r_code)
             except UzRegion.DoesNotExist:
                 region = regions[0]
+            district = None
+            if d_code:
+                district = UzDistrict.objects.filter(region=region, code=d_code).first()
             owner = sotuvchilar[i % len(sotuvchilar)]
             s, _ = Store.objects.get_or_create(
                 name=name,
@@ -192,12 +195,17 @@ class Command(BaseCommand):
                     'phone': phone,
                     'address': addr,
                     'region': region,
+                    'district': district,
                     'owner': owner,
                     'commission_percent': round(random.uniform(3.0, 8.0), 2),
                     'contract_signed_at': date.today() - timedelta(days=random.randint(30, 365)),
                     'is_active': True,
                 },
             )
+            # Mavjud do'konga ham district biriktiramiz (idempotent)
+            if district and not s.district_id:
+                s.district = district
+                s.save(update_fields=['district'])
             stores.append(s)
         return stores
 

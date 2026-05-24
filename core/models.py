@@ -26,7 +26,11 @@ class UzRegion(models.Model):
         ordering = ['code']
 
     def __str__(self):
-        return f'{self.code} — {self.name_ru}'
+        # Tilga qarab — UZ aktif bo'lsa name_uz, RU bo'lsa name_ru
+        from django.utils.translation import get_language
+        if get_language() and get_language().startswith('ru') and self.name_ru:
+            return self.name_ru
+        return self.name_uz or self.name_ru or self.code
 
 
 class UzDistrict(models.Model):
@@ -50,7 +54,10 @@ class UzDistrict(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.region.code}/{self.code} — {self.name_ru}'
+        from django.utils.translation import get_language
+        if get_language() and get_language().startswith('ru') and self.name_ru:
+            return self.name_ru
+        return self.name_uz or self.name_ru or self.code
 
 
 class Store(models.Model):

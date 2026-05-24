@@ -358,6 +358,9 @@ LOGIN_URL = '/admin/login/'
 JAZZMIN_SETTINGS = {
     # Заголовок сайта
     "site_brand": "JIP",
+    "site_header": "JIP — Sodiqlik dasturi",
+    "site_title": "JIP Admin",
+    "welcome_sign": "Xush kelibsiz! JIP boshqaruv paneliga kiring",
     "site_logo": "core_admin/img/logo.svg",
     "login_logo": "core_admin/img/logo.svg",
     "login_logo_dark": "core_admin/img/logo.svg",
@@ -441,8 +444,8 @@ JAZZMIN_SETTINGS = {
     # Настройки пользовательского интерфейса
     "user_avatar": None,
     "topmenu_links": [
-        {"name": "Главная", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Дашборд", "url": "dashboard", "permissions": ["auth.view_user"]},
+        {"name": "Bosh sahifa", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Boshqaruv paneli", "url": "dashboard", "permissions": ["auth.view_user"]},
     ],
     
     # Настройки языков — переключатель в админке (узбекский по умолчанию)

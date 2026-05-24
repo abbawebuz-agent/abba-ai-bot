@@ -2100,10 +2100,11 @@ class GiftRedemptionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     def phone_number_display(self, obj):
         """Отображает номер телефона пользователя."""
+        from .utils import format_phone_uz
         if obj.user.phone_number:
             return format_html(
                 '<span style="font-family: monospace; color: #10b981; font-weight: 600;">📞 {}</span>',
-                obj.user.phone_number
+                format_phone_uz(obj.user.phone_number)
             )
         return format_html('<span style="color: #9ca3af;">-</span>')
 
@@ -2874,7 +2875,7 @@ class QRCodeBatchInline(admin.TabularInline):
 class StoreAdmin(SimpleHistoryAdmin):
     """JIP: Do'kon admin — admin menyusidan yashirilgan."""
     list_display = [
-        'name', 'region', 'district', 'owner_display', 'phone',
+        'name', 'region', 'district', 'owner_display', 'phone_display',
         'batches_count', 'qr_codes_stats', 'commission_percent', 'is_active', 'created_at',
     ]
     list_filter = ['is_active', 'region', 'district']
@@ -2947,10 +2948,18 @@ class StoreAdmin(SimpleHistoryAdmin):
     store_statistics.short_description = "Do'kon statistikasi"
 
     def owner_display(self, obj):
+        from .utils import format_phone_uz
         if obj.owner_id:
-            return f"{obj.owner.first_name or ''} ({obj.owner.phone_number or '-'})"
+            phone = format_phone_uz(obj.owner.phone_number) if obj.owner.phone_number else '-'
+            return f"{obj.owner.first_name or ''} ({phone})"
         return format_html('<span style="color:#c00;">— biriktirilmagan —</span>')
     owner_display.short_description = 'Egasi'
+
+    def phone_display(self, obj):
+        from .utils import format_phone_uz
+        return format_phone_uz(obj.phone) if obj.phone else '-'
+    phone_display.short_description = 'Telefon'
+    phone_display.admin_order_field = 'phone'
 
     def batches_count(self, obj):
         count = obj.batches.count()

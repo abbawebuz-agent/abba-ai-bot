@@ -2,6 +2,7 @@
 Utility functions for core app.
 """
 import os
+import re
 import time
 import threading
 from playwright.sync_api import sync_playwright
@@ -11,6 +12,28 @@ from .models import QRCode
 
 # Семафор для ограничения одновременных операций Playwright
 _playwright_semaphore = threading.Semaphore(3)  # Максимум 3 одновременных операции
+
+
+def format_phone_uz(raw):
+    """O'zbekiston telefon raqamini +998 XX XXX XX XX formatiga keltiradi.
+
+    Misol: '998742345678' yoki '+99874234567' yoki '+998 (74) 234 5678'
+           → '+998 74 234 56 78'
+    Agar format mos kelmasa, asl qiymatni qaytaradi.
+    """
+    if not raw:
+        return ''
+    digits = re.sub(r'\D', '', str(raw))
+    if not digits:
+        return str(raw)
+    # 998 prefix bilan bo'lsa
+    if digits.startswith('998') and len(digits) == 12:
+        return f'+998 {digits[3:5]} {digits[5:8]} {digits[8:10]} {digits[10:12]}'
+    # 9 raqamli lokal nomer
+    if len(digits) == 9:
+        return f'+998 {digits[0:2]} {digits[2:5]} {digits[5:7]} {digits[7:9]}'
+    # Boshqa hollarda — asl qiymat
+    return str(raw)
 
 
 def generate_qr_code_image(qr_code_instance):
