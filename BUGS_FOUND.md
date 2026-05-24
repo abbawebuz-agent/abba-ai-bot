@@ -2,9 +2,11 @@
 **Sana:** 2026-05-24
 **URL:** https://jip-production.up.railway.app/
 **Tester:** Claude (Puppeteer MCP)
-**Status:** 12/22 tuzatildi va deploy qilindi (commit 1146013)
+**Status:** 18/22 tuzatildi va deploy qilindi (commit 9220160)
 
 ## ✅ TUZATILGAN VA TEKSHIRILGAN (Puppeteer testdan o'tdi)
+
+### Kritik buglar (Round 1)
 - BUG-001 Batch 500 → migration 0072 + try/except
 - BUG-002 Gift add 500 → fieldsets fixed
 - BUG-003 SellerRegistrationCode add 403 → has_add_permission=False
@@ -16,18 +18,20 @@
 - BUG-014 Sotuvchi ID spacing → letter-spacing 1px
 - BUG-023 (yangi) Redis URL config + cache defensive try/except
 
-## 🟡 QOLGAN (UI polish, kritik emas)
-- BUG-007 Mixed languages (Jazzmin hardcoded RU labels)
-- BUG-011 Phone format
-- BUG-012 Date format
-- BUG-013 Mixed status badges
-- BUG-015/016 User detail page language
-- BUG-017 Region slug+name display
-- BUG-018 Tuman column empty
-- BUG-019 Welcome → Xush kelibsiz
-- BUG-020 Promokoddar telefon blur
-- BUG-021 Date format short
-- BUG-022 Sidebar "Изменить пароль" RU
+### UI polish (Round 2)
+- BUG-007 Topmenu RU → "Bosh sahifa", "Boshqaruv paneli"
+- BUG-011 Telefon format → "+998 74 234 56 78" (format_phone_uz utility)
+- BUG-016 "Город Ташкент" → UZ tilida "Toshkent shahri" ko'rinadi
+- BUG-017 Region "andijan — Андижанская" → faqat "Andijon viloyati"
+- BUG-018 Tuman ustun bo'sh → seed_test_data district biriktirildi
+- BUG-019 "Welcome" → "Xush kelibsiz! JIP boshqaruv paneliga kiring"
+
+## 🟡 QOLGAN (sekundar)
+- BUG-012/021 Date format ("23 Май 2026", "Май 21, 19:03") — Django builtin
+- BUG-013 Mixed status badges (admin.py hardcoded RU short_descriptions)
+- BUG-015 User detail page tili — get_language() conditional kerak
+- BUG-020 Promokoddar telefon bo'sh/blur — webapp template
+- BUG-022 Sidebar "Изменить пароль" / "Выйти" RU — Jazzmin internal
 
 
 
