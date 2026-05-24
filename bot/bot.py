@@ -874,36 +874,47 @@ async def _get_admin_contact_str() -> str:
     return await _fetch()
 
 
-async def _notify_admins_new_seller(user) -> None:
-    """Yangi sotuvchi ro'yxatdan o'tganda admin Telegram ID'lariga xabar yuboradi."""
-    from django.conf import settings
-    admin_ids = getattr(settings, 'ADMIN_TELEGRAM_IDS', [])
-    if not admin_ids or not bot:
-        return
+async def _notify_admins_new_seller(user_id: int) -> None:
+    """Yangi sotuvchi ro'yxatdan o'tganda admin Telegram ID'lariga xabar yuboradi.
 
-    @sync_to_async
-    def _get_store_name():
-        store = user.owned_stores.filter(is_active=True).first()
-        return store.name if store else None
+    Sync DB queries hammasi sync_to_async ichida — async kontekstdan FK
+    accessga urinmaymiz.
+    """
+    try:
+        from django.conf import settings
+        admin_ids = getattr(settings, 'ADMIN_TELEGRAM_IDS', [])
+        if not admin_ids or not bot:
+            return
 
-    store_name = await _get_store_name()
-    region_name = user.region.name_uz if user.region else '—'
+        @sync_to_async
+        def _gather():
+            u = TelegramUser.objects.select_related('region').get(pk=user_id)
+            store = u.owned_stores.filter(is_active=True).first()
+            return {
+                'first_name': u.first_name or '—',
+                'phone': u.phone_number or '—',
+                'store_name': store.name if store else None,
+                'region_name': u.region.name_uz if u.region_id else '—',
+                'id': u.id,
+            }
+        info = await _gather()
 
-    text = (
-        f"🆕 <b>Yangi sotuvchi ro'yxatdan o'tdi!</b>\n\n"
-        f"👤 Ism: {user.first_name or '—'}\n"
-        f"📱 Telefon: <code>{user.phone_number or '—'}</code>\n"
-        f"🏪 Do'kon: {store_name or '— biriktirilmagan'}\n"
-        f"🌍 Viloyat: {region_name}\n\n"
-        f"✅ Tasdiqlash uchun admin panel:\n"
-        f"/admin/core/telegramuser/{user.id}/change/"
-    )
-
-    for admin_id in admin_ids:
-        try:
-            await bot.send_message(chat_id=admin_id, text=text, parse_mode='HTML')
-        except Exception as exc:
-            logger.warning("Admin %s ga xabar yuborilmadi: %s", admin_id, exc)
+        text = (
+            f"🆕 <b>Yangi sotuvchi ro'yxatdan o'tdi!</b>\n\n"
+            f"👤 Ism: {info['first_name']}\n"
+            f"📱 Telefon: <code>{info['phone']}</code>\n"
+            f"🏪 Do'kon: {info['store_name'] or '— biriktirilmagan'}\n"
+            f"🌍 Viloyat: {info['region_name']}\n\n"
+            f"✅ Tasdiqlash uchun admin panel:\n"
+            f"/admin/core/telegramuser/{info['id']}/change/"
+        )
+        for admin_id in admin_ids:
+            try:
+                await bot.send_message(chat_id=admin_id, text=text, parse_mode='HTML')
+            except Exception as exc:
+                logger.warning("Admin %s ga xabar yuborilmadi: %s", admin_id, exc)
+    except Exception:
+        logger.exception("_notify_admins_new_seller failed")
 
 
 async def try_attach_seller_to_store(message: Message, user, state: FSMContext):
@@ -913,38 +924,69 @@ async def try_attach_seller_to_store(message: Message, user, state: FSMContext):
     - Agar seller_approved=True → to'g'ridan-to'g'ri menyu
     - Aks holda → admin tasdiqlashiga yuboradi, xabar ko'rsatadi
     """
-    admin_contact = await _get_admin_contact_str()
+    # Defensive: hech narsa silent fail bo'lmasin — xato bo'lsa loglaymiz va
+    # foydalanuvchiga umumiy "kutish" xabarini ko'rsatamiz.
+    try:
+        admin_contact = await _get_admin_contact_str()
+    except Exception:
+        logger.exception("_get_admin_contact_str failed")
+        admin_contact = '@jip_admin'
 
     # Allaqachon tasdiqlangan
-    if user.seller_approved:
-        await state.clear()
-        await show_main_menu(message, user)
+    if getattr(user, 'seller_approved', False):
+        try:
+            await state.clear()
+            await show_main_menu(message, user)
+        except Exception:
+            logger.exception("show_main_menu failed for approved seller")
         return
 
     # Store biriktirish (agar mavjud bo'lsa, silent)
-    @sync_to_async
-    def _find_and_attach():
-        from core.models import Store
-        store = Store.objects.filter(owner=user, is_active=True).first()
-        if not store:
-            store = Store.objects.filter(
-                phone=user.phone_number, is_active=True, owner__isnull=True
-            ).first()
-            if store:
-                store.owner = user
-                store.save(update_fields=['owner'])
-        return store
-    await _find_and_attach()
+    try:
+        @sync_to_async
+        def _find_and_attach():
+            from core.models import Store
+            store = Store.objects.filter(owner=user, is_active=True).first()
+            if not store:
+                store = Store.objects.filter(
+                    phone=user.phone_number, is_active=True, owner__isnull=True
+                ).first()
+                if store:
+                    store.owner = user
+                    store.save(update_fields=['owner'])
+            return store
+        await _find_and_attach()
+    except Exception:
+        logger.exception("Store attach failed")
 
-    # Adminlarga xabar (background)
-    asyncio.create_task(_notify_admins_new_seller(user))
+    # Adminlarga xabar (background) — user_id pass qilamiz, instance emas
+    try:
+        asyncio.create_task(_notify_admins_new_seller(user.id))
+    except Exception:
+        logger.exception("notify_admins schedule failed")
 
-    # Foydalanuvchiga: kutish xabari
-    await message.answer(
-        get_text(user, 'SELLER_PENDING_APPROVAL').format(admin_contact=admin_contact),
-        parse_mode='HTML',
-    )
-    await state.clear()
+    # Foydalanuvchiga: kutish xabari (har holda yuborish kerak)
+    try:
+        await message.answer(
+            get_text(user, 'SELLER_PENDING_APPROVAL').format(admin_contact=admin_contact),
+            parse_mode='HTML',
+        )
+    except Exception:
+        logger.exception("SELLER_PENDING_APPROVAL send failed")
+        # Fallback — HTML siz
+        try:
+            await message.answer(
+                "⏳ Sizning arizangiz adminga yuborildi.\n"
+                f"Admin tasdiqlagandan keyin sizga xabar yuboriladi.\n\n"
+                f"Savollar uchun: {admin_contact}"
+            )
+        except Exception:
+            logger.exception("Fallback SELLER_PENDING send also failed")
+
+    try:
+        await state.clear()
+    except Exception:
+        logger.exception("state.clear failed")
 
 
 async def ask_promo_code(message: Message, user, state: FSMContext):
