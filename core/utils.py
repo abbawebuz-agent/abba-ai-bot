@@ -19,19 +19,24 @@ def format_phone_uz(raw):
 
     Misol: '998742345678' yoki '+99874234567' yoki '+998 (74) 234 5678'
            → '+998 74 234 56 78'
-    Agar format mos kelmasa, asl qiymatni qaytaradi.
+    Malformed phones (masalan '+9998...', '+9989...') ham mos formatlanadi —
+    oxirgi 9 raqam = local nomer, qolgan prefiks +998 bilan almashtiriladi.
     """
     if not raw:
         return ''
     digits = re.sub(r'\D', '', str(raw))
     if not digits:
         return str(raw)
-    # 998 prefix bilan bo'lsa
+    # 998 prefix bilan to'liq 12 raqam (kanonik)
     if digits.startswith('998') and len(digits) == 12:
         return f'+998 {digits[3:5]} {digits[5:8]} {digits[8:10]} {digits[10:12]}'
     # 9 raqamli lokal nomer
     if len(digits) == 9:
         return f'+998 {digits[0:2]} {digits[2:5]} {digits[5:7]} {digits[7:9]}'
+    # Malformed (11-13 raqam) — oxirgi 9 raqamni olib +998 bilan formatlash
+    if 10 <= len(digits) <= 13:
+        local = digits[-9:]
+        return f'+998 {local[0:2]} {local[2:5]} {local[5:7]} {local[7:9]}'
     # Boshqa hollarda — asl qiymat
     return str(raw)
 
