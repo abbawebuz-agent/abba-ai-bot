@@ -402,6 +402,135 @@
                 display: block;
             }
         }
+
+        /* ============================================================
+           RESPONSIVE — Dashboard inline grid overrides
+           ============================================================ */
+
+        /* Tablet 1024px va kichikroq — 4/5 colon → 2 colon */
+        @media (max-width: 1024px) {
+            .stat-grid,
+            .stat-grid[style*="repeat(4"],
+            .stat-grid[style*="repeat(3"],
+            .kpi-row,
+            .kpi-row[style*="repeat(5"],
+            .grid-container[style*="repeat(4"],
+            .grid-container[style*="2fr 1fr"],
+            div[style*="grid-template-columns: repeat(4"],
+            div[style*="grid-template-columns:repeat(4"],
+            div[style*="grid-template-columns: repeat(5"],
+            div[style*="grid-template-columns:repeat(5"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+            }
+            .content-body {
+                padding: 16px !important;
+            }
+        }
+
+        /* Mobile 640px va kichikroq — 1 colon */
+        @media (max-width: 640px) {
+            .stat-grid,
+            .stat-grid[style*="repeat"],
+            .kpi-row,
+            .kpi-row[style*="repeat"],
+            .grid-container,
+            .grid-container[style*="repeat"],
+            .grid-container[style*="2fr 1fr"],
+            .grid-container[style*="1fr 1fr"],
+            div[style*="grid-template-columns: repeat"],
+            div[style*="grid-template-columns:repeat"],
+            div[style*="grid-template-columns: 1.5fr"],
+            div[style*="grid-template-columns: 2fr"],
+            div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .content-body {
+                padding: 12px !important;
+            }
+            .header {
+                padding: 0 12px !important;
+                gap: 8px;
+            }
+            .user-pill span {
+                display: none; /* faqat avatar qoladi */
+            }
+            .lang-switcher {
+                margin-right: 8px !important;
+            }
+            /* KPI / stat card padding kichkina */
+            .stat-card-header,
+            .kpi-unit {
+                padding: 12px 14px !important;
+            }
+            .stat-card-total {
+                font-size: 14px !important;
+            }
+            .kpi-unit-value {
+                font-size: 22px !important;
+            }
+            .stat-card-title,
+            .kpi-unit-label {
+                font-size: 10px !important;
+            }
+        }
+
+        /* Tabs — gorizontal scroll bo'lsin (overflow') */
+        .tabs-scroll,
+        nav.tabs,
+        .tabs-row,
+        [class*="tab"][style*="display: flex"] {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        @media (max-width: 1024px) {
+            .tabs-scroll,
+            nav.tabs,
+            .tabs-row {
+                overflow-x: auto;
+                white-space: nowrap;
+                flex-wrap: nowrap !important;
+            }
+        }
+
+        /* Jadval — gorizontal scroll bo'lsin */
+        @media (max-width: 1024px) {
+            .product-widget,
+            .product-card {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .data-table-minimal,
+            .crm-table,
+            table.table {
+                min-width: 700px;
+            }
+        }
+
+        /* Filters/buttons row — wrap qilsin */
+        @media (max-width: 768px) {
+            .control-group,
+            .view-controls,
+            .widget-bar {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            .widget-bar h3 {
+                font-size: 12px !important;
+                width: 100%;
+            }
+            .date-picker-minimal {
+                font-size: 11px !important;
+                padding: 4px 8px !important;
+            }
+            .btn-export,
+            .btn-update,
+            .btn-clear {
+                font-size: 11px !important;
+                padding: 5px 10px !important;
+            }
+        }
     </style>
     {% block extrahead %}{% endblock %}
 </head>
