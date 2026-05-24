@@ -1333,9 +1333,13 @@ def seller_dashboard(request):
         seller=user, store=store
     ).aggregate(total=Sum('points'))['total'] or 0
 
+    region_name = None
+    if store.region_id:
+        region_name = store.region.name_uz or store.region.name_ru or store.region.code
+
     return Response({
         'store_name': store.name,
-        'region': store.region.name if store.region_id else None,
+        'region': region_name,
         'address': store.address,
         'points': int(points_total),
         'commission': float(store.commission_percent),
