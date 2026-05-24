@@ -2003,26 +2003,6 @@ class GiftAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     gift_display.short_description = 'Подарок'
     gift_display.admin_order_field = 'name_uz_latin'
 
-    def user_type_badge(self, obj):
-        """Отображает тип пользователя с цветным badge."""
-        if obj.user_type == 'santenik':
-            return format_html(
-                '<span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; '
-                'font-size: 12px; font-weight: 600;">🔧 Santenik</span>'
-            )
-        elif obj.user_type == 'sotuvchi':
-            return format_html(
-                '<span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 12px; '
-                'font-size: 12px; font-weight: 600;">🛒 Sotuvchi</span>'
-            )
-        return format_html(
-            '<span style="background: #f3f4f6; color: #6b7280; padding: 4px 12px; border-radius: 12px; '
-            'font-size: 12px; font-weight: 600;">🌐 Barcha</span>'
-        )
-
-    user_type_badge.short_description = 'Foydalanuvchi turi'
-    user_type_badge.admin_order_field = 'user_type'
-
     def points_cost_display(self, obj):
         """Отображает стоимость с цветом."""
         points_formatted = f"{obj.points_cost:,}".replace(",", " ")
@@ -2069,7 +2049,7 @@ class GiftAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             'fields': ('description_uz_latin', 'description_ru')
         }),
         ('Настройки', {
-            'fields': ('user_type', 'points_cost', 'order', 'is_active')
+            'fields': ('points_cost', 'stock_quantity', 'order', 'is_active')
         }),
         ('Даты', {
             'fields': ('created_at', 'updated_at')
@@ -3105,22 +3085,33 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         self.message_user(request, f"✅ {count} ta batch 'yetkazib berildi' deb belgilandi.")
 
     def save_model(self, request, obj, form, change):
-        from .tasks import generate_batch_zip, _do_generate_batch_zip
         import logging
+        import traceback
         logger = logging.getLogger(__name__)
         is_new = not obj.pk
-        if not obj.created_by_id:
-            obj.created_by = request.user
-        obj.points_per_code = 50
-        # Generate name BEFORE first save — avoids (name='', store) UniqueConstraint issue
-        if is_new and not obj.name and obj.store_id:
-            obj.name = QRCodeBatch.generate_name(obj.store)
-        super().save_model(request, obj, form, change)
+        try:
+            from .tasks import generate_batch_zip, _do_generate_batch_zip
+            if not obj.created_by_id:
+                obj.created_by = request.user
+            obj.points_per_code = 50
+            # Generate name BEFORE first save — avoids (name='', store) UniqueConstraint issue
+            if is_new and not obj.name and obj.store_id:
+                obj.name = QRCodeBatch.generate_name(obj.store)
+            super().save_model(request, obj, form, change)
+        except Exception as exc:
+            tb = traceback.format_exc()
+            logger.error("QRCodeBatch save_model PRE/SAVE xato: %s\n%s", exc, tb)
+            self.message_user(
+                request,
+                f"❌ Batch saqlashda xato: {type(exc).__name__}: {exc}",
+                level='error',
+            )
+            return
         if is_new and obj.seller_id:
-            bonus_points = obj.quantity * 50
-            from django.db.models import F as DbF
-            TelegramUser.objects.filter(pk=obj.seller_id).update(points=DbF('points') + bonus_points)
             try:
+                bonus_points = obj.quantity * 50
+                from django.db.models import F as DbF
+                TelegramUser.objects.filter(pk=obj.seller_id).update(points=DbF('points') + bonus_points)
                 SellerPointsTransaction.objects.create(
                     seller=obj.seller,
                     store=obj.store,
@@ -3129,22 +3120,37 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
                     note=f"Batch '{obj.name}' yaratildi ({obj.quantity} ta × 50 ball)",
                     created_by=request.user,
                 )
+                obj.seller.invalidate_points_cache()
+                self.message_user(
+                    request,
+                    f"✅ '{obj.name}' batch yaratildi. Sotuvchiga {bonus_points:,} ball qo'shildi.",
+                )
             except Exception as exc:
-                logger.error("SellerPointsTransaction yaratishda xato: %s", exc)
-            obj.seller.invalidate_points_cache()
-            self.message_user(
-                request,
-                f"✅ '{obj.name}' batch yaratildi. Sotuvchiga {bonus_points:,} ball qo'shildi.",
-            )
+                tb = traceback.format_exc()
+                logger.error("SellerPointsTransaction xato: %s\n%s", exc, tb)
+                self.message_user(
+                    request,
+                    f"⚠️ Batch yaratildi, ammo ball qo'shishda xato: {type(exc).__name__}: {exc}",
+                    level='warning',
+                )
         elif is_new:
             self.message_user(request, f"✅ '{obj.name}' batch yaratildi.")
         if is_new:
             try:
                 generate_batch_zip.delay(obj.id)
-            except Exception:
-                import threading
-                t = threading.Thread(target=_do_generate_batch_zip, args=(obj,), daemon=True)
-                t.start()
+            except Exception as exc:
+                logger.warning("Celery delay() xato (thread fallback): %s", exc)
+                try:
+                    import threading
+                    t = threading.Thread(target=_do_generate_batch_zip, args=(obj,), daemon=True)
+                    t.start()
+                except Exception as exc2:
+                    logger.error("Thread fallback ham xato: %s", exc2)
+                    self.message_user(
+                        request,
+                        f"⚠️ ZIP generatsiyasi boshlanmadi: {type(exc2).__name__}: {exc2}",
+                        level='warning',
+                    )
 
 
 @admin.register(SellerPointsTransaction)
@@ -3397,7 +3403,9 @@ class SellerRegistrationCodeAdmin(admin.ModelAdmin):
         bg = '#1e1e2e' if not obj.is_used else '#2a2a2a'
         return format_html(
             '<code style="background:{};color:{};padding:4px 10px;border-radius:6px;'
-            'font-size:15px;letter-spacing:3px;font-weight:700;">{}</code>',
+            'font-size:15px;letter-spacing:1px;font-weight:700;'
+            'font-family:Menlo,Monaco,Consolas,monospace;display:inline-block;'
+            'min-width:120px;text-align:center;">{}</code>',
             bg, color, obj.code
         )
     code_display.short_description = 'ID (8 raqam)'

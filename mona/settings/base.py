@@ -346,10 +346,10 @@ LOGIN_URL = '/admin/login/'
 JAZZMIN_SETTINGS = {
     # Заголовок сайта
     "site_brand": "JIP",
-    "site_logo": None,
-    "login_logo": None,
-    "login_logo_dark": None,
-    "site_logo_classes": "img-fluid",
+    "site_logo": "core_admin/img/logo.svg",
+    "login_logo": "core_admin/img/logo.svg",
+    "login_logo_dark": "core_admin/img/logo.svg",
+    "site_logo_classes": "img-fluid jip-brand-logo",
     "site_icon": "core_admin/img/favicon.png",
     
     # Цветовая схема

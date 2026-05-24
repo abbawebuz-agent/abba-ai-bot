@@ -332,11 +332,14 @@ def _promo_metrics_for_scope(
     if date_to: uq_period = uq_period.filter(created_at__date__lte=date_to)
     users_period = uq_period.count()
 
-    # 2. QR Codes / Points — JIP: code_type yo'q, barcha QR santenik uchun
+    # 2. QR Codes / Points — JIP: barcha QR santenik tomonidan skanerlanadi.
+    # BUG-005 fix: stores (sotuvchi) tab uchun QR scans 0 bo'lishi kerak,
+    # chunki sotuvchilar QR scan qilmaydi (ular batchlardan ball oladi).
     qr_base = QRCode.objects.filter(
         is_scanned=True, is_deleted=False,
+        scanned_by__user_type=user_type,
     )
-    
+
     if region_id == 'isnull':
         qr_base = qr_base.filter(scanned_by__region_id__isnull=True)
     elif region_id == 'undefined':

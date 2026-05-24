@@ -717,7 +717,13 @@ from core.bot_webhook import telegram_webhook_view
 
 
 
+def root_redirect(request):
+    """Bosh sahifa / → /admin/ ga redirect (BUG-006)."""
+    return redirect('/admin/')
+
+
 urlpatterns = [
+    path('', root_redirect, name='root'),
     path('i18n/', include('django.conf.urls.i18n')),
     path('webhook/<str:token>/', telegram_webhook_view, name='telegram_webhook'),
     path('admin/dashboard/export/', admin.site.admin_view(dashboard_export_view), name='dashboard_export'),

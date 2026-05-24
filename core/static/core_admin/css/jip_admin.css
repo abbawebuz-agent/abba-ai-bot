@@ -50,11 +50,16 @@ body, .wrapper {
   color: #fff !important;
 }
 
-.brand-link::after {
-  content: ' Admin';
-  font-weight: 300;
-  font-size: 14px;
-  opacity: 0.7;
+.brand-link::after { content: none !important; }
+.brand-link .brand-text { display: none !important; }
+.brand-link img.brand-image,
+.brand-link .brand-image,
+.brand-link .jip-brand-logo {
+  max-height: 36px !important;
+  width: auto !important;
+  margin: 0 auto !important;
+  display: block !important;
+  filter: brightness(1.15);
 }
 
 /* Sidebar nav items */
@@ -135,7 +140,12 @@ body, .wrapper {
   color: #fff !important;
 }
 
-/* Search */
+/* Search — duplicate navbar search box yashirildi (BUG-010) */
+.main-header .navbar-search-block,
+.main-header form.form-inline.ml-3,
+.main-header .navbar-nav > li:has(> form.form-inline) {
+  display: none !important;
+}
 .navbar-search-block .form-control {
   background: rgba(255,255,255,0.08) !important;
   border-color: rgba(255,255,255,0.12) !important;
@@ -381,9 +391,15 @@ fieldset.module h2 {
   background-clip: text !important;
 }
 
-.login-logo::before {
-  content: '◆ ';
-  font-size: 20px;
+.login-logo::before { content: none !important; }
+.login-logo a { text-decoration: none !important; }
+.login-logo img {
+  max-width: 220px !important;
+  width: 80% !important;
+  height: auto !important;
+  display: block !important;
+  margin: 0 auto 12px auto !important;
+  filter: drop-shadow(0 4px 20px rgba(59,130,246,0.4));
 }
 
 .login-box .form-control {
@@ -737,11 +753,7 @@ fieldset.module h2 {
 .status-active { animation: pulse 2s ease-in-out infinite; }
 
 /* --- JIP Brand Header --- */
-.brand-link .brand-text::before {
-  content: '◆ ';
-  color: #06b6d4;
-  font-size: 14px;
-}
+.brand-link .brand-text::before { content: none !important; }
 
 /* ============================================================
    Admin index — app list kartalar va tugmalar
