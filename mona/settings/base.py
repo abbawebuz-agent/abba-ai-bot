@@ -115,17 +115,29 @@ MONGODB_SETTINGS = {
 }
 
 # Redis — Railway REDIS_URL yoki alohida REDIS_HOST/PORT
+# BUG-023 FIX: agar REDIS_URL berilgan bo'lsa, uni to'g'ridan-to'g'ri ishlatamiz
+# (host/port qisib olishga urinish kerak emas — auth bilan URL buziladi).
 _redis_url = env('REDIS_URL', default='')
 if _redis_url:
-    REDIS_HOST = _redis_url
-    REDIS_PORT = 6379
-    CELERY_BROKER_URL = _redis_url
-    CELERY_RESULT_BACKEND = _redis_url
+    # URL dan host/port ajratib olish (channels_redis tuple talab qiladi)
+    from urllib.parse import urlparse as _urlparse
+    _parsed = _urlparse(_redis_url)
+    REDIS_HOST = _parsed.hostname or 'redis'
+    REDIS_PORT = _parsed.port or 6379
+    # Cache, Celery, Channels — barchasi to'liq URL ishlatadi (parol bilan)
+    _redis_base = _redis_url.rstrip('/')
+    if _redis_base.endswith(('/0', '/1', '/2', '/3', '/4', '/5')):
+        # Agar URL allaqachon DB nomeriga ega bo'lsa — base'ni olamiz
+        _redis_base = _redis_base.rsplit('/', 1)[0]
+    CELERY_BROKER_URL = f'{_redis_base}/0'
+    CELERY_RESULT_BACKEND = f'{_redis_base}/0'
+    _cache_location = f'{_redis_base}/1'
 else:
     REDIS_HOST = env('REDIS_HOST', default='redis')
     REDIS_PORT = int(env('REDIS_PORT', default='6379'))
     CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
     CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    _cache_location = f'redis://{REDIS_HOST}:{REDIS_PORT}/1'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -133,13 +145,18 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
 
-# Cache Configuration (Redis)
+# Cache Configuration (Redis) — agar Redis ulanmasa local-memory ga fallback
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'LOCATION': _cache_location,
+        'OPTIONS': {
+            'IGNORE_EXCEPTIONS': True,
+        },
     }
 }
+# Cache xatosi loyihani sindirmasin
+DJANGO_REDIS_IGNORE_EXCEPTIONS = True
 
 # Channels
 CHANNEL_LAYERS = {
