@@ -1,673 +1,1179 @@
 {% load webapp_i18n %}
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="{{ user_language }}">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>JIP — Sotuvchi paneli</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: var(--tg-theme-bg-color, #f3f4f6);
-      --card: var(--tg-theme-secondary-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #0f172a);
-      --muted: var(--tg-theme-hint-color, #64748b);
-      --primary: #2563eb;
-      --primary-light: #3b82f6;
-      --primary-dark: #1d4ed8;
-      --accent: #06b6d4;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --border: #e2e8f0;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-      background: var(--bg); color: var(--text); min-height: 100vh;
-      padding-bottom: 80px; -webkit-font-smoothing: antialiased;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<title>JIP Loyalty — Sotuvchi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: #fafafa;
+    color: #0a0a0a;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .jip-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  .jip-scroll { scrollbar-width: none; }
 
-    /* ============= HEADER ============= */
-    .header {
-      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 50%, var(--accent) 100%);
-      color: #fff; padding: 20px 16px 24px;
-      border-radius: 0 0 24px 24px;
-      box-shadow: 0 8px 24px rgba(37,99,235,0.25);
-    }
-    .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-    .header h1 { font-size: 16px; font-weight: 700; opacity: .95; letter-spacing: .3px; }
-    .header .store-name { font-size: 14px; font-weight: 500; opacity: .85; margin-top: 4px; }
-    .header .store-region { font-size: 12px; opacity: .7; margin-top: 2px; }
-    .refresh-btn {
-      background: rgba(255,255,255,0.15); border: none; color: #fff;
-      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(8px); transition: .2s;
-    }
-    .refresh-btn:active { background: rgba(255,255,255,0.3); transform: rotate(180deg); }
+  @keyframes jip-fade-up { from { opacity:0; transform: translate3d(0,8px,0);} to { opacity:1; transform: translate3d(0,0,0);} }
+  @keyframes jip-fade-in { from { opacity:0;} to { opacity:1;} }
+  @keyframes jip-scale-in { from { opacity:0; transform: scale(0.96);} to { opacity:1; transform: scale(1);} }
+  @keyframes jip-pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(79,70,229,0.5);} 50% { box-shadow: 0 0 0 6px rgba(79,70,229,0);} }
+  @keyframes jip-pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5);} 50% { box-shadow: 0 0 0 5px rgba(16,185,129,0);} }
+  @keyframes jip-spin { to { transform: rotate(360deg);} }
 
-    /* ============= BOTTOM TAB BAR ============= */
-    .tabbar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--card); border-top: 1px solid var(--border);
-      display: flex; padding: 6px 4px 8px; z-index: 100;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.06);
-    }
-    .tab-btn {
-      flex: 1; min-width: 0; background: none; border: none;
-      padding: 8px 4px; cursor: pointer; display: flex;
-      flex-direction: column; align-items: center; gap: 4px;
-      color: var(--muted); font-size: 10px; font-weight: 600;
-      transition: color .2s;
-    }
-    .tab-btn.active { color: var(--primary); }
-    .tab-btn svg { width: 22px; height: 22px; transition: transform .2s; }
-    .tab-btn.active svg { transform: scale(1.1); }
-    .tab-label { font-size: 10px; white-space: nowrap; }
+  .jip-fade-up { animation: jip-fade-up 420ms cubic-bezier(.22,1,.36,1) both; }
+  .jip-fade-in { animation: jip-fade-in 280ms ease-out both; }
+  .jip-scale-in { animation: jip-scale-in 320ms cubic-bezier(.22,1,.36,1) both; }
+  .jip-pulse-dot { animation: jip-pulse-dot 1800ms ease-out infinite; }
+  .jip-pulse-green { animation: jip-pulse-green 2000ms ease-out infinite; }
 
-    /* ============= PAGES ============= */
-    .page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
-    .page.active { display: block; animation: fadeIn .3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* ============= CARDS ============= */
-    .balance-card {
-      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #06b6d4 100%);
-      color: #fff; border-radius: 20px; padding: 22px;
-      margin: -16px 0 16px; position: relative; overflow: hidden;
-      box-shadow: 0 12px 32px rgba(37,99,235,0.3);
-    }
-    .balance-card::before {
-      content: ''; position: absolute; top: -50%; right: -20%;
-      width: 200px; height: 200px; background: rgba(255,255,255,0.08);
-      border-radius: 50%; pointer-events: none;
-    }
-    .balance-label { font-size: 12px; opacity: .85; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; }
-    .balance-val { font-size: 36px; font-weight: 800; margin-top: 6px; letter-spacing: -.5px; }
-    .balance-suffix { font-size: 16px; opacity: .8; font-weight: 500; }
-    .balance-delta {
-      display: inline-flex; align-items: center; gap: 4px;
-      margin-top: 8px; font-size: 12px; padding: 4px 10px;
-      background: rgba(255,255,255,0.18); border-radius: 100px;
-      font-weight: 600; backdrop-filter: blur(8px);
-    }
-    .balance-note { font-size: 11px; opacity: .7; margin-top: 12px; }
-
-    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-    .stat-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px; text-align: center;
-      transition: transform .15s; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    .stat-card:active { transform: scale(0.97); }
-    .stat-val { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
-    .stat-label { font-size: 11px; color: var(--muted); margin-top: 6px; font-weight: 500; }
-
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px; margin-bottom: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      transition: transform .15s;
-    }
-    .card:active { transform: scale(0.99); }
-    .card-title {
-      font-size: 13px; font-weight: 700; color: var(--text);
-      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
-    }
-    .card-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;
-    }
-    .card-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .card-row > span:first-child { color: var(--muted); }
-    .card-row > span:last-child { font-weight: 600; text-align: right; max-width: 60%; }
-
-    .tx-plus { color: var(--success); font-weight: 700; }
-    .tx-minus { color: var(--danger); font-weight: 700; }
-
-    /* ============= PROGRESS BAR ============= */
-    .progress-bar {
-      height: 6px; background: var(--border); border-radius: 100px;
-      overflow: hidden; margin-top: 8px;
-    }
-    .progress-fill {
-      height: 100%; background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-      border-radius: 100px; transition: width .4s ease;
-    }
-    .progress-fill.success { background: linear-gradient(90deg, var(--success) 0%, #34d399 100%); }
-    .progress-fill.warning { background: linear-gradient(90deg, var(--warning) 0%, #fbbf24 100%); }
-    .progress-fill.danger { background: linear-gradient(90deg, var(--danger) 0%, #f87171 100%); }
-
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;
-    }
-    .badge-success { background: #d1fae5; color: #047857; }
-    .badge-info { background: #dbeafe; color: #1e40af; }
-    .badge-warning { background: #fef3c7; color: #92400e; }
-    .badge-muted { background: #f1f5f9; color: #64748b; }
-
-    /* ============= CHART ============= */
-    .chart-wrap {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px; margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    .chart-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .chart-title { font-size: 13px; font-weight: 700; }
-    .chart-period {
-      font-size: 11px; color: var(--muted); background: var(--bg);
-      padding: 3px 10px; border-radius: 100px; font-weight: 600;
-    }
-    .chart-canvas { height: 180px !important; max-height: 180px; }
-
-    /* ============= TOP USERS ============= */
-    .top-user {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
-    .top-user:last-child { border-bottom: none; }
-    .rank-badge {
-      width: 32px; height: 32px; border-radius: 10px;
-      background: var(--bg); display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 800; color: var(--muted); flex-shrink: 0;
-    }
-    .rank-badge.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
-    .rank-badge.silver { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color: #fff; }
-    .rank-badge.bronze { background: linear-gradient(135deg, #d97706, #92400e); color: #fff; }
-    .top-info { flex: 1; min-width: 0; }
-    .top-name { font-size: 14px; font-weight: 600; }
-    .top-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .top-points {
-      font-size: 16px; font-weight: 800; color: var(--primary); text-align: right;
-    }
-    .top-points small { font-size: 10px; color: var(--muted); font-weight: 500; display: block; }
-
-    /* ============= CALCULATOR ============= */
-    .calc-input-group {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 16px; margin-bottom: 14px;
-    }
-    .calc-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
-    .calc-input {
-      width: 100%; border: 2px solid var(--border); border-radius: 10px;
-      padding: 12px 14px; font-size: 18px; font-weight: 700; color: var(--text);
-      background: var(--bg); transition: .2s;
-      -webkit-appearance: none; appearance: none;
-    }
-    .calc-input:focus { outline: none; border-color: var(--primary); background: #fff; }
-    .calc-result {
-      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-      border: 1px solid #6ee7b7; border-radius: 14px; padding: 18px;
-      text-align: center; margin-top: 14px;
-    }
-    .calc-result-label { font-size: 12px; color: #047857; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; }
-    .calc-result-val { font-size: 32px; font-weight: 800; color: #047857; margin-top: 6px; }
-
-    /* ============= BATCH DETAIL ============= */
-    .batch-back {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 13px; font-weight: 600; color: var(--primary);
-      padding: 6px 12px; background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; margin-bottom: 12px; cursor: pointer;
-    }
-    .qr-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px; background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; margin-bottom: 6px; font-size: 12px;
-    }
-    .qr-status-dot {
-      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-    }
-    .qr-status-dot.scanned { background: var(--success); }
-    .qr-status-dot.unscanned { background: var(--border); }
-    .qr-info { flex: 1; min-width: 0; }
-    .qr-serial { font-family: 'Menlo', monospace; font-size: 11px; color: var(--muted); }
-    .qr-scanned-by { font-size: 11px; color: var(--text); font-weight: 600; }
-    .qr-points { font-weight: 700; color: var(--primary); }
-
-    /* ============= MISC ============= */
-    .empty {
-      text-align: center; color: var(--muted); padding: 48px 16px;
-      font-size: 14px; font-weight: 500;
-    }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
-    .loading {
-      text-align: center; color: var(--muted); padding: 40px;
-      font-size: 13px; font-weight: 500;
-    }
-    .spinner {
-      display: inline-block; width: 32px; height: 32px;
-      border: 3px solid var(--border); border-top-color: var(--primary);
-      border-radius: 50%; animation: spin 1s linear infinite;
-      margin-bottom: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .section-title {
-      font-size: 12px; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .8px;
-      margin: 16px 0 8px; padding: 0 4px;
-    }
-
-    /* Tablet adaptive */
-    @media (min-width: 768px) {
-      .stat-grid { grid-template-columns: repeat(4, 1fr); }
-      .balance-val { font-size: 42px; }
-    }
-  </style>
+  .jip-press { transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease; }
+  .jip-press:active { transform: scale(0.975); }
+  button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+</style>
 </head>
 <body>
+<div id="root"></div>
 
-<!-- ============= HEADER ============= -->
-<div class="header">
-  <div class="header-row">
-    <div>
-      <h1>JIP — Sotuvchi paneli</h1>
-      <div class="store-name" id="store-name">Yuklanmoqda...</div>
-      <div class="store-region" id="store-region"></div>
-    </div>
-    <button class="refresh-btn" id="refresh-btn" title="Yangilash">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8M3 8v4h4M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16m18 0v-4h-4"/>
-      </svg>
-    </button>
-  </div>
-</div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
 
-<!-- ============= PAGES ============= -->
-<!-- 1. DASHBOARD -->
-<div id="page-dashboard" class="page active">
-  <div id="dash-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
-</div>
+<script type="text/babel" data-presets="react">
+// ═══════════════════════════════════════════════════════════
+// JIP Loyalty Seller — Telegram Mini App
+// Linear-inspired violet/indigo design
+// ═══════════════════════════════════════════════════════════
 
-<!-- 2. TRANSACTIONS -->
-<div id="page-transactions" class="page">
-  <div id="tx-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
-</div>
-
-<!-- 3. BATCHES -->
-<div id="page-batches" class="page">
-  <div id="batch-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
-</div>
-
-<!-- 4. TOP SANTEXNIKS -->
-<div id="page-top" class="page">
-  <div id="top-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
-</div>
-
-<!-- 5. CALCULATOR -->
-<div id="page-calc" class="page">
-  <div id="calc-content"></div>
-</div>
-
-<!-- ============= BOTTOM TAB BAR ============= -->
-<div class="tabbar">
-  <button class="tab-btn active" data-tab="dashboard">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-    <span class="tab-label">Bosh sahifa</span>
-  </button>
-  <button class="tab-btn" data-tab="transactions">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    <span class="tab-label">Ballar</span>
-  </button>
-  <button class="tab-btn" data-tab="batches">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-    <span class="tab-label">Batch'lar</span>
-  </button>
-  <button class="tab-btn" data-tab="top">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-    <span class="tab-label">Top</span>
-  </button>
-  <button class="tab-btn" data-tab="calc">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-    <span class="tab-label">Kalkulyator</span>
-  </button>
-</div>
-
-<script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
 const INIT_DATA = tg?.initData || '';
 const LANG = '{{ user_language|default:"uz_latin" }}';
+const haptic = (k='light') => tg?.HapticFeedback?.impactOccurred?.(k);
+const hapticSelect = () => tg?.HapticFeedback?.selectionChanged?.();
 
-function api(path) {
-  return fetch(path, {
-    headers: { 'X-Telegram-Init-Data': INIT_DATA, 'Content-Type': 'application/json' },
-    cache: 'no-store',
-  }).then(r => r.json());
-}
-function fmt(n) { return Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' '); }
-function escHtml(s) { return String(s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+// ─────────────────────────────────────────────────────────────
+// Design tokens
+// ─────────────────────────────────────────────────────────────
+const T = {
+  page:'#fafafa', card:'#ffffff', surface:'#f4f4f6',
+  border:'#e7e7eb', borderSoft:'#f1f1f4', divider:'#ececef',
+  ink:'#0a0a0a', text:'#18181b', mute:'#71717a', light:'#a1a1aa', faint:'#d4d4d8',
+  primary:'#4f46e5', primaryDeep:'#3730a3', primaryDark:'#312e81', primaryLite:'#818cf8',
+  primarySoft:'#eef2ff', primaryTint:'#f5f3ff', accent:'#a855f7',
+  good:'#10b981', goodSoft:'#d1fae5', warn:'#f59e0b', warnSoft:'#fef3c7',
+  bad:'#ef4444', badSoft:'#fee2e2',
+  font:"'Inter', -apple-system, system-ui, sans-serif",
+  mono:"'JetBrains Mono', ui-monospace, monospace",
+};
 
-let loaded = {};
-let chartInstance = null;
+// ─────────────────────────────────────────────────────────────
+// API helper
+// ─────────────────────────────────────────────────────────────
+const api = (path) => fetch(path, {
+  headers: { 'X-Telegram-Init-Data': INIT_DATA, 'Content-Type': 'application/json' },
+  cache: 'no-store',
+}).then(r => r.json());
 
-// ===== TAB switching =====
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('page-' + tab).classList.add('active');
-    if (!loaded[tab]) { loadTab(tab); loaded[tab] = true; }
-    if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-  });
-});
-
-function loadTab(name) {
-  switch (name) {
-    case 'dashboard': loadDashboard(); break;
-    case 'transactions': loadTransactions(); break;
-    case 'batches': loadBatches(); break;
-    case 'top': loadTop(); break;
-    case 'calc': loadCalc(); break;
-  }
-}
-
-// ===== REFRESH button =====
-document.getElementById('refresh-btn').addEventListener('click', () => {
-  loaded = {};
-  const active = document.querySelector('.tab-btn.active').dataset.tab;
-  loadTab(active);
-  loaded[active] = true;
-  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-});
-
-// ===== 1. DASHBOARD =====
-function loadDashboard() {
-  Promise.all([
-    api('/api/webapp/seller/dashboard/'),
-    api('/api/webapp/seller/balance-history/'),
-  ]).then(([d, hist]) => {
-    if (d.error) { document.getElementById('dash-content').innerHTML = `<div class="empty">❌ ${escHtml(d.error)}</div>`; return; }
-    document.getElementById('store-name').textContent = d.store_name || '—';
-    document.getElementById('store-region').textContent = d.region || '';
-
-    const rate = d.qr_scanned && d.qr_total ? Math.round(d.qr_scanned / d.qr_total * 100) : 0;
-    const rateClass = rate >= 50 ? 'success' : rate >= 20 ? 'warning' : 'danger';
-    const delta = hist && hist.period_change || 0;
-    const deltaSign = delta > 0 ? '+' : '';
-    const deltaIcon = delta > 0 ? '↗' : delta < 0 ? '↘' : '→';
-
-    document.getElementById('dash-content').innerHTML = `
-      <div class="balance-card">
-        <div class="balance-label">💰 Joriy balans</div>
-        <div><span class="balance-val">${fmt(d.points)}</span> <span class="balance-suffix">ball</span></div>
-        <div class="balance-delta">${deltaIcon} ${deltaSign}${fmt(delta)} (30 kun)</div>
-        <div class="balance-note">Ballar admin tomonidan batch yaratganda qo'shiladi</div>
-      </div>
-
-      <div class="chart-wrap">
-        <div class="chart-header">
-          <div class="chart-title">📈 Balans tarixi</div>
-          <div class="chart-period">Oxirgi 30 kun</div>
-        </div>
-        <canvas id="balance-chart" class="chart-canvas"></canvas>
-      </div>
-
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-val">${fmt(d.qr_total)}</div>
-          <div class="stat-label">📦 Jami QR</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">${fmt(d.qr_scanned)}</div>
-          <div class="stat-label">✅ Skanlangan</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val" style="color: var(--${rateClass === 'success' ? 'success' : rateClass === 'warning' ? 'warning' : 'danger'});">${rate}%</div>
-          <div class="stat-label">📊 Aktivatsiya</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">${d.commission}%</div>
-          <div class="stat-label">💳 Komissiya</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🏪 Do'kon ma'lumotlari</div>
-        <div class="card-row"><span>Nomi</span><span>${escHtml(d.store_name)}</span></div>
-        <div class="card-row"><span>Viloyat</span><span>${escHtml(d.region) || '—'}</span></div>
-        <div class="card-row"><span>Manzil</span><span style="font-size:12px;">${escHtml(d.address) || '—'}</span></div>
-      </div>
-    `;
-
-    // Render chart
-    if (hist && hist.labels) {
-      setTimeout(() => renderBalanceChart(hist), 50);
-    }
-  }).catch((e) => {
-    console.error(e);
-    document.getElementById('dash-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>';
-  });
+// ─────────────────────────────────────────────────────────────
+// Icons (lucide-style)
+// ─────────────────────────────────────────────────────────────
+function Icon({ name, size = 20, color = 'currentColor', strokeWidth = 2, style }) {
+  const p = { fill:'none', stroke:color, strokeWidth, strokeLinecap:'round', strokeLinejoin:'round' };
+  const paths = {
+    home: <><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></>,
+    coin: <><circle cx="12" cy="12" r="9"/><path d="M9 8h4.5a2.5 2.5 0 0 1 0 5H9"/><path d="M9 13h5a2.5 2.5 0 0 1 0 5H9"/><path d="M9 5v14"/></>,
+    box:  <><path d="M3 8 12 3l9 5v8l-9 5-9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></>,
+    trophy: <><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h2.5a1.5 1.5 0 0 1 0 5h-2"/><path d="M7 5H4.5a1.5 1.5 0 0 0 0 5h2"/></>,
+    calc: <><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></>,
+    refresh: <><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></>,
+    chevR: <path d="m9 6 6 6-6 6"/>,
+    chevL: <path d="m15 6-6 6 6 6"/>,
+    plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
+    minus: <path d="M5 12h14"/>,
+    up: <><path d="M7 17 17 7"/><path d="M8 7h9v9"/></>,
+    down: <><path d="M7 7l10 10"/><path d="M17 8v9H8"/></>,
+    check: <path d="M5 12l5 5L20 7"/>,
+    x: <><path d="M6 6l12 12"/><path d="M18 6L6 18"/></>,
+    qr: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></>,
+    store: <><path d="M3 9 4.5 4h15L21 9"/><path d="M4 9v10h16V9"/><path d="M9 19v-5h6v5"/></>,
+    map: <><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14"/><path d="M15 6v14"/></>,
+    sparkles: <><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M6 6l-2-2M20 20l-2-2M6 18l-2 2M20 4l-2 2"/><circle cx="12" cy="12" r="3"/></>,
+    phone: <path d="M5 4h3l2 5-2 1a11 11 0 0 0 6 6l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>,
+    info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="8" r="0.5" fill={color}/></>,
+    bell: <><path d="M6 8a6 6 0 0 1 12 0v5l2 3H4l2-3Z"/><path d="M10 19a2 2 0 0 0 4 0"/></>,
+  };
+  return (<svg width={size} height={size} viewBox="0 0 24 24" style={style}><g {...p}>{paths[name] || null}</g></svg>);
 }
 
-function renderBalanceChart(hist) {
-  const ctx = document.getElementById('balance-chart');
-  if (!ctx) return;
-  if (chartInstance) chartInstance.destroy();
-  const tg_text = getComputedStyle(document.body).getPropertyValue('--text').trim() || '#0f172a';
-  const tg_muted = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#64748b';
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: hist.labels,
-      datasets: [{
-        label: 'Ball',
-        data: hist.values,
-        borderColor: '#2563eb',
-        backgroundColor: (ctx) => {
-          const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 180);
-          g.addColorStop(0, 'rgba(37,99,235,0.25)');
-          g.addColorStop(1, 'rgba(37,99,235,0)');
-          return g;
-        },
-        fill: true,
-        tension: 0.35,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        borderWidth: 2.5,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { size: 11, weight: 600 },
-          bodyFont: { size: 13, weight: 700 },
-          padding: 10,
-          cornerRadius: 8,
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: tg_muted, font: { size: 10 }, maxTicksLimit: 6 },
-          grid: { display: false },
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: tg_muted, font: { size: 10 } },
-          grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
-        },
-      },
-    },
-  });
+// ─────────────────────────────────────────────────────────────
+// Pill / Card / SectionTitle / PageHeader
+// ─────────────────────────────────────────────────────────────
+function Pill({ children, tone='neutral', solid=false, size='sm', style }) {
+  const tones = {
+    neutral:{bg:'#f4f4f6',fg:'#52525b',bd:'#e7e7eb'},
+    brand:{bg:T.primarySoft,fg:T.primaryDeep,bd:'#dcd9ff'},
+    good:{bg:T.goodSoft,fg:'#047857',bd:'#a7f3d0'},
+    warn:{bg:T.warnSoft,fg:'#92400e',bd:'#fde68a'},
+    bad:{bg:T.badSoft,fg:'#b91c1c',bd:'#fecaca'},
+    glass:{bg:'rgba(255,255,255,0.18)',fg:'#fff',bd:'rgba(255,255,255,0.25)'},
+    dark:{bg:'#0a0a0a',fg:'#fff',bd:'#0a0a0a'},
+  };
+  const t = tones[tone];
+  const padY = size==='lg'?6:size==='md'?4:3;
+  const padX = size==='lg'?12:size==='md'?10:8;
+  const fs = size==='lg'?12:11;
+  return (<span style={{display:'inline-flex',alignItems:'center',gap:4,padding:`${padY}px ${padX}px`,borderRadius:999,
+    background:solid?t.fg:t.bg,color:solid?'#fff':t.fg,border:`1px solid ${solid?t.fg:t.bd}`,
+    fontSize:fs,fontWeight:600,letterSpacing:0.1,lineHeight:1,whiteSpace:'nowrap',...style}}>{children}</span>);
 }
 
-// ===== 2. TRANSACTIONS =====
-function loadTransactions() {
-  api('/api/webapp/seller/transactions/').then(data => {
-    const list = data.results || [];
-    if (!list.length) {
-      document.getElementById('tx-content').innerHTML = '<div class="empty"><div class="empty-icon">💸</div>Tranzaksiyalar yo\'q</div>';
-      return;
-    }
-    const rows = list.map(tx => `
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:700;">${escHtml(tx.transaction_type_display)}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${escHtml(tx.created_at)}</div>
-            ${tx.note ? `<div style="font-size:11px;color:var(--text);margin-top:6px;line-height:1.4;">${escHtml(tx.note)}</div>` : ''}
+function Card({ children, style, padding=16, onClick, className='' }) {
+  return (<div onClick={onClick} className={`${onClick?'jip-press':''} ${className}`}
+    style={{background:'#fff',border:`1px solid ${T.border}`,borderRadius:16,padding,cursor:onClick?'pointer':'default',...style}}>{children}</div>);
+}
+
+function SectionTitle({ children, action, style }) {
+  return (<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'0 0 10px 4px',...style}}>
+    <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mute}}>{children}</div>
+    {action}
+  </div>);
+}
+
+function PageHeader({ eyebrow, title, subtitle, right }) {
+  return (<div style={{padding:'8px 20px 18px',display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:12}}>
+    <div style={{minWidth:0}}>
+      {eyebrow && <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:T.mute,marginBottom:4}}>{eyebrow}</div>}
+      <div style={{fontSize:26,fontWeight:700,letterSpacing:'-0.025em',color:T.ink,lineHeight:1.1}}>{title}</div>
+      {subtitle && <div style={{fontSize:13,color:T.mute,marginTop:4,fontWeight:500}}>{subtitle}</div>}
+    </div>
+    {right}
+  </div>);
+}
+
+function Avatar({ name, size=36, color }) {
+  const letter = (name || '?').trim().charAt(0).toUpperCase();
+  const palette = ['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#84cc16'];
+  let hash = 0; for (const c of (name||'')) hash = (hash*31 + c.charCodeAt(0)) % 1000;
+  const bg = color || palette[hash % palette.length];
+  return (<div style={{width:size,height:size,borderRadius:999,background:bg,color:'#fff',
+    display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:size*0.42,letterSpacing:'-0.02em',flexShrink:0}}>{letter}</div>);
+}
+
+function AreaChart({ data, width=320, height=110, color=T.primary, fillColor }) {
+  if (!data || data.length === 0) return null;
+  const pad = { l:0, r:0, t:6, b:4 };
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const step = data.length > 1 ? W / (data.length - 1) : 0;
+  const pts = data.map((v, i) => [pad.l + i*step, pad.t + H - ((v - min) / range) * H]);
+  const path = pts.reduce((acc, [x,y], i) => {
+    if (i === 0) return `M ${x} ${y}`;
+    const [px, py] = pts[i-1];
+    return `${acc} C ${px + step/2} ${py} ${x - step/2} ${y} ${x} ${y}`;
+  }, '');
+  const area = `${path} L ${pts[pts.length-1][0]} ${height} L ${pts[0][0]} ${height} Z`;
+  const lineRef = React.useRef(null);
+  const [len, setLen] = React.useState(0);
+  React.useEffect(() => { if (lineRef.current) setLen(lineRef.current.getTotalLength()); }, [data]);
+  const gid = React.useMemo(() => 'ac-' + Math.random().toString(36).slice(2,8), []);
+  return (<svg width={width} height={height} style={{display:'block',overflow:'visible'}}>
+    <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor={fillColor||color} stopOpacity="0.22"/>
+      <stop offset="100%" stopColor={fillColor||color} stopOpacity="0"/>
+    </linearGradient></defs>
+    <path d={area} fill={`url(#${gid})`} style={{animation:'jip-fade-in 1100ms 200ms ease-out both'}}/>
+    <path ref={lineRef} d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      strokeDasharray={len||undefined} strokeDashoffset={len||undefined}
+      style={{animation: len ? 'jip-draw-area 1200ms cubic-bezier(.22,1,.36,1) forwards' : 'none'}}/>
+    <style>{`@keyframes jip-draw-area { to { stroke-dashoffset: 0; } }`}</style>
+    <circle cx={pts[pts.length-1][0]} cy={pts[pts.length-1][1]} r="3.5" fill={color} stroke="#fff" strokeWidth="2"
+      style={{animation:'jip-fade-in 300ms 1100ms ease-out both'}}/>
+  </svg>);
+}
+
+function Progress({ value, max=100, height=6 }) {
+  const pct = Math.max(0, Math.min(1, value / max));
+  const [w, setW] = React.useState(0);
+  React.useEffect(() => { const id = setTimeout(() => setW(pct), 60); return () => clearTimeout(id); }, [pct]);
+  return (<div style={{width:'100%',height,borderRadius:999,background:T.borderSoft,overflow:'hidden'}}>
+    <div style={{width:`${w*100}%`,height:'100%',background:`linear-gradient(90deg, ${T.primary}, ${T.primaryLite})`,
+      borderRadius:999,transition:'width 900ms cubic-bezier(.22,1,.36,1)'}}/>
+  </div>);
+}
+
+function BottomSheet({ open, onClose, title, children, maxHeight='78%' }) {
+  return (<div style={{position:'fixed',inset:0,zIndex:90,pointerEvents:open?'auto':'none'}}>
+    <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(15,16,30,0.45)',
+      opacity:open?1:0,transition:'opacity 220ms ease'}}/>
+    <div className="jip-scroll" style={{position:'absolute',left:0,right:0,bottom:0,background:'#fff',borderRadius:'24px 24px 0 0',
+      maxHeight,overflow:'auto',transform:open?'translateY(0)':'translateY(100%)',
+      transition:'transform 280ms cubic-bezier(.22,1,.36,1)',boxShadow:'0 -10px 40px rgba(15,16,30,0.18)',paddingBottom:40}}>
+      <div style={{display:'flex',justifyContent:'center',padding:'10px 0 4px'}}>
+        <div style={{width:36,height:4,borderRadius:4,background:T.faint}}/>
+      </div>
+      {title && <div style={{padding:'6px 20px 14px',fontSize:18,fontWeight:700,letterSpacing:'-0.02em',color:T.ink}}>{title}</div>}
+      <div style={{padding:'0 20px'}}>{children}</div>
+    </div>
+  </div>);
+}
+
+function Chips({ items, value, onChange, style }) {
+  return (<div className="jip-scroll" style={{display:'flex',gap:6,overflowX:'auto',padding:'2px 20px',...style}}>
+    {items.map(it => {
+      const active = it.id === value;
+      return (<button key={it.id} onClick={() => onChange(it.id)} className="jip-press" style={{
+        border:'none',cursor:'pointer',padding:'8px 14px',borderRadius:999,
+        background:active?T.ink:'#fff',color:active?'#fff':T.text,
+        boxShadow:active?'0 6px 14px -6px rgba(10,10,10,0.4)':`inset 0 0 0 1px ${T.border}`,
+        fontSize:13,fontWeight:600,whiteSpace:'nowrap',fontFamily:T.font,letterSpacing:'-0.01em',
+        display:'flex',alignItems:'center',gap:6,
+        transition:'background 220ms ease, color 220ms ease, box-shadow 220ms ease, transform 140ms ease',
+      }}>
+        {it.icon && <Icon name={it.icon} size={14}/>}
+        {it.label}
+        {it.count != null && <span style={{fontSize:11,fontWeight:700,
+          background:active?'rgba(255,255,255,0.18)':T.borderSoft,color:active?'#fff':T.mute,
+          padding:'1px 7px',borderRadius:999,marginLeft:2,transition:'background 220ms ease, color 220ms ease',
+        }}>{it.count}</span>}
+      </button>);
+    })}
+  </div>);
+}
+
+function AnimatedNumber({ value, duration=700, format=v => Math.round(v).toLocaleString('ru-RU') }) {
+  const [v, setV] = React.useState(value);
+  const start = React.useRef({from: value, to: value, t0: 0});
+  React.useEffect(() => {
+    start.current = {from: v, to: value, t0: performance.now()};
+    let raf;
+    const tick = (now) => {
+      const p = Math.min(1, (now - start.current.t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setV(start.current.from + (start.current.to - start.current.from) * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{format(v)}</>;
+}
+
+function Stagger({ children, delay=0, step=60 }) {
+  const items = React.Children.toArray(children);
+  return (<>{items.map((c, i) => (
+    <div key={i} className="jip-fade-up" style={{animationDelay: `${delay + i*step}ms`}}>{c}</div>
+  ))}</>);
+}
+
+function LoadingSpinner() {
+  return (<div style={{display:'flex',justifyContent:'center',padding:'40px 0'}}>
+    <div style={{width:28,height:28,border:`3px solid ${T.border}`,borderTopColor:T.primary,
+      borderRadius:'50%',animation:'jip-spin 800ms linear infinite'}}/>
+  </div>);
+}
+
+function ErrorState({ message, onRetry }) {
+  return (<div style={{padding:'40px 24px',textAlign:'center'}}>
+    <div style={{fontSize:48,marginBottom:8,opacity:0.5}}>⚠️</div>
+    <div style={{fontSize:14,color:T.mute,fontWeight:500,marginBottom:16}}>{message || 'Ошибка загрузки'}</div>
+    {onRetry && <button onClick={onRetry} className="jip-press" style={{
+      padding:'10px 20px',borderRadius:10,background:T.ink,color:'#fff',border:'none',cursor:'pointer',
+      fontFamily:T.font,fontSize:13,fontWeight:600,
+    }}>Попробовать снова</button>}
+  </div>);
+}
+
+function EmptyState({ icon='📭', title, subtitle }) {
+  return (<div style={{padding:'48px 24px',textAlign:'center'}}>
+    <div style={{fontSize:48,marginBottom:12,opacity:0.5}}>{icon}</div>
+    <div style={{fontSize:14,color:T.text,fontWeight:600,marginBottom:4}}>{title}</div>
+    {subtitle && <div style={{fontSize:12,color:T.mute,fontWeight:500}}>{subtitle}</div>}
+  </div>);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD TAB
+// ═══════════════════════════════════════════════════════════
+function HeroBalance({ balance, delta }) {
+  const positive = delta >= 0;
+  return (<div style={{position:'relative',borderRadius:22,padding:'20px 22px 22px',color:'#fff',overflow:'hidden',
+    background:`radial-gradient(120% 100% at 100% 0%, #6366f1 0%, transparent 55%),
+      radial-gradient(100% 100% at 0% 100%, #a855f7 0%, transparent 60%),
+      linear-gradient(135deg, #3730a3 0%, #4338ca 55%, #4f46e5 100%)`,
+    boxShadow:'0 18px 40px -12px rgba(79, 70, 229, 0.45)'}}>
+    <svg style={{position:'absolute',right:-40,top:-40,opacity:0.18}} width="220" height="220" viewBox="0 0 220 220">
+      <defs><radialGradient id="hb-blob" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#fff" stopOpacity="0.6"/>
+        <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
+      </radialGradient></defs>
+      <circle cx="110" cy="110" r="110" fill="url(#hb-blob)"/>
+    </svg>
+    <svg style={{position:'absolute',inset:0,opacity:0.08}} width="100%" height="100%">
+      <defs><pattern id="hb-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#fff" strokeWidth="1"/>
+      </pattern></defs>
+      <rect width="100%" height="100%" fill="url(#hb-grid)"/>
+    </svg>
+    <div style={{position:'relative',zIndex:1}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',
+        fontSize:11,fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',opacity:0.85}}>
+        <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
+          <Icon name="coin" size={14}/>Текущий баланс
+        </span>
+        <Pill tone="glass" size="sm">
+          <span className="jip-pulse-green" style={{width:6,height:6,borderRadius:999,background:'#86efac',marginRight:2}}/>
+          Активен
+        </Pill>
+      </div>
+      <div style={{fontSize:44,fontWeight:800,letterSpacing:'-0.04em',lineHeight:1,marginTop:14,
+        display:'flex',alignItems:'baseline',gap:8}}>
+        <AnimatedNumber value={balance}/>
+        <span style={{fontSize:16,fontWeight:600,opacity:0.75,letterSpacing:'-0.02em'}}>баллов</span>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginTop:14,flexWrap:'wrap'}}>
+        <Pill tone="glass" size="md">
+          <Icon name={positive?'up':'down'} size={12} color={positive?'#86efac':'#fca5a5'}/>
+          <span style={{color:positive?'#86efac':'#fca5a5',fontWeight:700}}>
+            {positive?'+':''}{(delta||0).toLocaleString('ru-RU')}
+          </span>
+          <span style={{opacity:0.75}}>за 30 дней</span>
+        </Pill>
+        <Pill tone="glass" size="md">
+          <Icon name="info" size={12}/>
+          начисляются автоматически
+        </Pill>
+      </div>
+    </div>
+  </div>);
+}
+
+function StatTile({ icon, label, value, suffix, tone='neutral', accent }) {
+  const tones = {
+    neutral:{fg:T.ink,accentBg:'#f4f4f6'},
+    good:{fg:'#047857',accentBg:T.goodSoft},
+    warn:{fg:'#92400e',accentBg:T.warnSoft},
+    bad:{fg:'#b91c1c',accentBg:T.badSoft},
+    brand:{fg:T.primaryDeep,accentBg:T.primarySoft},
+  };
+  const t = tones[tone];
+  return (<div style={{background:'#fff',border:`1px solid ${T.border}`,borderRadius:16,padding:14,
+    display:'flex',flexDirection:'column',gap:14,minHeight:100}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+      <div style={{width:30,height:30,borderRadius:9,background:t.accentBg,color:t.fg,
+        display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <Icon name={icon} size={16}/>
+      </div>
+      {accent && <Pill tone={tone} size="sm">{accent}</Pill>}
+    </div>
+    <div>
+      <div style={{fontSize:24,fontWeight:700,letterSpacing:'-0.03em',color:t.fg,lineHeight:1,
+        display:'flex',alignItems:'baseline',gap:3}}>
+        {value}{suffix && <span style={{fontSize:13,fontWeight:600,color:T.mute}}>{suffix}</span>}
+      </div>
+      <div style={{fontSize:11,fontWeight:600,color:T.mute,letterSpacing:'0.04em',textTransform:'uppercase',marginTop:6}}>{label}</div>
+    </div>
+  </div>);
+}
+
+function ChartCard({ data, labels }) {
+  if (!data || data.length === 0) return null;
+  const W = Math.min(window.innerWidth - 64, 340);
+  const min = Math.min(...data), max = Math.max(...data);
+  const delta = data[data.length-1] - data[0];
+  const dayLabels = labels.length >= 4
+    ? [labels[0], labels[Math.floor(labels.length/3)], labels[Math.floor(labels.length*2/3)], labels[labels.length-1]]
+    : labels;
+  return (<Card padding={16}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:700,color:T.mute,letterSpacing:'0.08em',textTransform:'uppercase'}}>История баланса</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,letterSpacing:'-0.02em',marginTop:2}}>
+          {delta>=0?'+':''}{delta.toLocaleString('ru-RU')} <span style={{fontSize:12,fontWeight:500,color:T.mute}}>за период</span>
+        </div>
+      </div>
+      <Pill tone="neutral" size="sm">30 дней</Pill>
+    </div>
+    <div style={{position:'relative'}}>
+      <AreaChart data={data} width={W} height={120}/>
+      <div style={{position:'absolute',top:6,right:0,fontSize:10,color:T.light,fontFamily:T.mono}}>{max.toLocaleString('ru-RU')}</div>
+      <div style={{position:'absolute',bottom:4,right:0,fontSize:10,color:T.light,fontFamily:T.mono}}>{min.toLocaleString('ru-RU')}</div>
+    </div>
+    <div style={{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:10,color:T.light,fontWeight:500}}>
+      {dayLabels.map((d,i) => <span key={i}>{d}</span>)}
+    </div>
+  </Card>);
+}
+
+function StoreInfo({ store }) {
+  const rows = [
+    { icon:'store', label:'Магазин', value: store.store_name },
+    { icon:'map',   label:'Регион',  value: store.region || '—' },
+    { icon:'home',  label:'Адрес',   value: store.address || '—' },
+  ];
+  return (<Card padding={0}>
+    <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:700,color:T.mute,letterSpacing:'0.08em',textTransform:'uppercase'}}>Профиль магазина</div>
+        <div style={{fontSize:14,fontWeight:600,color:T.ink,marginTop:2}}>Партнёр JIP Loyalty</div>
+      </div>
+      <Pill tone="good" size="sm">
+        <span className="jip-pulse-green" style={{width:6,height:6,borderRadius:999,background:'#10b981',marginRight:2}}/>
+        Активен
+      </Pill>
+    </div>
+    <div style={{borderTop:`1px solid ${T.divider}`}}>
+      {rows.map((r, i) => (<div key={r.label} style={{display:'flex',alignItems:'center',gap:12,
+        padding:'12px 16px',borderTop:i===0?'none':`1px solid ${T.divider}`}}>
+        <div style={{width:28,height:28,borderRadius:8,background:T.borderSoft,color:T.text,
+          display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon name={r.icon} size={14}/>
+        </div>
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontSize:11,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.04em'}}>{r.label}</div>
+          <div style={{fontSize:14,fontWeight:600,color:T.ink,marginTop:2,overflow:'hidden',textOverflow:'ellipsis'}}>{r.value}</div>
+        </div>
+      </div>))}
+    </div>
+  </Card>);
+}
+
+function DashboardTab() {
+  const [dash, setDash] = React.useState(null);
+  const [hist, setHist] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const load = () => {
+    setErr(null);
+    Promise.all([api('/api/webapp/seller/dashboard/'), api('/api/webapp/seller/balance-history/')])
+      .then(([d, h]) => {
+        if (d.error) { setErr(d.error); return; }
+        setDash(d); setHist(h);
+      })
+      .catch(e => setErr(e.message));
+  };
+  React.useEffect(load, []);
+
+  if (err) return <div style={{padding:'0 16px'}}><ErrorState message={err} onRetry={load}/></div>;
+  if (!dash || !hist) return <LoadingSpinner/>;
+
+  const activation = dash.qr_total ? Math.round(dash.qr_scanned / dash.qr_total * 100) : 0;
+  const aTone = activation > 50 ? 'good' : activation > 20 ? 'warn' : 'bad';
+
+  return (<div style={{padding:'0 16px 16px'}}>
+    <div style={{display:'grid',gap:14}}>
+      <HeroBalance balance={dash.points} delta={hist.period_change}/>
+      <ChartCard data={hist.values} labels={hist.labels}/>
+      <SectionTitle style={{margin:'6px 0 0 4px'}}>Показатели</SectionTitle>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {[
+          <StatTile key="a" icon="qr" label="Всего QR" value={(dash.qr_total||0).toLocaleString('ru-RU')}/>,
+          <StatTile key="b" icon="check" label="Активировано" value={(dash.qr_scanned||0).toLocaleString('ru-RU')} tone="brand"/>,
+          <StatTile key="c" icon="sparkles" label="Активация" value={activation} suffix="%" tone={aTone} accent={activation>50?'Хорошо':null}/>,
+          <StatTile key="d" icon="coin" label="Комиссия" value={dash.commission} suffix="%"/>,
+        ].map((el, i) => (<div key={i} className="jip-fade-up" style={{animationDelay:`${200+i*70}ms`}}>{el}</div>))}
+      </div>
+      <SectionTitle style={{margin:'6px 0 0 4px'}}>Магазин</SectionTitle>
+      <StoreInfo store={dash}/>
+      <div style={{background:T.primarySoft,border:`1px solid #dcd9ff`,borderRadius:14,padding:'12px 14px',
+        display:'flex',gap:12,alignItems:'center'}}>
+        <div style={{width:32,height:32,borderRadius:10,background:'#fff',color:T.primary,
+          display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid #dcd9ff`}}>
+          <Icon name="info" size={16}/>
+        </div>
+        <div style={{flex:1,fontSize:12,color:T.primaryDeep,fontWeight:500,lineHeight:1.4}}>
+          Баллы начисляются автоматически после создания партии админом.
+        </div>
+      </div>
+    </div>
+  </div>);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TRANSACTIONS TAB
+// ═══════════════════════════════════════════════════════════
+function TransactionRow({ t, onClick }) {
+  const isAdd = t.points >= 0;
+  return (<button onClick={() => onClick(t)} className="jip-press" style={{
+    width:'100%',textAlign:'left',display:'flex',alignItems:'center',gap:12,padding:'14px 16px',
+    background:'#fff',border:'none',borderBottom:`1px solid ${T.divider}`,cursor:'pointer',fontFamily:T.font,
+  }}>
+    <div style={{width:38,height:38,borderRadius:12,background:isAdd?T.goodSoft:T.badSoft,
+      color:isAdd?'#047857':'#b91c1c',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+      <Icon name={isAdd?'plus':'minus'} size={18} strokeWidth={2.5}/>
+    </div>
+    <div style={{flex:1,minWidth:0}}>
+      <div style={{fontSize:14,fontWeight:600,color:T.ink,letterSpacing:'-0.01em'}}>{t.transaction_type_display}</div>
+      <div style={{fontSize:12,color:T.mute,marginTop:2,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.note || '—'}</div>
+    </div>
+    <div style={{textAlign:'right',flexShrink:0}}>
+      <div style={{fontSize:16,fontWeight:700,color:isAdd?'#047857':'#b91c1c',
+        letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>
+        {isAdd?'+':''}{t.points}
+      </div>
+      <div style={{fontSize:11,color:T.light,marginTop:2,fontWeight:500}}>{t.created_at}</div>
+    </div>
+  </button>);
+}
+
+function TransactionsTab() {
+  const [data, setData] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const [filter, setFilter] = React.useState('all');
+  const [selected, setSelected] = React.useState(null);
+  const load = () => {
+    setErr(null);
+    api('/api/webapp/seller/transactions/').then(d => {
+      if (d.error) { setErr(d.error); return; }
+      setData(d.results || []);
+    }).catch(e => setErr(e.message));
+  };
+  React.useEffect(load, []);
+  if (err) return <ErrorState message={err} onRetry={load}/>;
+  if (!data) return <LoadingSpinner/>;
+  if (!data.length) return <EmptyState icon="💸" title="Нет транзакций" subtitle="После создания партии записи появятся здесь"/>;
+
+  const filtered = data.filter(t => filter === 'add' ? t.points >= 0 : filter === 'sub' ? t.points < 0 : true);
+  const totals = data.reduce((a, t) => { if (t.points >= 0) a.add += t.points; else a.sub += Math.abs(t.points); return a; }, {add:0, sub:0});
+
+  return (<>
+    <div style={{padding:'0 16px 14px'}}>
+      <div style={{background:'#fff',borderRadius:16,padding:14,border:`1px solid ${T.border}`,display:'flex',alignItems:'center'}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:11,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>Поступило</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#047857',letterSpacing:'-0.03em',marginTop:2,fontVariantNumeric:'tabular-nums'}}>+{totals.add.toLocaleString('ru-RU')}</div>
+        </div>
+        <div style={{width:1,height:36,background:T.divider}}/>
+        <div style={{flex:1,paddingLeft:14}}>
+          <div style={{fontSize:11,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>Списано</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#b91c1c',letterSpacing:'-0.03em',marginTop:2,fontVariantNumeric:'tabular-nums'}}>−{totals.sub.toLocaleString('ru-RU')}</div>
+        </div>
+      </div>
+    </div>
+    <Chips items={[
+      {id:'all', label:'Все', count:data.length},
+      {id:'add', label:'Поступления', icon:'plus', count:data.filter(t=>t.points>=0).length},
+      {id:'sub', label:'Списания', icon:'minus', count:data.filter(t=>t.points<0).length},
+    ]} value={filter} onChange={(id)=>{setFilter(id); hapticSelect();}} style={{marginBottom:14}}/>
+    <div style={{padding:'0 16px'}}>
+      <Card padding={0} style={{overflow:'hidden'}}>
+        {filtered.map((t, i) => (<div key={t.id} className="jip-fade-up" style={{animationDelay:`${i*45}ms`}}>
+          <TransactionRow t={t} onClick={(x)=>{setSelected(x); haptic();}}/>
+        </div>))}
+      </Card>
+    </div>
+    <BottomSheet open={!!selected} onClose={()=>setSelected(null)} title="Детали транзакции">
+      {selected && (<div>
+        <div style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0 18px',borderBottom:`1px solid ${T.divider}`}}>
+          <div style={{width:54,height:54,borderRadius:16,background:selected.points>=0?T.goodSoft:T.badSoft,
+            color:selected.points>=0?'#047857':'#b91c1c',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name={selected.points>=0?'plus':'minus'} size={26} strokeWidth={2.5}/>
           </div>
-          <div class="${tx.points >= 0 ? 'tx-plus' : 'tx-minus'}" style="font-size:18px;white-space:nowrap;">
-            ${tx.points >= 0 ? '+' : ''}${fmt(tx.points)}
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,color:T.mute,fontWeight:500}}>{selected.created_at}</div>
+            <div style={{fontSize:28,fontWeight:800,letterSpacing:'-0.03em',
+              color:selected.points>=0?'#047857':'#b91c1c',fontVariantNumeric:'tabular-nums'}}>
+              {selected.points>=0?'+':''}{selected.points} <span style={{fontSize:14,fontWeight:600,color:T.mute}}>баллов</span>
+            </div>
+          </div>
+        </div>
+        <div style={{padding:'16px 0'}}>
+          <DetailRow label="Тип" value={selected.transaction_type_display}/>
+          <DetailRow label="Описание" value={selected.note || '—'}/>
+          <DetailRow label="Статус" value={<Pill tone="good" size="sm">Зачислено</Pill>}/>
+          <DetailRow label="ID операции" value={<span style={{fontFamily:T.mono,fontSize:12}}>TXN-{selected.id}</span>} isLast/>
+        </div>
+      </div>)}
+    </BottomSheet>
+  </>);
+}
+
+function DetailRow({ label, value, isLast }) {
+  return (<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',
+    borderBottom:isLast?'none':`1px solid ${T.divider}`}}>
+    <div style={{fontSize:13,color:T.mute,fontWeight:500}}>{label}</div>
+    <div style={{fontSize:14,color:T.ink,fontWeight:600,textAlign:'right'}}>{value}</div>
+  </div>);
+}
+
+// ═══════════════════════════════════════════════════════════
+// BATCHES TAB + DETAIL
+// ═══════════════════════════════════════════════════════════
+function MiniStat({ label, value, color }) {
+  return (<div>
+    <div style={{fontSize:11,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</div>
+    <div style={{fontSize:18,fontWeight:700,color:color||T.ink,letterSpacing:'-0.02em',marginTop:2,fontVariantNumeric:'tabular-nums'}}>{value}</div>
+  </div>);
+}
+
+function BatchCard({ b, onClick }) {
+  const pct = b.quantity ? Math.round(b.scanned / b.quantity * 100) : 0;
+  const tone = pct > 70 ? 'good' : pct > 30 ? 'warn' : 'bad';
+  const statusTone = b.delivery_status === 'delivered' ? 'good' : b.delivery_status === 'shipped' ? 'warn' : 'neutral';
+  return (<button onClick={() => onClick(b)} className="jip-press" style={{
+    width:'100%',textAlign:'left',background:'#fff',border:`1px solid ${T.border}`,
+    borderRadius:18,padding:16,cursor:'pointer',fontFamily:T.font,position:'relative',overflow:'hidden',
+  }}>
+    <div style={{position:'absolute',top:0,left:0,right:0,height:3,
+      background:`linear-gradient(90deg, ${T.primaryDeep}, ${T.primary} ${pct}%, ${T.borderSoft} ${pct}%)`}}/>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+      <div style={{minWidth:0,flex:1}}>
+        <div style={{fontSize:11,fontWeight:700,color:T.mute,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:4}}>Партия</div>
+        <div style={{fontFamily:T.mono,fontSize:14,fontWeight:600,color:T.ink,letterSpacing:'-0.01em'}}>{b.name}</div>
+      </div>
+      <Pill tone={statusTone} size="sm">{b.delivery_status_display}</Pill>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:8,padding:'12px 0',
+      borderTop:`1px dashed ${T.divider}`,borderBottom:`1px dashed ${T.divider}`}}>
+      <MiniStat label="Всего" value={b.quantity}/>
+      <MiniStat label="Скан." value={b.scanned} color={T.primary}/>
+      <MiniStat label="Актив." value={`${pct}%`} color={tone==='good'?'#047857':tone==='warn'?'#92400e':'#b91c1c'}/>
+    </div>
+    <div style={{marginTop:12}}>
+      <Progress value={b.scanned} max={b.quantity}/>
+    </div>
+    <div style={{marginTop:12,display:'flex',alignItems:'center',justifyContent:'space-between',
+      fontSize:12,color:T.mute,fontWeight:500}}>
+      <span>{b.created_at}</span>
+      <span style={{color:T.primary,fontWeight:600,display:'inline-flex',alignItems:'center',gap:2}}>
+        Подробнее <Icon name="chevR" size={14}/>
+      </span>
+    </div>
+  </button>);
+}
+
+function BatchesTab({ onOpenBatch }) {
+  const [data, setData] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const [filter, setFilter] = React.useState('all');
+  const load = () => {
+    setErr(null);
+    api('/api/webapp/seller/batches/').then(d => {
+      if (d.error) { setErr(d.error); return; }
+      setData(d.results || []);
+    }).catch(e => setErr(e.message));
+  };
+  React.useEffect(load, []);
+  if (err) return <ErrorState message={err} onRetry={load}/>;
+  if (!data) return <LoadingSpinner/>;
+  if (!data.length) return <EmptyState icon="📦" title="Нет партий" subtitle="Когда админ создаст партию, она появится здесь"/>;
+
+  const filtered = data.filter(b => filter === 'active' ? b.scanned < b.quantity : filter === 'done' ? b.scanned >= b.quantity : true);
+  return (<>
+    <Chips items={[
+      {id:'all', label:'Все партии', count:data.length},
+      {id:'active', label:'Активные', count:data.filter(b=>b.scanned<b.quantity).length},
+      {id:'done', label:'Завершённые', count:data.filter(b=>b.scanned>=b.quantity).length},
+    ]} value={filter} onChange={(id)=>{setFilter(id); hapticSelect();}} style={{marginBottom:14}}/>
+    <div style={{padding:'0 16px',display:'grid',gap:12}}>
+      {filtered.map((b, i) => (<div key={b.id} className="jip-fade-up" style={{animationDelay:`${i*70}ms`}}>
+        <BatchCard b={b} onClick={(x)=>{onOpenBatch(x); haptic();}}/>
+      </div>))}
+    </div>
+  </>);
+}
+
+function DarkStat({ label, value }) {
+  return (<div>
+    <div style={{fontSize:10,fontWeight:600,opacity:0.7,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</div>
+    <div style={{fontSize:20,fontWeight:700,letterSpacing:'-0.03em',marginTop:4,fontVariantNumeric:'tabular-nums'}}>{value}</div>
+  </div>);
+}
+
+function BatchDetail({ batch, onBack }) {
+  const [data, setData] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const load = () => {
+    setErr(null);
+    api(`/api/webapp/seller/batch/${batch.id}/qr/`).then(d => {
+      if (d.error) { setErr(d.error); return; }
+      setData(d);
+    }).catch(e => setErr(e.message));
+  };
+  React.useEffect(load, []);
+  if (err) return <ErrorState message={err} onRetry={load}/>;
+  if (!data) return <LoadingSpinner/>;
+
+  const pct = data.quantity ? Math.round(data.scanned_count / data.quantity * 100) : 0;
+  const qrs = data.results || [];
+  const totalPts = qrs.filter(q => q.is_scanned).reduce((a, q) => a + (q.points||0), 0);
+
+  return (<div style={{padding:'0 16px 16px'}}>
+    <div style={{position:'relative',overflow:'hidden',borderRadius:20,padding:'18px 18px 16px',color:'#fff',
+      background:`radial-gradient(120% 100% at 100% 0%, #6366f1 0%, transparent 55%),
+        linear-gradient(135deg, #312e81 0%, #4338ca 60%, #4f46e5 100%)`,
+      boxShadow:'0 14px 32px -12px rgba(67, 56, 202, 0.4)'}}>
+      <div style={{position:'relative',zIndex:1}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',opacity:0.85}}>
+              Партия QR · {batch.created_at}
+            </div>
+            <div style={{fontFamily:T.mono,fontSize:18,fontWeight:600,marginTop:6,letterSpacing:'-0.01em'}}>{data.batch_name}</div>
+          </div>
+          <Pill tone="glass" size="sm">
+            <span style={{width:6,height:6,borderRadius:999,background:'#86efac',marginRight:2}}/>
+            {batch.delivery_status_display}
+          </Pill>
+        </div>
+        <div style={{marginTop:18,display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:6}}>
+          <DarkStat label="Всего QR" value={data.quantity}/>
+          <DarkStat label="Активировано" value={`${data.scanned_count}/${data.quantity}`}/>
+          <DarkStat label="Баллов" value={`+${totalPts}`}/>
+        </div>
+        <div style={{marginTop:16}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:11,fontWeight:600,opacity:0.85,marginBottom:6}}>
+            <span>Активация</span><span>{pct}%</span>
+          </div>
+          <div style={{height:6,borderRadius:999,background:'rgba(255,255,255,0.18)',overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg, #a5f3fc, #fff)',borderRadius:999}}/>
           </div>
         </div>
       </div>
-    `).join('');
-    document.getElementById('tx-content').innerHTML = `<div class="section-title">${list.length} ta tranzaksiya</div>` + rows;
-  }).catch(() => { document.getElementById('tx-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>'; });
-}
-
-// ===== 3. BATCHES =====
-function loadBatches() {
-  api('/api/webapp/seller/batches/').then(data => {
-    const list = data.results || [];
-    if (!list.length) {
-      document.getElementById('batch-content').innerHTML = '<div class="empty"><div class="empty-icon">📦</div>Batch\'lar yo\'q</div>';
-      return;
-    }
-    const rows = list.map(b => {
-      const rate = b.quantity ? Math.round(b.scanned / b.quantity * 100) : 0;
-      const rateClass = rate >= 50 ? 'success' : rate >= 20 ? 'warning' : 'danger';
-      const dStatusBadge = b.delivery_status === 'delivered' ? 'badge-success'
-                         : b.delivery_status === 'shipped' ? 'badge-info' : 'badge-muted';
-      return `
-        <div class="card" onclick="openBatchDetail(${b.id}, '${escHtml(b.name)}')" style="cursor:pointer;">
-          <div class="card-title">${escHtml(b.name)}</div>
-          <div class="card-row"><span>Jami QR</span><span>${fmt(b.quantity)} ta</span></div>
-          <div class="card-row"><span>Skanlangan</span><span>${fmt(b.scanned)} ta</span></div>
-          <div class="card-row">
-            <span>Aktivatsiya</span>
-            <span style="color: var(--${rateClass});">${rate}%</span>
+      <svg style={{position:'absolute',right:-30,bottom:-30,opacity:0.18}} width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="90" fill="#fff" fillOpacity="0.2"/>
+        <circle cx="90" cy="90" r="60" fill="#fff" fillOpacity="0.25"/>
+      </svg>
+    </div>
+    <div style={{marginTop:18}}>
+      <SectionTitle action={<span style={{fontSize:11,color:T.light,fontWeight:500}}>Последние {qrs.length} из {data.quantity}</span>}>
+        QR коды
+      </SectionTitle>
+      <Card padding={0} style={{overflow:'hidden'}}>
+        {qrs.map((q, i) => (<div key={q.serial} className="jip-fade-up" style={{
+          animationDelay:`${i*28}ms`,display:'flex',alignItems:'center',gap:12,padding:'12px 14px',
+          borderBottom:i===qrs.length-1?'none':`1px solid ${T.divider}`,
+        }}>
+          <span style={{width:8,height:8,borderRadius:999,background:q.is_scanned?'#10b981':T.faint,
+            boxShadow:q.is_scanned?'0 0 0 3px rgba(16,185,129,0.18)':'none',flexShrink:0}}/>
+          <span style={{fontFamily:T.mono,fontSize:12,fontWeight:600,color:q.is_scanned?T.ink:T.light,
+            letterSpacing:'-0.01em',flexShrink:0,minWidth:90}}>{q.serial}</span>
+          <div style={{flex:1,minWidth:0}}>
+            {q.is_scanned ? (<div style={{fontSize:12,color:T.text,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              <span style={{fontWeight:600}}>{q.scanned_by}</span>
+              <span style={{color:T.mute}}> · {q.scanned_at}</span>
+            </div>) : (<div style={{fontSize:12,color:T.light,fontStyle:'italic'}}>Не активирован</div>)}
           </div>
-          <div class="progress-bar"><div class="progress-fill ${rateClass}" style="width:${rate}%"></div></div>
-          <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
-            <span class="badge ${dStatusBadge}">${escHtml(b.delivery_status_display)}</span>
-            <span style="font-size:11px;color:var(--muted);">${escHtml(b.created_at)} • Batafsil →</span>
+          {q.is_scanned && <span style={{fontSize:13,fontWeight:700,color:'#047857',
+            fontVariantNumeric:'tabular-nums',flexShrink:0}}>+{q.points}</span>}
+        </div>))}
+        {qrs.length === 0 && <div style={{padding:32,textAlign:'center',color:T.mute,fontSize:13}}>QR кодов нет</div>}
+      </Card>
+    </div>
+  </div>);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOP SANTEXNIKS
+// ═══════════════════════════════════════════════════════════
+function PodiumColumn({ s, rank }) {
+  const heights = { 1:100, 2:78, 3:60 };
+  const ringColors = {
+    1: { ring:'linear-gradient(135deg, #fbbf24, #f59e0b)', medal:'#f59e0b' },
+    2: { ring:'linear-gradient(135deg, #e2e8f0, #94a3b8)', medal:'#94a3b8' },
+    3: { ring:'linear-gradient(135deg, #fdba74, #c2410c)', medal:'#c2410c' },
+  };
+  const c = ringColors[rank];
+  return (<div style={{display:'flex',flexDirection:'column',alignItems:'center',flex:1}}>
+    <div style={{position:'relative',marginBottom:10}}>
+      <div style={{padding:3,borderRadius:999,background:c.ring}}>
+        <Avatar name={s.name} size={rank===1?64:54}/>
+      </div>
+      <div style={{position:'absolute',bottom:-6,right:-4,background:'#fff',borderRadius:999,padding:2}}>
+        <div style={{background:c.medal,color:'#fff',width:22,height:22,borderRadius:999,
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700}}>{rank}</div>
+      </div>
+    </div>
+    <div style={{fontSize:rank===1?13:12,fontWeight:600,color:T.ink,letterSpacing:'-0.01em',textAlign:'center',
+      maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(s.name||'').split(' ')[0]}</div>
+    <div style={{fontSize:18,fontWeight:800,color:T.primaryDeep,letterSpacing:'-0.03em',marginTop:2,fontVariantNumeric:'tabular-nums'}}>
+      {(s.earned||0).toLocaleString('ru-RU')}
+    </div>
+    <div style={{fontSize:10,color:T.mute,fontWeight:600,letterSpacing:'0.04em',textTransform:'uppercase'}}>баллов</div>
+    <div style={{width:'100%',maxWidth:80,height:heights[rank],marginTop:10,borderRadius:'14px 14px 0 0',
+      background:rank===1?`linear-gradient(180deg, ${T.primary}, ${T.primaryDeep})`
+        :rank===2?`linear-gradient(180deg, #818cf8, #6366f1)`
+        :`linear-gradient(180deg, #c7d2fe, #a5b4fc)`,
+      display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:10,
+      color:'#fff',fontSize:32,fontWeight:800,letterSpacing:'-0.04em'}}>{rank}</div>
+  </div>);
+}
+
+function TopTab() {
+  const [data, setData] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const [period, setPeriod] = React.useState('month');
+  const load = () => {
+    setErr(null);
+    api('/api/webapp/seller/top-santexniks/').then(d => {
+      if (d.error) { setErr(d.error); return; }
+      setData(d.results || []);
+    }).catch(e => setErr(e.message));
+  };
+  React.useEffect(load, []);
+  if (err) return <ErrorState message={err} onRetry={load}/>;
+  if (!data) return <LoadingSpinner/>;
+  if (!data.length) return <EmptyState icon="🏆" title="Нет лидеров" subtitle="Когда сантехники начнут сканировать QR, появится рейтинг"/>;
+
+  const top3 = data.slice(0, 3);
+  const rest = data.slice(3);
+
+  return (<>
+    <Chips items={[
+      {id:'week', label:'Эта неделя'},
+      {id:'month', label:'Этот месяц'},
+      {id:'all', label:'Всё время'},
+    ]} value={period} onChange={(id)=>{setPeriod(id); hapticSelect();}} style={{marginBottom:14}}/>
+    <div style={{padding:'0 16px'}}>
+      {top3.length >= 3 && (<div style={{background:'#fff',border:`1px solid ${T.border}`,borderRadius:20,
+        padding:'20px 14px 0',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,background:'radial-gradient(80% 60% at 50% 0%, #eef2ff 0%, transparent 60%)'}}/>
+        <div style={{position:'relative',display:'flex',alignItems:'flex-end',gap:8}}>
+          <div className="jip-fade-up" style={{animationDelay:'120ms',flex:1,display:'flex',justifyContent:'center'}}>
+            <PodiumColumn s={top3[1]} rank={2}/>
+          </div>
+          <div className="jip-fade-up" style={{animationDelay:'0ms',flex:1,display:'flex',justifyContent:'center'}}>
+            <PodiumColumn s={top3[0]} rank={1}/>
+          </div>
+          <div className="jip-fade-up" style={{animationDelay:'200ms',flex:1,display:'flex',justifyContent:'center'}}>
+            <PodiumColumn s={top3[2]} rank={3}/>
           </div>
         </div>
-      `;
-    }).join('');
-    document.getElementById('batch-content').innerHTML = `<div class="section-title">${list.length} ta batch</div>` + rows;
-  }).catch(() => { document.getElementById('batch-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>'; });
+      </div>)}
+      <div style={{marginTop:18}}>
+        <SectionTitle action={<span style={{fontSize:11,color:T.light,fontWeight:500}}>{data.length} мастеров</span>}>Рейтинг</SectionTitle>
+        <Card padding={0} style={{overflow:'hidden'}}>
+          {(top3.length >= 3 ? rest : data).map((s, i) => {
+            const idx = (top3.length >= 3 ? 4 : 1) + i;
+            return (<div key={s.name+i} className="jip-fade-up" style={{animationDelay:`${300+i*50}ms`,
+              display:'flex',alignItems:'center',gap:12,padding:'12px 14px',
+              borderBottom:i===(top3.length>=3?rest:data).length-1?'none':`1px solid ${T.divider}`}}>
+              <div style={{width:24,height:24,borderRadius:8,background:T.borderSoft,color:T.mute,
+                display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,
+                fontVariantNumeric:'tabular-nums',flexShrink:0}}>{idx}</div>
+              <Avatar name={s.name} size={36}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:600,color:T.ink,letterSpacing:'-0.01em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                  {s.name}
+                </div>
+                <div style={{fontSize:11,color:T.mute,fontWeight:500,marginTop:2,fontVariantNumeric:'tabular-nums'}}>
+                  {s.phone || '—'} · {s.scans} скан.
+                </div>
+              </div>
+              <div style={{textAlign:'right',flexShrink:0}}>
+                <div style={{fontSize:15,fontWeight:700,color:T.primaryDeep,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>
+                  {s.earned.toLocaleString('ru-RU')}
+                </div>
+                <div style={{fontSize:10,color:T.light,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>баллов</div>
+              </div>
+            </div>);
+          })}
+        </Card>
+      </div>
+    </div>
+  </>);
 }
 
-function openBatchDetail(batchId, batchName) {
-  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-  document.getElementById('batch-content').innerHTML = '<div class="loading"><div class="spinner"></div><div>QR kodlar yuklanmoqda...</div></div>';
-  api('/api/webapp/seller/batch/' + batchId + '/qr/').then(d => {
-    if (d.error) { document.getElementById('batch-content').innerHTML = `<div class="empty">❌ ${escHtml(d.error)}</div>`; return; }
-    const items = (d.results || []).map(q => `
-      <div class="qr-item">
-        <div class="qr-status-dot ${q.is_scanned ? 'scanned' : 'unscanned'}"></div>
-        <div class="qr-info">
-          <div class="qr-serial">${escHtml(q.serial)}</div>
-          ${q.is_scanned ? `<div class="qr-scanned-by">👤 ${escHtml(q.scanned_by)} · ${escHtml(q.scanned_at)}</div>` : '<div class="qr-scanned-by" style="color:var(--muted);">Skanlanmagan</div>'}
+// ═══════════════════════════════════════════════════════════
+// CALCULATOR TAB
+// ═══════════════════════════════════════════════════════════
+function CalculatorTab() {
+  const [info, setInfo] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const [amount, setAmount] = React.useState(5000);
+  const load = () => {
+    setErr(null);
+    api('/api/webapp/seller/commission-calc/?sales=0').then(d => {
+      if (d.error) { setErr(d.error); return; }
+      setInfo(d);
+    }).catch(e => setErr(e.message));
+  };
+  React.useEffect(load, []);
+  if (err) return <ErrorState message={err} onRetry={load}/>;
+  if (!info) return <LoadingSpinner/>;
+  const commission = info.commission_percent;
+  const result = amount * commission / 100;
+  const presets = [1000, 2500, 5000, 10000];
+
+  return (<div style={{padding:'0 16px 16px'}}>
+    <Card padding={16} style={{marginBottom:14}}>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>
+        <div style={{width:42,height:42,borderRadius:12,background:T.primarySoft,color:T.primaryDeep,
+          display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Icon name="store" size={20}/>
         </div>
-        <div class="qr-points">${q.is_scanned ? '+' + fmt(q.points) : ''}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,color:T.mute,fontWeight:500}}>Магазин</div>
+          <div style={{fontSize:15,fontWeight:700,color:T.ink,letterSpacing:'-0.01em',
+            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{info.store_name}</div>
+        </div>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontSize:11,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>Ставка</div>
+          <div style={{fontSize:18,fontWeight:700,color:T.primary,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>{commission}%</div>
+        </div>
       </div>
-    `).join('');
-    document.getElementById('batch-content').innerHTML = `
-      <div class="batch-back" onclick="loadBatches()">← Orqaga</div>
-      <div class="card">
-        <div class="card-title">📦 ${escHtml(d.batch_name)}</div>
-        <div class="card-row"><span>Jami QR</span><span>${fmt(d.quantity)} ta</span></div>
-        <div class="card-row"><span>Skanlangan</span><span>${fmt(d.scanned_count)} ta</span></div>
+    </Card>
+    <Card padding={20} style={{marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:T.mute,textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>
+        Сумма продажи
       </div>
-      <div class="section-title">QR kodlar (oxirgi 200 ta)</div>
-      ${items || '<div class="empty">QR kod yo\'q</div>'}
-    `;
-  });
-}
-
-// ===== 4. TOP SANTEXNIKS =====
-function loadTop() {
-  api('/api/webapp/seller/top-santexniks/').then(data => {
-    const list = data.results || [];
-    if (!list.length) {
-      document.getElementById('top-content').innerHTML = '<div class="empty"><div class="empty-icon">🏆</div>Hali skanlovchi yo\'q</div>';
-      return;
-    }
-    const rows = list.map(u => {
-      let rankClass = '';
-      if (u.rank === 1) rankClass = 'gold';
-      else if (u.rank === 2) rankClass = 'silver';
-      else if (u.rank === 3) rankClass = 'bronze';
-      return `
-        <div class="top-user">
-          <div class="rank-badge ${rankClass}">${u.rank}</div>
-          <div class="top-info">
-            <div class="top-name">${escHtml(u.name)}</div>
-            <div class="top-meta">${escHtml(u.phone) || '—'} · ${u.scans} ta skan</div>
+      <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+        <input type="text" inputMode="numeric" value={amount.toLocaleString('ru-RU')}
+          onChange={e => {
+            const cleaned = e.target.value.replace(/[^\d]/g, '');
+            setAmount(cleaned === '' ? 0 : Math.min(1000000, parseInt(cleaned, 10)));
+          }}
+          style={{border:'none',outline:'none',fontSize:40,fontWeight:800,color:T.ink,
+            letterSpacing:'-0.04em',fontFamily:T.font,width:'calc(100% - 50px)',padding:0,fontVariantNumeric:'tabular-nums'}}/>
+        <span style={{fontSize:18,fontWeight:600,color:T.mute,letterSpacing:'-0.02em'}}>USD</span>
+      </div>
+      <div style={{display:'flex',gap:6,marginTop:14,flexWrap:'wrap'}}>
+        {presets.map(p => (<button key={p} onClick={()=>{setAmount(p); haptic();}} className="jip-press" style={{
+          padding:'6px 12px',borderRadius:999,background:amount===p?T.ink:'#fff',
+          color:amount===p?'#fff':T.text,border:`1px solid ${amount===p?T.ink:T.border}`,
+          fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:T.font,fontVariantNumeric:'tabular-nums',
+          transition:'background 220ms ease, color 220ms ease, border-color 220ms ease, transform 140ms ease',
+        }}>${p.toLocaleString('ru-RU')}</button>))}
+      </div>
+    </Card>
+    <div style={{position:'relative',overflow:'hidden',borderRadius:20,padding:'22px 22px 20px',color:'#fff',
+      background:`radial-gradient(120% 100% at 100% 0%, #6366f1 0%, transparent 55%),
+        radial-gradient(100% 100% at 0% 100%, #a855f7 0%, transparent 60%),
+        linear-gradient(135deg, #3730a3 0%, #4338ca 55%, #4f46e5 100%)`,
+      boxShadow:'0 18px 40px -12px rgba(79, 70, 229, 0.45)'}}>
+      <svg style={{position:'absolute',right:-40,bottom:-40,opacity:0.18}} width="220" height="220" viewBox="0 0 220 220">
+        <defs><radialGradient id="calc-blob" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.6"/>
+          <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
+        </radialGradient></defs>
+        <circle cx="110" cy="110" r="110" fill="url(#calc-blob)"/>
+      </svg>
+      <div style={{position:'relative',zIndex:1}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',opacity:0.9}}>
+            Ваша комиссия
           </div>
-          <div class="top-points">+${fmt(u.earned)}<small>ball</small></div>
+          <Pill tone="glass" size="sm">
+            <Icon name="sparkles" size={12}/> ≈ {commission}%
+          </Pill>
         </div>
-      `;
-    }).join('');
-    document.getElementById('top-content').innerHTML = `
-      <div class="card">
-        <div class="card-title">🏆 Top Santexniklar (mening do'konimda)</div>
-        ${rows}
-      </div>
-    `;
-  }).catch(() => { document.getElementById('top-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>'; });
-}
-
-// ===== 5. CALCULATOR =====
-let calcCommissionPercent = 0;
-let calcStoreName = '';
-function loadCalc() {
-  api('/api/webapp/seller/commission-calc/?sales=0').then(d => {
-    if (d.error) { document.getElementById('calc-content').innerHTML = `<div class="empty">❌ ${escHtml(d.error)}</div>`; return; }
-    calcCommissionPercent = d.commission_percent;
-    calcStoreName = d.store_name;
-    document.getElementById('calc-content').innerHTML = `
-      <div class="card">
-        <div class="card-title">💳 Komissiya kalkulyatori</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-          ${escHtml(calcStoreName)} · komissiya <b style="color:var(--primary);">${calcCommissionPercent}%</b>
+        <div style={{fontSize:48,fontWeight:800,letterSpacing:'-0.04em',lineHeight:1,marginTop:14,
+          display:'flex',alignItems:'baseline',gap:6,fontVariantNumeric:'tabular-nums'}}>
+          <span style={{opacity:0.7,fontWeight:600}}>$</span>
+          <AnimatedNumber value={result} duration={400} format={v => v.toFixed(2)}/>
+        </div>
+        <div style={{marginTop:16,padding:'10px 12px',background:'rgba(255,255,255,0.12)',borderRadius:12,
+          fontSize:12,opacity:0.92,display:'flex',alignItems:'center',gap:8,fontWeight:500,lineHeight:1.4}}>
+          <Icon name="info" size={14}/>
+          Окончательная сумма утверждается администратором
         </div>
       </div>
-      <div class="calc-input-group">
-        <div class="calc-label">💵 Sotuv summasi (USD)</div>
-        <input type="number" inputmode="decimal" class="calc-input" id="calc-input" placeholder="0" oninput="recalc()">
-      </div>
-      <div class="calc-result" id="calc-result">
-        <div class="calc-result-label">Sizning komissiyangiz</div>
-        <div class="calc-result-val">$0.00</div>
-      </div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5;">
-        Komissiya summasi = Sotuv × <b>${calcCommissionPercent}%</b><br>
-        Real summa admin tasdiqlash bilan o'rnatiladi.
-      </div>
-    `;
-  });
-}
-function recalc() {
-  const v = parseFloat(document.getElementById('calc-input').value) || 0;
-  const amt = (v * calcCommissionPercent / 100).toFixed(2);
-  document.querySelector('#calc-result .calc-result-val').textContent = '$' + Number(amt).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/,/g, ' ');
+    </div>
+    <div style={{marginTop:18}}>
+      <SectionTitle>Расшифровка</SectionTitle>
+      <Card padding={0} style={{overflow:'hidden'}}>
+        {[
+          {label:'Сумма продажи', value:`$${amount.toLocaleString('ru-RU', {minimumFractionDigits:2})}`},
+          {label:'Ставка комиссии', value:`${commission}%`},
+          {label:'Комиссия (до утв.)', value:`$${result.toFixed(2)}`, bold:true},
+        ].map((r, i, arr) => (<div key={r.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',
+          padding:'14px 16px',borderBottom:i===arr.length-1?'none':`1px solid ${T.divider}`,
+          background:r.bold?T.primaryTint:'#fff'}}>
+          <div style={{fontSize:13,color:T.mute,fontWeight:500}}>{r.label}</div>
+          <div style={{fontSize:r.bold?16:14,fontWeight:r.bold?700:600,color:r.bold?T.primaryDeep:T.ink,
+            letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>{r.value}</div>
+        </div>))}
+      </Card>
+    </div>
+  </div>);
 }
 
-// ===== INIT =====
-loadDashboard();
-loaded['dashboard'] = true;
+// ═══════════════════════════════════════════════════════════
+// APP SHELL
+// ═══════════════════════════════════════════════════════════
+const TABS = [
+  { id:'dash',  label:'Главная',  icon:'home',   title:'JIP Loyalty',      eyebrow:'Сотуйчи · Магазин' },
+  { id:'tx',    label:'Баллы',    icon:'coin',   title:'Транзакции',       eyebrow:'История начислений' },
+  { id:'batch', label:'Партии',   icon:'box',    title:'Партии QR',        eyebrow:'Активные и завершённые' },
+  { id:'top',   label:'Топ',      icon:'trophy', title:'Топ сантехники',   eyebrow:'Рейтинг моих мастеров' },
+  { id:'calc',  label:'Расчёт',   icon:'calc',   title:'Калькулятор',      eyebrow:'Расчёт комиссии' },
+];
+
+function JIPLogo() {
+  return (<div style={{display:'flex',alignItems:'center',gap:8}}>
+    <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg, ${T.primary}, ${T.primaryDeep})`,
+      color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',
+      fontWeight:800,fontSize:13,letterSpacing:'-0.04em',boxShadow:'0 4px 12px -4px rgba(79,70,229,0.6)'}}>
+      <span style={{marginRight:-1}}>J</span><span>I</span><span style={{marginLeft:-1}}>P</span>
+    </div>
+    <div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
+      <span style={{fontSize:13,fontWeight:700,color:T.ink,letterSpacing:'-0.02em'}}>JIP Loyalty</span>
+      <span style={{fontSize:10,fontWeight:600,color:T.mute,letterSpacing:'0.04em'}}>Sotuvchi</span>
+    </div>
+  </div>);
+}
+
+function TopBar({ onRefresh, onMore, refreshing, onBack, backLabel }) {
+  return (<div style={{padding:'14px 16px 8px',background:'rgba(250,250,251,0.92)',
+    backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',
+    borderBottom:`1px solid ${T.divider}`,position:'sticky',top:0,zIndex:30}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,height:36}}>
+      {onBack ? (<button onClick={onBack} style={{display:'flex',alignItems:'center',gap:4,
+        background:'transparent',border:'none',color:T.primary,fontWeight:600,fontSize:14,
+        cursor:'pointer',padding:0,fontFamily:T.font}}>
+        <Icon name="chevL" size={20}/><span>{backLabel || 'Назад'}</span>
+      </button>) : <JIPLogo/>}
+      <div style={{display:'flex',gap:8}}>
+        <button onClick={onRefresh} className="jip-press" style={{width:34,height:34,borderRadius:999,
+          background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
+          justifyContent:'center',cursor:'pointer',color:T.text,
+          transition:'transform 700ms cubic-bezier(.22,1,.36,1)',transform:refreshing?'rotate(360deg)':'rotate(0deg)'}}>
+          <Icon name="refresh" size={16}/>
+        </button>
+        <button onClick={onMore} className="jip-press" style={{width:34,height:34,borderRadius:999,
+          background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
+          justifyContent:'center',cursor:'pointer',color:T.text,position:'relative'}}>
+          <Icon name="bell" size={16}/>
+          <span className="jip-pulse-dot" style={{position:'absolute',top:7,right:8,
+            width:7,height:7,borderRadius:999,background:T.primary,border:'2px solid #fff'}}/>
+        </button>
+      </div>
+    </div>
+  </div>);
+}
+
+function BottomTabBar({ active, onChange }) {
+  const activeIdx = TABS.findIndex(t => t.id === active);
+  return (<div style={{position:'sticky',bottom:0,background:'rgba(255,255,255,0.96)',
+    backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
+    borderTop:`1px solid ${T.divider}`,paddingBottom:'calc(12px + env(safe-area-inset-bottom, 0px))',
+    paddingTop:10,zIndex:40,boxShadow:'0 -6px 24px rgba(15, 16, 30, 0.05)'}}>
+    <div style={{position:'relative',display:'grid',gridTemplateColumns:`repeat(${TABS.length}, 1fr)`,padding:'0 8px'}}>
+      <div style={{position:'absolute',top:6,left:8,
+        width:`calc((100% - 16px) / ${TABS.length})`,height:28,pointerEvents:'none',
+        transition:'transform 420ms cubic-bezier(.5, 1.5, .4, 1)',
+        transform:`translateX(${activeIdx * 100}%)`,display:'flex',justifyContent:'center'}}>
+        <div style={{width:44,height:28,borderRadius:999,background:T.primarySoft}}/>
+      </div>
+      {TABS.map((t, i) => {
+        const isActive = t.id === active;
+        return (<button key={t.id} onClick={() => onChange(t.id)} className="jip-press" style={{
+          display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:'6px 4px',
+          background:'transparent',border:'none',cursor:'pointer',fontFamily:T.font,position:'relative',zIndex:1,
+        }}>
+          <div style={{width:44,height:28,borderRadius:999,display:'flex',alignItems:'center',justifyContent:'center',
+            color:isActive?T.primaryDeep:T.mute,
+            transition:'color 240ms ease, transform 240ms cubic-bezier(.5,1.6,.4,1)',
+            transform:isActive?'scale(1.05)':'scale(1)'}}>
+            <Icon name={t.icon} size={18} strokeWidth={isActive?2.4:2}/>
+          </div>
+          <span style={{fontSize:10,fontWeight:isActive?700:500,color:isActive?T.primaryDeep:T.mute,
+            letterSpacing:'-0.01em',transition:'color 240ms ease'}}>{t.label}</span>
+        </button>);
+      })}
+    </div>
+  </div>);
+}
+
+function NotificationsSheet({ open, onClose }) {
+  const items = [
+    { id:'n1', icon:'info', tone:'brand', title:'Добро пожаловать!', body:'Это новый дизайн панели сотуйчи. Все данные подгружаются из реального магазина.', time:'сейчас' },
+    { id:'n2', icon:'info', tone:'neutral', title:'Совет', body:'Откройте вкладку "Партии" чтобы увидеть детали QR кодов', time:'1 мин' },
+  ];
+  const toneColors = {
+    good: { bg:T.goodSoft, fg:'#047857' },
+    brand: { bg:T.primarySoft, fg:T.primaryDeep },
+    warn: { bg:T.warnSoft, fg:'#92400e' },
+    neutral: { bg:T.borderSoft, fg:T.text },
+  };
+  return (<BottomSheet open={open} onClose={onClose} title="Уведомления">
+    <div style={{display:'grid',gap:10,paddingTop:6}}>
+      {items.map(n => {
+        const c = toneColors[n.tone];
+        return (<div key={n.id} style={{display:'flex',gap:12,padding:'12px 14px',borderRadius:14,
+          background:'#fff',border:`1px solid ${T.border}`}}>
+          <div style={{width:36,height:36,borderRadius:10,flexShrink:0,background:c.bg,color:c.fg,
+            display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name={n.icon} size={18}/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+              <div style={{fontSize:13,fontWeight:600,color:T.ink,letterSpacing:'-0.01em'}}>{n.title}</div>
+              <div style={{fontSize:11,color:T.light,fontWeight:500,flexShrink:0}}>{n.time}</div>
+            </div>
+            <div style={{fontSize:12,color:T.mute,marginTop:2,fontWeight:500,lineHeight:1.35}}>{n.body}</div>
+          </div>
+        </div>);
+      })}
+    </div>
+  </BottomSheet>);
+}
+
+function App() {
+  const [tab, setTab] = React.useState('dash');
+  const [openBatch, setOpenBatch] = React.useState(null);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [showNotif, setShowNotif] = React.useState(false);
+  const [key, setKey] = React.useState(0);
+
+  const currentTab = TABS.find(t => t.id === tab);
+  const scrollerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (scrollerRef.current) scrollerRef.current.scrollTop = 0;
+  }, [tab, openBatch]);
+
+  const doRefresh = () => {
+    setRefreshing(true);
+    setKey(k => k + 1);
+    haptic();
+    setTimeout(() => setRefreshing(false), 700);
+  };
+
+  const handleTab = (id) => {
+    setOpenBatch(null);
+    setTab(id);
+    hapticSelect();
+  };
+
+  let body;
+  if (openBatch) body = <BatchDetail batch={openBatch} onBack={() => setOpenBatch(null)}/>;
+  else if (tab === 'dash')  body = <DashboardTab/>;
+  else if (tab === 'tx')    body = <TransactionsTab/>;
+  else if (tab === 'batch') body = <BatchesTab onOpenBatch={setOpenBatch}/>;
+  else if (tab === 'top')   body = <TopTab/>;
+  else if (tab === 'calc')  body = <CalculatorTab/>;
+
+  return (<div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#fafafa',
+    fontFamily:T.font,color:T.ink,position:'relative'}}>
+    <TopBar onRefresh={doRefresh} onMore={()=>setShowNotif(true)} refreshing={refreshing}
+      onBack={openBatch?()=>setOpenBatch(null):null} backLabel={openBatch?'К партиям':null}/>
+    <div ref={scrollerRef} className="jip-scroll" style={{flex:1,overflow:'auto',scrollBehavior:'smooth'}}>
+      <div key={`${openBatch?'b-'+openBatch.id:tab}-${key}`} className="jip-fade-up">
+        {openBatch ? (<PageHeader eyebrow={`Партия · ${openBatch.created_at}`} title="Детали партии"/>)
+          : (<PageHeader eyebrow={currentTab.eyebrow} title={currentTab.title}/>)}
+        {body}
+        <div style={{height:24}}/>
+      </div>
+    </div>
+    <BottomTabBar active={tab} onChange={handleTab}/>
+    <NotificationsSheet open={showNotif} onClose={()=>setShowNotif(false)}/>
+  </div>);
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
 </script>
 </body>
 </html>
