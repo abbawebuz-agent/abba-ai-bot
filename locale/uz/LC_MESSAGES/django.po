@@ -387,7 +387,7 @@ msgstr "Do‘konlar"
 #: templates/admin/dashboard.html:1791 templates/admin/dashboard.html:1814
 #: templates/admin/dashboard.html:1987 templates/admin/dashboard.html:2189
 msgid "Electricians"
-msgstr "Elektriklar"
+msgstr "Santexniklar"
 
 #: templates/admin/dashboard.html:1008
 msgid "This Month"
@@ -424,7 +424,7 @@ msgstr "Tanlanmagan"
 
 #: templates/admin/dashboard.html:1092
 msgid "ELECTRICIAN CODES"
-msgstr "ELEKTRIKLAR KODLARI"
+msgstr "SANTEXNIKLAR KODLARI"
 
 #: templates/admin/dashboard.html:1097 templates/admin/dashboard.html:1121
 #: templates/admin/dashboard.html:2192
@@ -445,7 +445,7 @@ msgstr "JAMI BALLAR"
 
 #: templates/admin/dashboard.html:1146 templates/admin/dashboard.html:1219
 msgid "from electricians"
-msgstr "elektriklardan"
+msgstr "santexniklardan"
 
 #: templates/admin/dashboard.html:1147 templates/admin/dashboard.html:1220
 msgid "from stores"
@@ -453,7 +453,7 @@ msgstr "do'konlardan"
 
 #: templates/admin/dashboard.html:1163
 msgid "ELECTRICIAN POOL"
-msgstr "ELEKTRIKLAR PULI"
+msgstr "SANTEXNIKLAR PULI"
 
 #: templates/admin/dashboard.html:1167 templates/admin/dashboard.html:1191
 msgid "Collected (period)"
@@ -478,7 +478,7 @@ msgstr "SOVG'Alarga ARIZALAR"
 
 #: templates/admin/dashboard.html:1229
 msgid "GIFTS: ELECTRICIANS"
-msgstr "SOVG'ALAR: ELEKTRIKLAR"
+msgstr "SOVG'ALAR: SANTEXNIKLAR"
 
 #: templates/admin/dashboard.html:1236 templates/admin/dashboard.html:1274
 #: templates/admin/dashboard.html:1854 templates/admin/dashboard.html:1973
@@ -569,7 +569,7 @@ msgstr "Hali so'rovlar yo'q"
 
 #: templates/admin/dashboard.html:1556
 msgid "Electrician Gifts"
-msgstr "Elektriklar"
+msgstr "Santexniklar"
 
 #: templates/admin/dashboard.html:1560 templates/admin/dashboard.html:1586
 #: templates/admin/dashboard.html:1883
@@ -902,7 +902,7 @@ msgstr ""
 
 #: templates/admin/dashboard_rows.html:21 templates/admin/user_detail.html:137
 msgid "Electrician"
-msgstr "Elektriklar"
+msgstr "Santexniklar"
 
 #: templates/admin/dashboard_rows.html:23 templates/admin/user_detail.html:139
 msgid "Store"

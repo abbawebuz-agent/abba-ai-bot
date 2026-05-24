@@ -161,12 +161,12 @@ LOCALIZATION_MAP = {
         'security': "Xavfsizlik",
         
         'total_reg': "Jami ro'yxatdan o'tganlar",
-        'elec': "Elektriklar",
+        'elec': "Santexniklar",
         'stores': "Do'konlar / Sotuvchilar",
         'unsel': "Tanlanmagan profil",
         
         'qr_total': "Muomaladagi jami QR-kodlar",
-        'qr_scanned_e': "Faollashtirilgan (Elektriklar)",
+        'qr_scanned_e': "Faollashtirilgan (Santexniklar)",
         'qr_scanned_s': "Faollashtirilgan (Do'konlar)",
         'qr_unscanned': "Ishlatilmagan kodlar",
         
@@ -175,16 +175,16 @@ LOCALIZATION_MAP = {
         'pts_potential': "Potentsial (faol bo'lmagan kodlar)",
         
         'red_total': "Sovg'alar uchun jami arizalar",
-        'red_comp_e': "Berilgan mukofotlar (Elektriklar)",
+        'red_comp_e': "Berilgan mukofotlar (Santexniklar)",
         'red_comp_s': "Berilgan mukofotlar (Do'konlar)",
         
         'fail_scans': "Muvaffaqiyatsiz skanerlash urinishlari",
         'success_rate': "Muvaffaqiyat ulushi (haqiqiy kodlar)",
         'clean_base': "Toza foydalanuvchilar bazasi",
 
-        'qr_e_title': "QR-kodlar: Elektriklar",
+        'qr_e_title': "QR-kodlar: Santexniklar",
         'qr_s_title': "QR-kodlar: Do'konlar",
-        'pool_e_title': "Ballar balansi: Elektriklar",
+        'pool_e_title': "Ballar balansi: Santexniklar",
         'pool_s_title': "Ballar balansi: Do'konlar",
         'red_status_title': "Sovg'alar holati",
         'period_delta': "Tanlangan davr uchun",
