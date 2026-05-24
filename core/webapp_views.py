@@ -1405,3 +1405,164 @@ def seller_batches(request):
         for b in batches
     ]
     return Response({'results': results})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_balance_history(request):
+    """Sotuvchi balans tarixi — oxirgi 30 kun."""
+    from django.db.models import Sum
+    from datetime import timedelta
+
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    today = timezone.localdate()
+    start_date = today - timedelta(days=29)
+
+    # Har kun uchun ball summasi
+    txs = SellerPointsTransaction.objects.filter(
+        seller=user,
+        created_at__date__gte=start_date,
+    ).values_list('created_at', 'points')
+
+    # Kumulyativ balans tayyorlash
+    daily = {(start_date + timedelta(days=i)): 0 for i in range(30)}
+    for created_at, points in txs:
+        d = timezone.localtime(created_at).date()
+        if d in daily:
+            daily[d] += points
+
+    # 30 kungacha bo'lgan boshlang'ich balans
+    base = SellerPointsTransaction.objects.filter(
+        seller=user,
+        created_at__date__lt=start_date,
+    ).aggregate(s=Sum('points'))['s'] or 0
+
+    labels, values = [], []
+    running = int(base)
+    for d in sorted(daily.keys()):
+        running += int(daily[d])
+        labels.append(d.strftime('%d.%m'))
+        values.append(running)
+
+    return Response({
+        'labels': labels,
+        'values': values,
+        'current': running,
+        'period_change': int(sum(daily.values())),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_batch_qr_detail(request, batch_id):
+    """Bitta batchning QR kodlari (oxirgi 200 ta) — skanlangan/skanlanmagan."""
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    store = user.owned_stores.first()
+    if not store:
+        return Response({'error': "Do'kon topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        batch = QRCodeBatch.objects.get(pk=batch_id, store=store)
+    except QRCodeBatch.DoesNotExist:
+        return Response({'error': 'Batch topilmadi'}, status=status.HTTP_404_NOT_FOUND)
+
+    qrs = batch.qr_codes.filter(is_deleted=False).select_related('scanned_by').order_by('-is_scanned', '-scanned_at')[:200]
+    results = [
+        {
+            'serial': q.serial_number,
+            'code': q.code,
+            'is_scanned': q.is_scanned,
+            'points': q.points,
+            'scanned_at': timezone.localtime(q.scanned_at).strftime('%d.%m.%Y %H:%M') if q.scanned_at else None,
+            'scanned_by': (q.scanned_by.first_name or q.scanned_by.username or 'Foydalanuvchi') if q.scanned_by_id else None,
+        }
+        for q in qrs
+    ]
+    return Response({
+        'batch_name': batch.name,
+        'quantity': batch.quantity,
+        'scanned_count': sum(1 for r in results if r['is_scanned']),
+        'results': results,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_top_santexniks(request):
+    """Sotuvchi do'konida QR skanlagan top santexniklar."""
+    from django.db.models import Count, Sum
+
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    store = user.owned_stores.first()
+    if not store:
+        return Response({'results': []})
+
+    top = (
+        TelegramUser.objects.filter(
+            scanned_qrcodes__store=store,
+            scanned_qrcodes__is_scanned=True,
+            scanned_qrcodes__is_deleted=False,
+            user_type='santenik',
+        )
+        .annotate(
+            scans=Count('scanned_qrcodes', distinct=True),
+            earned=Sum('scanned_qrcodes__points'),
+        )
+        .order_by('-scans')[:20]
+    )
+
+    results = [
+        {
+            'rank': i + 1,
+            'name': (u.first_name or u.username or f'ID {u.telegram_id}'),
+            'phone': u.phone_number or '',
+            'scans': u.scans,
+            'earned': int(u.earned or 0),
+        }
+        for i, u in enumerate(top)
+    ]
+    return Response({'results': results, 'total_count': len(results)})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def seller_commission_calc(request):
+    """Komissiya kalkulyatori — sotuv summasi → komissiya hisobi.
+
+    Query: ?sales=10000 (USD)
+    """
+    user, err = _get_seller_user(request)
+    if err:
+        return err
+
+    store = user.owned_stores.first()
+    if not store:
+        return Response({'error': "Do'kon topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        sales = float(request.GET.get('sales', 0) or 0)
+    except ValueError:
+        sales = 0
+
+    commission_percent = float(store.commission_percent or 0)
+    commission_amount = round(sales * commission_percent / 100, 2)
+
+    return Response({
+        'sales': sales,
+        'commission_percent': commission_percent,
+        'commission_amount': commission_amount,
+        'store_name': store.name,
+    })

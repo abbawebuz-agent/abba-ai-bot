@@ -6,145 +6,426 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>JIP — Do'kon paneli</title>
+  <title>JIP — Sotuvchi paneli</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           background: var(--tg-theme-bg-color, #f5f5f5); color: var(--tg-theme-text-color, #222);
-           min-height: 100vh; }
+    :root {
+      --bg: var(--tg-theme-bg-color, #f3f4f6);
+      --card: var(--tg-theme-secondary-bg-color, #ffffff);
+      --text: var(--tg-theme-text-color, #0f172a);
+      --muted: var(--tg-theme-hint-color, #64748b);
+      --primary: #2563eb;
+      --primary-light: #3b82f6;
+      --primary-dark: #1d4ed8;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      padding-bottom: 80px; -webkit-font-smoothing: antialiased;
+    }
 
-    .header { background: #1976D2; color: #fff; padding: 16px; }
-    .header h1 { font-size: 18px; font-weight: 700; }
-    .header .store-name { font-size: 14px; opacity: .85; margin-top: 4px; }
+    /* ============= HEADER ============= */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 50%, var(--accent) 100%);
+      color: #fff; padding: 20px 16px 24px;
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 8px 24px rgba(37,99,235,0.25);
+    }
+    .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .header h1 { font-size: 16px; font-weight: 700; opacity: .95; letter-spacing: .3px; }
+    .header .store-name { font-size: 14px; font-weight: 500; opacity: .85; margin-top: 4px; }
+    .header .store-region { font-size: 12px; opacity: .7; margin-top: 2px; }
+    .refresh-btn {
+      background: rgba(255,255,255,0.15); border: none; color: #fff;
+      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); transition: .2s;
+    }
+    .refresh-btn:active { background: rgba(255,255,255,0.3); transform: rotate(180deg); }
 
-    .tabs { display: flex; background: #fff; border-bottom: 2px solid #e5e7eb; overflow-x: auto; }
-    .tab { flex: 1; min-width: 80px; padding: 12px 8px; text-align: center; font-size: 13px;
-           font-weight: 500; cursor: pointer; color: #6b7280; white-space: nowrap; border: none;
-           background: none; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-    .tab.active { color: #1976D2; border-bottom-color: #1976D2; font-weight: 700; }
+    /* ============= BOTTOM TAB BAR ============= */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      display: flex; padding: 6px 4px 8px; z-index: 100;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.06);
+    }
+    .tab-btn {
+      flex: 1; min-width: 0; background: none; border: none;
+      padding: 8px 4px; cursor: pointer; display: flex;
+      flex-direction: column; align-items: center; gap: 4px;
+      color: var(--muted); font-size: 10px; font-weight: 600;
+      transition: color .2s;
+    }
+    .tab-btn.active { color: var(--primary); }
+    .tab-btn svg { width: 22px; height: 22px; transition: transform .2s; }
+    .tab-btn.active svg { transform: scale(1.1); }
+    .tab-label { font-size: 10px; white-space: nowrap; }
 
-    .page { display: none; padding: 16px; }
-    .page.active { display: block; }
+    /* ============= PAGES ============= */
+    .page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    .page.active { display: block; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .stat-card { background: #fff; border-radius: 12px; padding: 16px; text-align: center;
-                 box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-    .stat-val { font-size: 26px; font-weight: 700; color: #1976D2; }
-    .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
+    /* ============= CARDS ============= */
+    .balance-card {
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #06b6d4 100%);
+      color: #fff; border-radius: 20px; padding: 22px;
+      margin: -16px 0 16px; position: relative; overflow: hidden;
+      box-shadow: 0 12px 32px rgba(37,99,235,0.3);
+    }
+    .balance-card::before {
+      content: ''; position: absolute; top: -50%; right: -20%;
+      width: 200px; height: 200px; background: rgba(255,255,255,0.08);
+      border-radius: 50%; pointer-events: none;
+    }
+    .balance-label { font-size: 12px; opacity: .85; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; }
+    .balance-val { font-size: 36px; font-weight: 800; margin-top: 6px; letter-spacing: -.5px; }
+    .balance-suffix { font-size: 16px; opacity: .8; font-weight: 500; }
+    .balance-delta {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 8px; font-size: 12px; padding: 4px 10px;
+      background: rgba(255,255,255,0.18); border-radius: 100px;
+      font-weight: 600; backdrop-filter: blur(8px);
+    }
+    .balance-note { font-size: 11px; opacity: .7; margin-top: 12px; }
 
-    .balance-card { background: linear-gradient(135deg, #1976D2, #42a5f5); color: #fff;
-                    border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-    .balance-val { font-size: 36px; font-weight: 800; }
-    .balance-label { font-size: 14px; opacity: .85; margin-top: 4px; }
-    .balance-note { font-size: 12px; opacity: .7; margin-top: 8px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; text-align: center;
+      transition: transform .15s; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .stat-card:active { transform: scale(0.97); }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 6px; font-weight: 500; }
 
-    .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-    .card-row { display: flex; justify-content: space-between; align-items: center;
-                padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
-    .card-row:last-child { border-bottom: none; }
-    .tx-plus { color: #16a34a; font-weight: 700; }
-    .tx-minus { color: #dc2626; font-weight: 700; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: transform .15s;
+    }
+    .card:active { transform: scale(0.99); }
+    .card-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .card-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+    }
+    .card-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .card-row > span:first-child { color: var(--muted); }
+    .card-row > span:last-child { font-weight: 600; text-align: right; max-width: 60%; }
 
-    .progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-top: 6px; }
-    .progress-fill { height: 100%; background: #1976D2; border-radius: 4px; transition: width .3s; }
+    .tx-plus { color: var(--success); font-weight: 700; }
+    .tx-minus { color: var(--danger); font-weight: 700; }
 
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-    .badge-green { background: #dcfce7; color: #16a34a; }
-    .badge-blue { background: #dbeafe; color: #1e40af; }
-    .badge-gray { background: #f3f4f6; color: #6b7280; }
+    /* ============= PROGRESS BAR ============= */
+    .progress-bar {
+      height: 6px; background: var(--border); border-radius: 100px;
+      overflow: hidden; margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+      border-radius: 100px; transition: width .4s ease;
+    }
+    .progress-fill.success { background: linear-gradient(90deg, var(--success) 0%, #34d399 100%); }
+    .progress-fill.warning { background: linear-gradient(90deg, var(--warning) 0%, #fbbf24 100%); }
+    .progress-fill.danger { background: linear-gradient(90deg, var(--danger) 0%, #f87171 100%); }
 
-    .empty { text-align: center; color: #aaa; padding: 40px 16px; font-size: 14px; }
-    .loading { text-align: center; color: #888; padding: 30px; font-size: 14px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;
+    }
+    .badge-success { background: #d1fae5; color: #047857; }
+    .badge-info { background: #dbeafe; color: #1e40af; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-muted { background: #f1f5f9; color: #64748b; }
 
-    .section-title { font-size: 15px; font-weight: 700; color: #374151; margin: 16px 0 8px; }
+    /* ============= CHART ============= */
+    .chart-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .chart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .chart-title { font-size: 13px; font-weight: 700; }
+    .chart-period {
+      font-size: 11px; color: var(--muted); background: var(--bg);
+      padding: 3px 10px; border-radius: 100px; font-weight: 600;
+    }
+    .chart-canvas { height: 180px !important; max-height: 180px; }
+
+    /* ============= TOP USERS ============= */
+    .top-user {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .top-user:last-child { border-bottom: none; }
+    .rank-badge {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: var(--bg); display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: var(--muted); flex-shrink: 0;
+    }
+    .rank-badge.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
+    .rank-badge.silver { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color: #fff; }
+    .rank-badge.bronze { background: linear-gradient(135deg, #d97706, #92400e); color: #fff; }
+    .top-info { flex: 1; min-width: 0; }
+    .top-name { font-size: 14px; font-weight: 600; }
+    .top-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .top-points {
+      font-size: 16px; font-weight: 800; color: var(--primary); text-align: right;
+    }
+    .top-points small { font-size: 10px; color: var(--muted); font-weight: 500; display: block; }
+
+    /* ============= CALCULATOR ============= */
+    .calc-input-group {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; margin-bottom: 14px;
+    }
+    .calc-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .calc-input {
+      width: 100%; border: 2px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; font-size: 18px; font-weight: 700; color: var(--text);
+      background: var(--bg); transition: .2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .calc-input:focus { outline: none; border-color: var(--primary); background: #fff; }
+    .calc-result {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 1px solid #6ee7b7; border-radius: 14px; padding: 18px;
+      text-align: center; margin-top: 14px;
+    }
+    .calc-result-label { font-size: 12px; color: #047857; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; }
+    .calc-result-val { font-size: 32px; font-weight: 800; color: #047857; margin-top: 6px; }
+
+    /* ============= BATCH DETAIL ============= */
+    .batch-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: var(--primary);
+      padding: 6px 12px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 12px; cursor: pointer;
+    }
+    .qr-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 6px; font-size: 12px;
+    }
+    .qr-status-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .qr-status-dot.scanned { background: var(--success); }
+    .qr-status-dot.unscanned { background: var(--border); }
+    .qr-info { flex: 1; min-width: 0; }
+    .qr-serial { font-family: 'Menlo', monospace; font-size: 11px; color: var(--muted); }
+    .qr-scanned-by { font-size: 11px; color: var(--text); font-weight: 600; }
+    .qr-points { font-weight: 700; color: var(--primary); }
+
+    /* ============= MISC ============= */
+    .empty {
+      text-align: center; color: var(--muted); padding: 48px 16px;
+      font-size: 14px; font-weight: 500;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+    .loading {
+      text-align: center; color: var(--muted); padding: 40px;
+      font-size: 13px; font-weight: 500;
+    }
+    .spinner {
+      display: inline-block; width: 32px; height: 32px;
+      border: 3px solid var(--border); border-top-color: var(--primary);
+      border-radius: 50%; animation: spin 1s linear infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-title {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .8px;
+      margin: 16px 0 8px; padding: 0 4px;
+    }
+
+    /* Tablet adaptive */
+    @media (min-width: 768px) {
+      .stat-grid { grid-template-columns: repeat(4, 1fr); }
+      .balance-val { font-size: 42px; }
+    }
   </style>
 </head>
 <body>
 
+<!-- ============= HEADER ============= -->
 <div class="header">
-  <h1>JIP — Do'kon paneli</h1>
-  <div class="store-name" id="store-name">Yuklanmoqda...</div>
+  <div class="header-row">
+    <div>
+      <h1>JIP — Sotuvchi paneli</h1>
+      <div class="store-name" id="store-name">Yuklanmoqda...</div>
+      <div class="store-region" id="store-region"></div>
+    </div>
+    <button class="refresh-btn" id="refresh-btn" title="Yangilash">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8M3 8v4h4M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16m18 0v-4h-4"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
-<div class="tabs">
-  <button class="tab active" onclick="showTab('dashboard')">🏠 Bosh sahifa</button>
-  <button class="tab" onclick="showTab('transactions')">💰 Tranzaksiyalar</button>
-  <button class="tab" onclick="showTab('batches')">📦 Batch'lar</button>
-</div>
-
-<!-- DASHBOARD -->
+<!-- ============= PAGES ============= -->
+<!-- 1. DASHBOARD -->
 <div id="page-dashboard" class="page active">
-  <div id="dash-content"><div class="loading">Yuklanmoqda...</div></div>
+  <div id="dash-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
 </div>
 
-<!-- TRANSACTIONS -->
+<!-- 2. TRANSACTIONS -->
 <div id="page-transactions" class="page">
-  <div id="tx-content"><div class="loading">Yuklanmoqda...</div></div>
+  <div id="tx-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
 </div>
 
-<!-- BATCHES -->
+<!-- 3. BATCHES -->
 <div id="page-batches" class="page">
-  <div id="batch-content"><div class="loading">Yuklanmoqda...</div></div>
+  <div id="batch-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
+</div>
+
+<!-- 4. TOP SANTEXNIKS -->
+<div id="page-top" class="page">
+  <div id="top-content"><div class="loading"><div class="spinner"></div><div>Yuklanmoqda...</div></div></div>
+</div>
+
+<!-- 5. CALCULATOR -->
+<div id="page-calc" class="page">
+  <div id="calc-content"></div>
+</div>
+
+<!-- ============= BOTTOM TAB BAR ============= -->
+<div class="tabbar">
+  <button class="tab-btn active" data-tab="dashboard">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    <span class="tab-label">Bosh sahifa</span>
+  </button>
+  <button class="tab-btn" data-tab="transactions">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span class="tab-label">Ballar</span>
+  </button>
+  <button class="tab-btn" data-tab="batches">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+    <span class="tab-label">Batch'lar</span>
+  </button>
+  <button class="tab-btn" data-tab="top">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+    <span class="tab-label">Top</span>
+  </button>
+  <button class="tab-btn" data-tab="calc">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+    <span class="tab-label">Kalkulyator</span>
+  </button>
 </div>
 
 <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
-const BASE = '';  // same origin
 const INIT_DATA = tg?.initData || '';
 const LANG = '{{ user_language|default:"uz_latin" }}';
 
 function api(path) {
-  return fetch(BASE + path, {
-    headers: { 'X-Telegram-Init-Data': INIT_DATA, 'Content-Type': 'application/json' }
+  return fetch(path, {
+    headers: { 'X-Telegram-Init-Data': INIT_DATA, 'Content-Type': 'application/json' },
+    cache: 'no-store',
   }).then(r => r.json());
 }
+function fmt(n) { return Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' '); }
+function escHtml(s) { return String(s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
-function fmt(n) { return Number(n || 0).toLocaleString(); }
-
-// ---- TAB switching ----
 let loaded = {};
-function showTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('page-' + name).classList.add('active');
-  if (!loaded[name]) { loadTab(name); loaded[name] = true; }
-}
+let chartInstance = null;
+
+// ===== TAB switching =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-' + tab).classList.add('active');
+    if (!loaded[tab]) { loadTab(tab); loaded[tab] = true; }
+    if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+  });
+});
 
 function loadTab(name) {
-  if (name === 'dashboard') loadDashboard();
-  else if (name === 'transactions') loadTransactions();
-  else if (name === 'batches') loadBatches();
+  switch (name) {
+    case 'dashboard': loadDashboard(); break;
+    case 'transactions': loadTransactions(); break;
+    case 'batches': loadBatches(); break;
+    case 'top': loadTop(); break;
+    case 'calc': loadCalc(); break;
+  }
 }
 
-// ---- DASHBOARD ----
+// ===== REFRESH button =====
+document.getElementById('refresh-btn').addEventListener('click', () => {
+  loaded = {};
+  const active = document.querySelector('.tab-btn.active').dataset.tab;
+  loadTab(active);
+  loaded[active] = true;
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+});
+
+// ===== 1. DASHBOARD =====
 function loadDashboard() {
-  api('/api/webapp/seller/dashboard/').then(d => {
-    if (d.error) { document.getElementById('dash-content').innerHTML = '<div class="empty">❌ ' + d.error + '</div>'; return; }
+  Promise.all([
+    api('/api/webapp/seller/dashboard/'),
+    api('/api/webapp/seller/balance-history/'),
+  ]).then(([d, hist]) => {
+    if (d.error) { document.getElementById('dash-content').innerHTML = `<div class="empty">❌ ${escHtml(d.error)}</div>`; return; }
     document.getElementById('store-name').textContent = d.store_name || '—';
+    document.getElementById('store-region').textContent = d.region || '';
+
     const rate = d.qr_scanned && d.qr_total ? Math.round(d.qr_scanned / d.qr_total * 100) : 0;
+    const rateClass = rate >= 50 ? 'success' : rate >= 20 ? 'warning' : 'danger';
+    const delta = hist && hist.period_change || 0;
+    const deltaSign = delta > 0 ? '+' : '';
+    const deltaIcon = delta > 0 ? '↗' : delta < 0 ? '↘' : '→';
+
     document.getElementById('dash-content').innerHTML = `
       <div class="balance-card">
         <div class="balance-label">💰 Joriy balans</div>
-        <div class="balance-val">${fmt(d.points)} ball</div>
-        <div class="balance-note">Ballar faqat admin tomonidan qo'shiladi</div>
+        <div><span class="balance-val">${fmt(d.points)}</span> <span class="balance-suffix">ball</span></div>
+        <div class="balance-delta">${deltaIcon} ${deltaSign}${fmt(delta)} (30 kun)</div>
+        <div class="balance-note">Ballar admin tomonidan batch yaratganda qo'shiladi</div>
       </div>
+
+      <div class="chart-wrap">
+        <div class="chart-header">
+          <div class="chart-title">📈 Balans tarixi</div>
+          <div class="chart-period">Oxirgi 30 kun</div>
+        </div>
+        <canvas id="balance-chart" class="chart-canvas"></canvas>
+      </div>
+
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-val">${fmt(d.qr_total)}</div>
-          <div class="stat-label">📦 Jami kartalar</div>
+          <div class="stat-label">📦 Jami QR</div>
         </div>
         <div class="stat-card">
           <div class="stat-val">${fmt(d.qr_scanned)}</div>
           <div class="stat-label">✅ Skanlangan</div>
         </div>
         <div class="stat-card">
-          <div class="stat-val">${rate}%</div>
+          <div class="stat-val" style="color: var(--${rateClass === 'success' ? 'success' : rateClass === 'warning' ? 'warning' : 'danger'});">${rate}%</div>
           <div class="stat-label">📊 Aktivatsiya</div>
         </div>
         <div class="stat-card">
@@ -152,69 +433,239 @@ function loadDashboard() {
           <div class="stat-label">💳 Komissiya</div>
         </div>
       </div>
+
       <div class="card">
-        <div class="card-title">🏪 Do'kon</div>
-        <div class="card-row"><span>Nomi</span><span>${d.store_name || '—'}</span></div>
-        <div class="card-row"><span>Viloyat</span><span>${d.region || '—'}</span></div>
-        <div class="card-row"><span>Manzil</span><span style="max-width:180px;text-align:right;">${d.address || '—'}</span></div>
+        <div class="card-title">🏪 Do'kon ma'lumotlari</div>
+        <div class="card-row"><span>Nomi</span><span>${escHtml(d.store_name)}</span></div>
+        <div class="card-row"><span>Viloyat</span><span>${escHtml(d.region) || '—'}</span></div>
+        <div class="card-row"><span>Manzil</span><span style="font-size:12px;">${escHtml(d.address) || '—'}</span></div>
       </div>
     `;
-  }).catch(() => { document.getElementById('dash-content').innerHTML = '<div class="empty">Yuklashda xatolik</div>'; });
+
+    // Render chart
+    if (hist && hist.labels) {
+      setTimeout(() => renderBalanceChart(hist), 50);
+    }
+  }).catch((e) => {
+    console.error(e);
+    document.getElementById('dash-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>';
+  });
 }
 
-// ---- TRANSACTIONS ----
+function renderBalanceChart(hist) {
+  const ctx = document.getElementById('balance-chart');
+  if (!ctx) return;
+  if (chartInstance) chartInstance.destroy();
+  const tg_text = getComputedStyle(document.body).getPropertyValue('--text').trim() || '#0f172a';
+  const tg_muted = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#64748b';
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hist.labels,
+      datasets: [{
+        label: 'Ball',
+        data: hist.values,
+        borderColor: '#2563eb',
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 180);
+          g.addColorStop(0, 'rgba(37,99,235,0.25)');
+          g.addColorStop(1, 'rgba(37,99,235,0)');
+          return g;
+        },
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        borderWidth: 2.5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 11, weight: 600 },
+          bodyFont: { size: 13, weight: 700 },
+          padding: 10,
+          cornerRadius: 8,
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: tg_muted, font: { size: 10 }, maxTicksLimit: 6 },
+          grid: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: tg_muted, font: { size: 10 } },
+          grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+        },
+      },
+    },
+  });
+}
+
+// ===== 2. TRANSACTIONS =====
 function loadTransactions() {
   api('/api/webapp/seller/transactions/').then(data => {
-    const list = data.results || data;
-    if (!list.length) { document.getElementById('tx-content').innerHTML = '<div class="empty">Tranzaksiyalar yo\'q</div>'; return; }
+    const list = data.results || [];
+    if (!list.length) {
+      document.getElementById('tx-content').innerHTML = '<div class="empty"><div class="empty-icon">💸</div>Tranzaksiyalar yo\'q</div>';
+      return;
+    }
     const rows = list.map(tx => `
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-size:13px;font-weight:600;">${tx.transaction_type_display}</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">${tx.created_at}</div>
-            ${tx.note ? `<div style="font-size:12px;color:#555;margin-top:4px;">${tx.note}</div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;">${escHtml(tx.transaction_type_display)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${escHtml(tx.created_at)}</div>
+            ${tx.note ? `<div style="font-size:11px;color:var(--text);margin-top:6px;line-height:1.4;">${escHtml(tx.note)}</div>` : ''}
           </div>
-          <div class="${tx.points >= 0 ? 'tx-plus' : 'tx-minus'}" style="font-size:18px;">
+          <div class="${tx.points >= 0 ? 'tx-plus' : 'tx-minus'}" style="font-size:18px;white-space:nowrap;">
             ${tx.points >= 0 ? '+' : ''}${fmt(tx.points)}
           </div>
         </div>
       </div>
     `).join('');
-    document.getElementById('tx-content').innerHTML = rows;
-  }).catch(() => { document.getElementById('tx-content').innerHTML = '<div class="empty">Yuklashda xatolik</div>'; });
+    document.getElementById('tx-content').innerHTML = `<div class="section-title">${list.length} ta tranzaksiya</div>` + rows;
+  }).catch(() => { document.getElementById('tx-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>'; });
 }
 
-// ---- BATCHES ----
+// ===== 3. BATCHES =====
 function loadBatches() {
   api('/api/webapp/seller/batches/').then(data => {
-    const list = data.results || data;
-    if (!list.length) { document.getElementById('batch-content').innerHTML = '<div class="empty">Batch\'lar yo\'q</div>'; return; }
+    const list = data.results || [];
+    if (!list.length) {
+      document.getElementById('batch-content').innerHTML = '<div class="empty"><div class="empty-icon">📦</div>Batch\'lar yo\'q</div>';
+      return;
+    }
     const rows = list.map(b => {
       const rate = b.quantity ? Math.round(b.scanned / b.quantity * 100) : 0;
+      const rateClass = rate >= 50 ? 'success' : rate >= 20 ? 'warning' : 'danger';
+      const dStatusBadge = b.delivery_status === 'delivered' ? 'badge-success'
+                         : b.delivery_status === 'shipped' ? 'badge-info' : 'badge-muted';
       return `
-        <div class="card">
-          <div class="card-title">${b.name}</div>
-          <div class="card-row"><span>Jami</span><span>${fmt(b.quantity)} ta</span></div>
+        <div class="card" onclick="openBatchDetail(${b.id}, '${escHtml(b.name)}')" style="cursor:pointer;">
+          <div class="card-title">${escHtml(b.name)}</div>
+          <div class="card-row"><span>Jami QR</span><span>${fmt(b.quantity)} ta</span></div>
           <div class="card-row"><span>Skanlangan</span><span>${fmt(b.scanned)} ta</span></div>
           <div class="card-row">
             <span>Aktivatsiya</span>
-            <span style="font-weight:700;color:${rate>=50?'#16a34a':rate>=20?'#d97706':'#dc2626'}">${rate}%</span>
+            <span style="color: var(--${rateClass});">${rate}%</span>
           </div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${rate}%"></div></div>
-          <div style="margin-top:8px;">
-            <span class="badge ${b.delivery_status==='delivered'?'badge-green':b.delivery_status==='shipped'?'badge-blue':'badge-gray'}">
-              ${b.delivery_status_display}
-            </span>
+          <div class="progress-bar"><div class="progress-fill ${rateClass}" style="width:${rate}%"></div></div>
+          <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
+            <span class="badge ${dStatusBadge}">${escHtml(b.delivery_status_display)}</span>
+            <span style="font-size:11px;color:var(--muted);">${escHtml(b.created_at)} • Batafsil →</span>
           </div>
         </div>
       `;
     }).join('');
-    document.getElementById('batch-content').innerHTML = rows;
-  }).catch(() => { document.getElementById('batch-content').innerHTML = '<div class="empty">Yuklashda xatolik</div>'; });
+    document.getElementById('batch-content').innerHTML = `<div class="section-title">${list.length} ta batch</div>` + rows;
+  }).catch(() => { document.getElementById('batch-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>'; });
 }
 
-// Bosh sahifani darhol yuklash
+function openBatchDetail(batchId, batchName) {
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  document.getElementById('batch-content').innerHTML = '<div class="loading"><div class="spinner"></div><div>QR kodlar yuklanmoqda...</div></div>';
+  api('/api/webapp/seller/batch/' + batchId + '/qr/').then(d => {
+    if (d.error) { document.getElementById('batch-content').innerHTML = `<div class="empty">❌ ${escHtml(d.error)}</div>`; return; }
+    const items = (d.results || []).map(q => `
+      <div class="qr-item">
+        <div class="qr-status-dot ${q.is_scanned ? 'scanned' : 'unscanned'}"></div>
+        <div class="qr-info">
+          <div class="qr-serial">${escHtml(q.serial)}</div>
+          ${q.is_scanned ? `<div class="qr-scanned-by">👤 ${escHtml(q.scanned_by)} · ${escHtml(q.scanned_at)}</div>` : '<div class="qr-scanned-by" style="color:var(--muted);">Skanlanmagan</div>'}
+        </div>
+        <div class="qr-points">${q.is_scanned ? '+' + fmt(q.points) : ''}</div>
+      </div>
+    `).join('');
+    document.getElementById('batch-content').innerHTML = `
+      <div class="batch-back" onclick="loadBatches()">← Orqaga</div>
+      <div class="card">
+        <div class="card-title">📦 ${escHtml(d.batch_name)}</div>
+        <div class="card-row"><span>Jami QR</span><span>${fmt(d.quantity)} ta</span></div>
+        <div class="card-row"><span>Skanlangan</span><span>${fmt(d.scanned_count)} ta</span></div>
+      </div>
+      <div class="section-title">QR kodlar (oxirgi 200 ta)</div>
+      ${items || '<div class="empty">QR kod yo\'q</div>'}
+    `;
+  });
+}
+
+// ===== 4. TOP SANTEXNIKS =====
+function loadTop() {
+  api('/api/webapp/seller/top-santexniks/').then(data => {
+    const list = data.results || [];
+    if (!list.length) {
+      document.getElementById('top-content').innerHTML = '<div class="empty"><div class="empty-icon">🏆</div>Hali skanlovchi yo\'q</div>';
+      return;
+    }
+    const rows = list.map(u => {
+      let rankClass = '';
+      if (u.rank === 1) rankClass = 'gold';
+      else if (u.rank === 2) rankClass = 'silver';
+      else if (u.rank === 3) rankClass = 'bronze';
+      return `
+        <div class="top-user">
+          <div class="rank-badge ${rankClass}">${u.rank}</div>
+          <div class="top-info">
+            <div class="top-name">${escHtml(u.name)}</div>
+            <div class="top-meta">${escHtml(u.phone) || '—'} · ${u.scans} ta skan</div>
+          </div>
+          <div class="top-points">+${fmt(u.earned)}<small>ball</small></div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('top-content').innerHTML = `
+      <div class="card">
+        <div class="card-title">🏆 Top Santexniklar (mening do'konimda)</div>
+        ${rows}
+      </div>
+    `;
+  }).catch(() => { document.getElementById('top-content').innerHTML = '<div class="empty">⚠️ Yuklashda xatolik</div>'; });
+}
+
+// ===== 5. CALCULATOR =====
+let calcCommissionPercent = 0;
+let calcStoreName = '';
+function loadCalc() {
+  api('/api/webapp/seller/commission-calc/?sales=0').then(d => {
+    if (d.error) { document.getElementById('calc-content').innerHTML = `<div class="empty">❌ ${escHtml(d.error)}</div>`; return; }
+    calcCommissionPercent = d.commission_percent;
+    calcStoreName = d.store_name;
+    document.getElementById('calc-content').innerHTML = `
+      <div class="card">
+        <div class="card-title">💳 Komissiya kalkulyatori</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+          ${escHtml(calcStoreName)} · komissiya <b style="color:var(--primary);">${calcCommissionPercent}%</b>
+        </div>
+      </div>
+      <div class="calc-input-group">
+        <div class="calc-label">💵 Sotuv summasi (USD)</div>
+        <input type="number" inputmode="decimal" class="calc-input" id="calc-input" placeholder="0" oninput="recalc()">
+      </div>
+      <div class="calc-result" id="calc-result">
+        <div class="calc-result-label">Sizning komissiyangiz</div>
+        <div class="calc-result-val">$0.00</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5;">
+        Komissiya summasi = Sotuv × <b>${calcCommissionPercent}%</b><br>
+        Real summa admin tasdiqlash bilan o'rnatiladi.
+      </div>
+    `;
+  });
+}
+function recalc() {
+  const v = parseFloat(document.getElementById('calc-input').value) || 0;
+  const amt = (v * calcCommissionPercent / 100).toFixed(2);
+  document.querySelector('#calc-result .calc-result-val').textContent = '$' + Number(amt).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/,/g, ' ');
+}
+
+// ===== INIT =====
 loadDashboard();
 loaded['dashboard'] = true;
 </script>
