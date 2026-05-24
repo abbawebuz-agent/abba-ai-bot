@@ -145,18 +145,13 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
 
-# Cache Configuration (Redis) — agar Redis ulanmasa local-memory ga fallback
+# Cache Configuration (Redis) — Django 5.0 built-in RedisCache
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': _cache_location,
-        'OPTIONS': {
-            'IGNORE_EXCEPTIONS': True,
-        },
     }
 }
-# Cache xatosi loyihani sindirmasin
-DJANGO_REDIS_IGNORE_EXCEPTIONS = True
 
 # Channels
 CHANNEL_LAYERS = {

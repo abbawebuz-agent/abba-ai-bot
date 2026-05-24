@@ -378,9 +378,12 @@ class TelegramUser(models.Model):
 
         cache_key = f'user_points_{self.id}'
         if not force:
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return cached
+            try:
+                cached = cache.get(cache_key)
+                if cached is not None:
+                    return cached
+            except Exception:
+                pass  # Cache xato bo'lsa, qayta hisoblaymiz
 
         if self.user_type == 'sotuvchi':
             total = SellerPointsTransaction.objects.filter(
@@ -407,13 +410,23 @@ class TelegramUser(models.Model):
             TelegramUser.objects.filter(id=self.id).update(points=calculated)
             self.points = calculated
 
-        cache.set(cache_key, calculated, 60)
+        try:
+            cache.set(cache_key, calculated, 60)
+        except Exception:
+            pass  # Cache xato — DB qiymati yetarli
         return calculated
     
     def invalidate_points_cache(self):
-        """Инвалидирует кеш баллов пользователя."""
-        from django.core.cache import cache
-        cache.delete(f'user_points_{self.id}')
+        """Инвалидирует кеш баллов пользователя. Cache xato bo'lsa - sukut."""
+        try:
+            from django.core.cache import cache
+            cache.delete(f'user_points_{self.id}')
+        except Exception:
+            # Redis/cache mavjud bo'lmasa, batch save'ni sindirmasin
+            import logging
+            logging.getLogger(__name__).warning(
+                "invalidate_points_cache: cache xato (e'tibor berilmadi)"
+            )
     
     # ──────────────────────────────────────────────────────────────────────
     # Promo code lock helpers
