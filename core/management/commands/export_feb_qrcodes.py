@@ -1,6 +1,6 @@
 """
 Management команда для экспорта сканированных промокодов за указанный месяц
-в два CSV файла: для электриков и для продавцов.
+в два CSV файла: для сантехников и для продавцов.
 
 Использование (из корня проекта):
     python manage.py export_feb_qrcodes              # февраль текущего года
@@ -21,7 +21,7 @@ from core.models import QRCode
 class Command(BaseCommand):
     help = (
         "Экспортирует сканированные промокоды в CSV за указанный месяц: "
-        "отдельно для электриков (code_type='electrician') и продавцов (code_type='seller')."
+        "отдельно для сантехников (code_type='electrician') и продавцов (code_type='seller')."
     )
 
     def add_arguments(self, parser):
@@ -155,7 +155,7 @@ class Command(BaseCommand):
                 )
             )
 
-        # Электрики
+        # Сантехники
         electricians_filename = f"electricians_{year}_{int(month):02d}.csv"
         export_for_type("electrician", electricians_filename)
 

@@ -932,7 +932,7 @@
             
             if (currentUser && currentUser.user_type) {
                 // Если Продавец (seller) -> DXXXX
-                // Если Покупатель/Электрик (electrician) -> EXXXX
+                // Если Покупатель/Сантехник (electrician) -> EXXXX
                 if (currentUser.user_type === 'seller') {
                     qrInput.placeholder = 'DXXXX';
                 } else if (currentUser.user_type === 'electrician') {

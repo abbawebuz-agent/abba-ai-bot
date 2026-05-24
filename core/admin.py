@@ -955,7 +955,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             message = forms.CharField(widget=forms.Textarea(attrs={'rows': 8}), label='Текст сообщения', required=False)
             image = forms.ImageField(required=False, label='Фото (опционально)')
             user_type_filter = forms.ChoiceField(
-                choices=[('', 'Все'), ('santenik', 'Электрики'), ('seller', 'Продавцы')],
+                choices=[('', 'Все'), ('santenik', 'Сантехники'), ('seller', 'Продавцы')],
                 required=False,
                 label='Тип пользователя'
             )
@@ -1710,7 +1710,7 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         return response
 
     def export_monthly_xlsx_view(self, request):
-        """Экспорт промокодов за выбранный месяц: два листа — электрики и продавцы."""
+        """Экспорт промокодов за выбранный месяц: два листа — сантехники и продавцы."""
         from django.core.exceptions import PermissionDenied
         from django.utils import timezone as dj_tz
         from openpyxl import Workbook
@@ -1798,13 +1798,13 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         wb = Workbook()
         if user_type == 'all':
             ws_elec = wb.active
-            ws_elec.title = 'Электрики'
+            ws_elec.title = 'Сантехники'
             fill_sheet(ws_elec, base_qs.filter(scanned_by__user_type='santenik'), 'D6E4F0')
             ws_sell = wb.create_sheet(title='Продавцы')
             fill_sheet(ws_sell, base_qs.filter(scanned_by__user_type='sotuvchi'), 'D6F0D6')
         elif user_type == 'santenik':
             ws = wb.active
-            ws.title = 'Электрики'
+            ws.title = 'Сантехники'
             fill_sheet(ws, base_qs.filter(scanned_by__user_type='santenik'), 'D6E4F0')
         else:
             ws = wb.active
@@ -2786,7 +2786,7 @@ class AdminContactSettingsAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 @admin.register(VideoInstruction)
 class VideoInstructionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
-    """Админка для видео инструкций. 4 видео: электрики (UZ/RU) и предприниматели (UZ/RU)."""
+    """Админка для видео инструкций. 4 видео: сантехники (UZ/RU) и предприниматели (UZ/RU)."""
     list_display = ['video_seller_preview', 'file_id_status', 'is_active', 'updated_at']
     list_filter = [
         'is_active',

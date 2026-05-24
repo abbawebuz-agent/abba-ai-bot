@@ -1,5 +1,5 @@
 """
-Сниппет для Django shell на продакшене: ТОП-10 электриков — верные/неверные попытки QR.
+Сниппет для Django shell на продакшене: ТОП-10 сантехников — верные/неверные попытки QR.
 
 Как использовать:
   1. На сервере: python manage.py shell
@@ -19,7 +19,7 @@ def mask_qr(code):
 electricians = list(
     TelegramUser.objects.filter(user_type="electrician").order_by("-points")[:TOP_N]
 )
-print(f"\nТОП-{TOP_N} электриков по рейтингу. Попытки сканирования QR.\n")
+print(f"\nТОП-{TOP_N} сантехников по рейтингу. Попытки сканирования QR.\n")
 for i, user in enumerate(electricians, 1):
     success = QRCodeScanAttempt.objects.filter(user=user, is_successful=True).count()
     fail = QRCodeScanAttempt.objects.filter(user=user, is_successful=False).count()

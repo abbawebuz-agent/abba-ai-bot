@@ -1485,8 +1485,8 @@ class AdminContactSettings(models.Model):
 
 
 class VideoInstruction(models.Model):
-    """Модель для видео инструкций. 4 видео: электрики (UZ/RU) и предприниматели (UZ/RU)."""
-    # Электрики
+    """Модель для видео инструкций. 4 видео: сантехники (UZ/RU) и предприниматели (UZ/RU)."""
+    # Сантехники
     video_electrician_uz = models.FileField(
         upload_to='video_instructions/',
         null=True, blank=True,
@@ -1715,7 +1715,7 @@ class LiveStream(models.Model):
 
 
 class LiveStreamWinner(models.Model):
-    """Победитель прямого эфира. Тип (электрик/продавец) берётся из user.user_type."""
+    """Победитель прямого эфира. Тип (сантехник/продавец) берётся из user.user_type."""
     live_stream = models.ForeignKey(
         LiveStream,
         on_delete=models.CASCADE,
