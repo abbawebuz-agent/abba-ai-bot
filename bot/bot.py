@@ -384,13 +384,65 @@ async def cmd_start(message: Message, state: FSMContext):
     await show_main_menu(message, user)
 
 
+@dp.message(Command("seller_panel"))
+async def cmd_seller_panel(message: Message, state: FSMContext):
+    """/seller_panel — sotuvchi uchun web app tugmasi."""
+    if message.from_user.is_bot:
+        return
+    await state.clear()
+    @sync_to_async
+    def get_user():
+        try:
+            return TelegramUser.objects.get(telegram_id=message.from_user.id)
+        except TelegramUser.DoesNotExist:
+            return None
+    user = await get_user()
+    if user is None:
+        no_user = SimpleNamespace(language='uz_latin')
+        await message.answer(get_text(no_user, 'PLEASE_START'))
+        return
+    if user.user_type != 'sotuvchi':
+        await message.answer("❌ Bu buyruq faqat sotuvchilar uchun.")
+        return
+    if not user.seller_approved:
+        admin_contact = await _get_admin_contact_str()
+        await message.answer(
+            get_text(user, 'SELLER_NOT_APPROVED_YET').format(admin_contact=admin_contact),
+            parse_mode='HTML',
+        )
+        return
+    # Web App tugma
+    web_app_url = get_web_app_url()
+    if not web_app_url:
+        await message.answer("⚠️ Web App URL sozlanmagan.")
+        return
+    seller_url = f"{web_app_url.rstrip('/')}/seller/"
+    inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
+        types.InlineKeyboardButton(
+            text="🏪 Do'kon panelini ochish",
+            web_app=types.WebAppInfo(url=seller_url),
+        )
+    ]])
+    await message.answer(
+        "🛒 Sizning sotuvchi panelingiz tayyor!\n\nQuyidagi tugma orqali ochishingiz mumkin:",
+        reply_markup=inline_kb,
+    )
+
+
 @dp.message(RegistrationStates.waiting_for_phone)
 async def process_phone(message: Message, state: FSMContext):
     """Обработчик получения номера телефона."""
     # Игнорируем сообщения от ботов
     if message.from_user.is_bot:
         return
-    
+
+    # Command (/start va h.k.) — state ni clear va cmd_start
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
+
     if message.contact:
         phone_number = message.contact.phone_number
         
@@ -420,7 +472,14 @@ async def process_location(message: Message, state: FSMContext):
     # Игнорируем сообщения от ботов
     if message.from_user.is_bot:
         return
-    
+
+    # Command (/start va h.k.) — state ni clear va cmd_start
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
+
     if message.location:
         latitude = message.location.latitude
         longitude = message.location.longitude
@@ -497,8 +556,17 @@ async def process_name(message: Message, state: FSMContext):
     # Игнорируем сообщения от ботов
     if message.from_user.is_bot:
         return
-    
-    name = message.text.strip()
+
+    # Command (/start va h.k.) — state ni clear va cmd_start
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
+
+    name = message.text.strip() if message.text else ""
+    if not name:
+        return
     
     # Проверяем, что имя не пустое и не слишком длинное
     if not name or len(name) < 2:
@@ -891,7 +959,19 @@ async def process_promo_code(message: Message, state: FSMContext):
     # Игнорируем сообщения от ботов
     if message.from_user.is_bot:
         return
-    
+
+    # Agar command bo'lsa (/start, /seller_panel va h.k.) — state ni tozalab,
+    # tegishli command handlerga o'tkazamiz
+    if message.text and message.text.startswith('/'):
+        cmd = message.text.split()[0].lower()
+        await state.clear()
+        if cmd == '/start' or cmd.startswith('/start'):
+            await cmd_start(message, state)
+            return
+        # Boshqa command — handle_message ga uzatamiz
+        await handle_message(message, state)
+        return
+
     promo_code = message.text.strip() if message.text else ""
     
     @sync_to_async
@@ -1210,6 +1290,13 @@ async def process_user_type_selection(callback: CallbackQuery, state: FSMContext
 async def process_seller_id(message: Message, state: FSMContext):
     """Sotuvchi ID ni tekshiradi va ro'yxatdan o'tishni davom ettiradi."""
     from django.utils import timezone as tz
+
+    # Command (/start va h.k.) — state ni clear va cmd_start
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
 
     entered_code = message.text.strip() if message.text else ''
 
@@ -1699,6 +1786,15 @@ async def handle_message(message: Message, state: FSMContext = None):
         await message.answer(get_text(user, 'SEND_PROMO_CODE'))
         await state.set_state(RegistrationStates.waiting_for_promo_code)
     else:
+        # Command lar (/start, /seller_panel va h.k.) — QR sifatida ishlamasin
+        if message.text and message.text.startswith('/'):
+            if message.text.lower().startswith('/start'):
+                if state:
+                    await state.clear()
+                await cmd_start(message, state)
+            else:
+                await handle_unknown_message(message)
+            return
         if message.text and len(message.text.strip()) > 0 and not message.contact and not message.location:
             qr_code_str = message.text.strip().upper()
             await handle_qr_code_scan(message, user, qr_code_str, state)

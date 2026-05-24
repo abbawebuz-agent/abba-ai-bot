@@ -293,6 +293,27 @@
             <button class="back-btn" onclick="showScreen('home')">‹</button>
             <h2 class="screen-title">{% trans "WEBAPP_GIFTS_TITLE" %}</h2>
         </div>
+        <!-- Filter va sort -->
+        <div class="gifts-toolbar" id="giftsToolbar" style="display: none;">
+            <div class="gifts-filter-row">
+                <button class="gifts-chip active" data-filter="all" onclick="filterGifts('all')">
+                    <span class="gifts-chip-text">Hammasi</span>
+                    <span class="gifts-chip-count" id="chipCountAll">0</span>
+                </button>
+                <button class="gifts-chip" data-filter="affordable" onclick="filterGifts('affordable')">
+                    <span class="gifts-chip-text">✓ Mavjud</span>
+                    <span class="gifts-chip-count" id="chipCountAffordable">0</span>
+                </button>
+                <button class="gifts-chip" data-filter="upcoming" onclick="filterGifts('upcoming')">
+                    <span class="gifts-chip-text">⏳ Yaqinda</span>
+                    <span class="gifts-chip-count" id="chipCountUpcoming">0</span>
+                </button>
+            </div>
+            <div class="gifts-balance-pill" id="giftsBalancePill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 12h8"/></svg>
+                <span id="giftsBalanceVal">0</span>
+            </div>
+        </div>
         <div class="gifts-list-container" id="giftsListContainer">
             <div class="loading">{% trans "WEBAPP_LOADING_GIFTS" %}</div>
         </div>
