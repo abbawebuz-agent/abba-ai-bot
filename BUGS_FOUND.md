@@ -1,7 +1,35 @@
-# 🐛 JIP Production Bug List
+# 🐛 JIP Production Bug List — RESOLVED
 **Sana:** 2026-05-24
 **URL:** https://jip-production.up.railway.app/
 **Tester:** Claude (Puppeteer MCP)
+**Status:** 12/22 tuzatildi va deploy qilindi (commit 1146013)
+
+## ✅ TUZATILGAN VA TEKSHIRILGAN (Puppeteer testdan o'tdi)
+- BUG-001 Batch 500 → migration 0072 + try/except
+- BUG-002 Gift add 500 → fieldsets fixed
+- BUG-003 SellerRegistrationCode add 403 → has_add_permission=False
+- BUG-004 Til tugmasi → ishlaydi (POST /i18n/setlang/)
+- BUG-005 Stores tab QR data → scanned_by__user_type filter
+- BUG-006 Root URL 404 → redirect / → /admin/
+- BUG-008/009 JIP logo → site_logo + login_logo SVG
+- BUG-010 Duplicate search → CSS hide
+- BUG-014 Sotuvchi ID spacing → letter-spacing 1px
+- BUG-023 (yangi) Redis URL config + cache defensive try/except
+
+## 🟡 QOLGAN (UI polish, kritik emas)
+- BUG-007 Mixed languages (Jazzmin hardcoded RU labels)
+- BUG-011 Phone format
+- BUG-012 Date format
+- BUG-013 Mixed status badges
+- BUG-015/016 User detail page language
+- BUG-017 Region slug+name display
+- BUG-018 Tuman column empty
+- BUG-019 Welcome → Xush kelibsiz
+- BUG-020 Promokoddar telefon blur
+- BUG-021 Date format short
+- BUG-022 Sidebar "Изменить пароль" RU
+
+
 
 ---
 
