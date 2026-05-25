@@ -96,7 +96,14 @@ class PromoCodeAttemptInline(admin.TabularInline):
 
 @admin.register(UzRegion)
 class UzRegionAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
-    """Справочник вилоятов (нужен для autocomplete в TelegramUser)."""
+    """Справочник вилоятов — admin paneldan yashirilgan (user talab).
+    Autocomplete uchun ishlatiladi (TelegramUser, Store), shu sababli
+    search_fields qoldirildi. Model DB da saqlanadi.
+    """
+
+    def has_module_permission(self, request):
+        return False
+
     list_display = ['code', 'name_uz', 'name_ru']
     search_fields = ['code', 'name_uz', 'name_ru']
     ordering = ['code']
@@ -104,7 +111,13 @@ class UzRegionAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
 
 @admin.register(UzDistrict)
 class UzDistrictAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
-    """Справочник туманов (нужен для autocomplete в TelegramUser)."""
+    """Справочник туманов — admin paneldan yashirilgan (user talab).
+    Autocomplete uchun ishlatiladi (Store.district). Model DB da saqlanadi.
+    """
+
+    def has_module_permission(self, request):
+        return False
+
     list_display = ['region', 'code', 'name_uz', 'name_ru']
     list_filter = ['region']
     search_fields = ['code', 'name_uz', 'name_ru', 'region__name_uz', 'region__name_ru']
