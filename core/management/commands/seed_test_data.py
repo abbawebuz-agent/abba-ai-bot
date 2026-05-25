@@ -53,7 +53,7 @@ class Command(BaseCommand):
             f'   Santeniklar: {len(santeniklar)}\n'
             f'   Sotuvchilar: {len(sotuvchilar)}\n'
             f'   Do\'konlar:   {len(stores)}\n'
-            f'   Batch\'lar:   {len(batches)}\n'
+            f'   Partiya\'lar:   {len(batches)}\n'
             f'   QR kodlar:   {len(qrcodes)}\n'
         ))
 

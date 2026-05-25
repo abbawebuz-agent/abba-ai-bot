@@ -671,7 +671,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 ('📍 Blok 2 — Manzil va lokatsiya', {
                     'fields': ('region', 'district', 'latitude', 'longitude', 'open_in_yandex_maps'),
                 }),
-                ('📦 Blok 3 — Batch tarixi', {
+                ('📦 Blok 3 — Partiya tarixi', {
                     'fields': ('batch_history_html',),
                 }),
                 ('📈 Blok 4 — Statistika', {
@@ -733,7 +733,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             )
             rows += (
                 f'<tr>'
-                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.name or f"Batch #{b.pk}"}</td>'
+                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.name or f"Partiya #{b.pk}"}</td>'
                 f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.quantity}</td>'
                 f'<td style="padding:6px 10px;border-bottom:1px solid #333;color:{color};font-weight:700;">'
                 f'{scanned} ({pct}%)</td>'
@@ -749,7 +749,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             '</div>'
             '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
             '<thead><tr style="background:#1e1e2e;color:#cdd6f4;">'
-            '<th style="padding:8px 10px;text-align:left;">Batch nomi</th>'
+            '<th style="padding:8px 10px;text-align:left;">Partiya nomi</th>'
             '<th style="padding:8px 10px;text-align:left;">Jami</th>'
             '<th style="padding:8px 10px;text-align:left;">Ishlatilgan</th>'
             '<th style="padding:8px 10px;text-align:left;">Sana</th>'
@@ -759,7 +759,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             '</table>',
             export_url, format_html(rows)
         )
-    batch_history_html.short_description = "Batch tarixi"
+    batch_history_html.short_description = "Partiya tarixi"
 
     def sotuvchi_stats_html(self, obj):
         if not obj or not obj.pk:
@@ -785,7 +785,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         rows = (
             stat_row('📅 Ro\'yxatdan o\'tgan', reg_date) +
             stat_row('✅ Tasdiqlangan', approved_date, '#4ade80') +
-            stat_row('🏪 Batch\'lar soni', total_batches) +
+            stat_row('🏪 Partiya\'lar soni', total_batches) +
             stat_row('🎴 Jami QR kodlar', f'{total_qr:,}') +
             stat_row('✅ Skanlanganlar', f'{scanned_qr:,}', '#4ade80') +
             stat_row('📊 Aktivatsiya darajasi', f'{activation_rate}%',
@@ -817,7 +817,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
         header_fill = PatternFill('solid', fgColor='1d4ed8')
         header_font = Font(bold=True, color='FFFFFF')
-        headers = ['Batch nomi', 'Promokod', 'Skanlanganmi', 'Skanlanish vaqti', 'Kim skanladi']
+        headers = ['Partiya nomi', 'Promokod', 'Skanlanganmi', 'Skanlanish vaqti', 'Kim skanladi']
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
             cell.fill = header_fill
@@ -831,7 +831,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 if qr.scanned_by:
                     scanned_by = qr.scanned_by.first_name or qr.scanned_by.username or str(qr.scanned_by.telegram_id)
                 ws.append([
-                    batch.name or f'Batch #{batch.pk}',
+                    batch.name or f'Partiya #{batch.pk}',
                     qr.code,
                     'Ha' if qr.is_scanned else 'Yo\'q',
                     qr.scanned_at.strftime('%d.%m.%Y %H:%M') if qr.scanned_at else '',
@@ -1518,12 +1518,12 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     store_badge.admin_order_field = 'store__name'
 
     def batch_display(self, obj):
-        """JIP: Batch nomi."""
+        """JIP: Partiya nomi."""
         if obj.batch_id:
             return format_html('<small>{}</small>', obj.batch.name)
         return '—'
 
-    batch_display.short_description = 'Batch'
+    batch_display.short_description = 'Partiya'
     batch_display.admin_order_field = 'batch__name'
 
     def points_display(self, obj):
@@ -1960,11 +1960,11 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
                     messages.success(
                         request,
-                        f"Batch '{batch.name}' yaratildi va generatsiya boshlandi!"
+                        f"Partiya '{batch.name}' yaratildi va generatsiya boshlandi!"
                     )
                     return redirect('admin:core_qrcodebatch_changelist')
                 except Exception as e:
-                    messages.error(request, f'Batch yaratishda xatolik: {str(e)}')
+                    messages.error(request, f'Partiya yaratishda xatolik: {str(e)}')
             else:
                 messages.error(request, "Do'kon va miqdorni to'g'ri tanlang!")
 
@@ -2935,7 +2935,7 @@ class StoreAdmin(SimpleHistoryAdmin):
               <td style="padding:8px 0;font-size:16px;font-weight:700;color:#2563eb;">{}%</td>
             </tr>
             <tr>
-              <td style="padding:8px 16px 8px 0;"><b>Batch'lar soni:</b></td>
+              <td style="padding:8px 16px 8px 0;"><b>Partiyalar soni:</b></td>
               <td style="padding:8px 0;">{}</td>
             </tr>
             <tr>
@@ -2965,7 +2965,7 @@ class StoreAdmin(SimpleHistoryAdmin):
         count = obj.batches.count()
         url = reverse('admin:core_qrcodebatch_changelist') + f'?store__id__exact={obj.pk}'
         return format_html('<a href="{}">{} batch</a>', url, count)
-    batches_count.short_description = "Batch'lar"
+    batches_count.short_description = "Partiyalar"
 
     def qr_codes_stats(self, obj):
         total = obj.total_qr_codes()
@@ -2998,7 +2998,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     list_per_page = 50
 
     fieldsets = (
-        ("Batch ma'lumotlari", {
+        ("Partiya ma'lumotlari", {
             'fields': ('seller', 'quantity', 'points_per_code'),
             'description': (
                 "Sotuvchini tanlang, miqdorni kiriting. "
@@ -3115,7 +3115,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
             logger.error("QRCodeBatch save_model PRE/SAVE xato: %s\n%s", exc, tb)
             self.message_user(
                 request,
-                f"❌ Batch saqlashda xato: {type(exc).__name__}: {exc}",
+                f"❌ Partiya saqlashda xato: {type(exc).__name__}: {exc}",
                 level='error',
             )
             return
@@ -3129,7 +3129,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
                     store=None,  # Store endi kerak emas — ball to'g'ridan-to'g'ri sotuvchiga
                     transaction_type='bonus',
                     points=bonus_points,
-                    note=f"Batch '{obj.name}' yaratildi ({obj.quantity} ta × 50 ball)",
+                    note=f"Partiya '{obj.name}' yaratildi ({obj.quantity} ta × 50 ball)",
                     created_by=request.user,
                 )
                 obj.seller.invalidate_points_cache()
@@ -3142,7 +3142,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
                 logger.error("SellerPointsTransaction xato: %s\n%s", exc, tb)
                 self.message_user(
                     request,
-                    f"⚠️ Batch yaratildi, ammo ball qo'shishda xato: {type(exc).__name__}: {exc}",
+                    f"⚠️ Partiya yaratildi, ammo ball qo'shishda xato: {type(exc).__name__}: {exc}",
                     level='warning',
                 )
         elif is_new:

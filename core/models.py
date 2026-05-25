@@ -643,7 +643,7 @@ class QRCodeBatch(models.Model):
 
     name = models.CharField(
         max_length=100,
-        verbose_name="Batch nomi",
+        verbose_name="Partiya nomi",
         help_text="Avtomatik: STORE-MAY-2026-001",
     )
     seller = models.ForeignKey(
@@ -709,8 +709,8 @@ class QRCodeBatch(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        verbose_name = 'Batch'
-        verbose_name_plural = "Batch'lar"
+        verbose_name = 'Partiya'
+        verbose_name_plural = "Partiyalar"
         ordering = ['-created_at']
         constraints = [
             # Unique batch name per seller (store endi optional)
@@ -788,7 +788,7 @@ class QRCode(models.Model):
         db_index=True,
         null=True,
         blank=True,
-        verbose_name='Batch',
+        verbose_name='Partiya',
     )
 
     generated_at = models.DateTimeField(auto_now_add=True)
@@ -870,7 +870,7 @@ class QRCode(models.Model):
     
     @classmethod
     def generate_serial_number(cls, batch):
-        """Batch ichida unique serial: STORE{store_id}-B{batch_id}-{NNNNN}."""
+        """Partiya ichida unique serial: STORE{store_id}-B{batch_id}-{NNNNN}."""
         prefix = f"S{batch.store_id}B{batch.id}"
         existing_count = cls.objects.filter(batch=batch).count()
         new_num = existing_count + 1
@@ -1021,7 +1021,7 @@ class SellerPointsTransaction(models.Model):
     TRANSACTION_TYPE_CHOICES = [
         ('manual_add', "Admin qo'shdi"),
         ('sales_bonus', 'Sotuv bonusi'),
-        ('bonus', 'Batch bonusi'),
+        ('bonus', 'Partiya bonusi'),
         ('correction', 'Tuzatish'),
         ('penalty', 'Jarima'),
     ]
