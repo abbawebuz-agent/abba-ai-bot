@@ -99,19 +99,24 @@
         }
 
         .logo-box {
-            width: 120px;
-            height: 54px;
+            width: 130px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
             transition: var(--layout-transition);
-            filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.08));
+            background: #fff;
+            border-radius: 12px;
+            padding: 6px 10px;
+            box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.18);
+            border: 1px solid rgba(255,255,255,0.4);
         }
 
         body.sidebar-collapsed .logo-box {
-            width: 32px;
-            height: 32px;
+            width: 44px;
+            height: 44px;
+            padding: 4px;
         }
 
         .logo-box img {
@@ -539,7 +544,7 @@
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <div class="logo-box">
-                <img src="{% static 'core_admin/img/logo.svg' %}" alt="Mono Logo">
+                <img src="{% static 'core_admin/img/jip_group_admin.jpg' %}" alt="JIP GROUP">
             </div>
         </div>
 
