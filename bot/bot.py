@@ -1626,30 +1626,23 @@ async def show_santenik_menu(message: Message, user: TelegramUser):
 
 
 async def show_seller_menu(message: Message, user: TelegramUser):
-    """Sotuvchi asosiy menyusi."""
+    """Sotuvchi asosiy menyusi. Do'kon yo'q — ball to'g'ridan-to'g'ri sotuvchiga."""
     @sync_to_async
-    def get_seller_data():
-        # select_related faqat ForwardRel uchun ishlaydi — owned_stores reverse,
-        # alohida query (yetarli — bitta sotuvchi 1-2 ta store ga ega).
-        u = TelegramUser.objects.get(telegram_id=message.from_user.id)
-        store = u.owned_stores.filter(is_active=True).select_related('region').first()
-        return u.points, store
+    def get_points():
+        return TelegramUser.objects.get(telegram_id=message.from_user.id).points
 
-    points, store = await get_seller_data()
+    points = await get_points()
     web_app_url = get_web_app_url()
 
-    store_name = store.name if store else '—'
     menu_text = get_text(
         user, 'SELLER_MAIN_MENU',
         name=user.first_name or '',
-        store=store_name,
         points=format_number(points),
     )
 
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=[
             [types.KeyboardButton(text=get_text(user, 'SELLER_MY_BALANCE'))],
-            [types.KeyboardButton(text=get_text(user, 'SELLER_MY_STORE'))],
             [types.KeyboardButton(text=get_text(user, 'SELLER_CONTACT_ADMIN'))],
             [types.KeyboardButton(text=get_text(user, 'LANGUAGE'))],
         ],
@@ -1783,15 +1776,12 @@ async def handle_message(message: Message, state: FSMContext = None):
     all_language_texts = [TRANSLATIONS['uz_latin']['LANGUAGE'], TRANSLATIONS['ru']['LANGUAGE']]
     all_promo_code_texts = [TRANSLATIONS['uz_latin']['ENTER_PROMO_CODE'], TRANSLATIONS['ru']['ENTER_PROMO_CODE']]
 
-    # Sotuvchi tugmalari
+    # Sotuvchi tugmalari (do'kon olib tashlandi)
     all_seller_balance_texts = [TRANSLATIONS['uz_latin']['SELLER_MY_BALANCE'], TRANSLATIONS['ru']['SELLER_MY_BALANCE']]
-    all_seller_store_texts = [TRANSLATIONS['uz_latin']['SELLER_MY_STORE'], TRANSLATIONS['ru']['SELLER_MY_STORE']]
     all_seller_contact_texts = [TRANSLATIONS['uz_latin']['SELLER_CONTACT_ADMIN'], TRANSLATIONS['ru']['SELLER_CONTACT_ADMIN']]
 
     if message.text in all_seller_balance_texts:
         await show_seller_balance(message, user)
-    elif message.text in all_seller_store_texts:
-        await show_seller_store_info(message, user)
     elif message.text in all_seller_contact_texts:
         await show_admin_contact_for_seller(message, user)
     elif message.text in all_balance_texts:
@@ -1851,41 +1841,6 @@ async def show_seller_balance(message: Message, user: TelegramUser):
 
     points = await get_points()
     await message.answer(get_text(user, 'SELLER_BALANCE_INFO', points=format_number(points)))
-
-
-async def show_seller_store_info(message: Message, user: TelegramUser):
-    """Sotuvchi do'koni haqida ma'lumot ko'rsatadi."""
-    @sync_to_async
-    def get_store():
-        return (
-            TelegramUser.objects.get(telegram_id=message.from_user.id)
-            .owned_stores.filter(is_active=True)
-            .select_related('region')
-            .first()
-        )
-
-    store = await get_store()
-    if not store:
-        await message.answer(get_text(user, 'SELLER_NO_STORE'))
-        return
-
-    @sync_to_async
-    def get_store_stats():
-        return store.total_qr_codes(), store.scanned_qr_codes()
-
-    total, scanned = await get_store_stats()
-    await message.answer(
-        get_text(
-            user, 'SELLER_STORE_INFO',
-            name=store.name,
-            address=store.address or '—',
-            region=store.region.name_uz if store.region else '—',
-            total=total,
-            scanned=scanned,
-            commission=store.commission_percent,
-        ),
-        parse_mode='HTML',
-    )
 
 
 async def show_admin_contact_for_seller(message: Message, user: TelegramUser):

@@ -347,16 +347,13 @@ TRANSLATIONS = {
         'DASHBOARD_CHART_DISTRICT_DISTRIBUTION': "Tuman kesimidagi statistika",
         'DASHBOARD_CHART_REGIONAL_DISTRIBUTION': "Viloyatlar kesimidagi statistika",
 
-        # Sotuvchi asosiy menyusi
-        'SELLER_MAIN_MENU': "👋 Assalomu alaykum, {name}!\n\n🏪 Do'kon: {store}\n💰 Balansingiz: {points} ball\n\nHarakatni tanlang:",
+        # Sotuvchi asosiy menyusi (Do'kon olib tashlandi — faqat sotuvchi)
+        'SELLER_MAIN_MENU': "👋 Assalomu alaykum, {name}!\n\n💰 Balansingiz: {points} ball\n\nHarakatni tanlang:",
         'SELLER_MY_BALANCE': "💰 Mening balansim",
         'SELLER_SALES_HISTORY': "📊 Sotuv tarixi",
-        'SELLER_MY_STORE': "🏪 Mening do'konim",
         'SELLER_OPEN_WEBAPP': "🌐 Web ilovani ochish",
         'SELLER_CONTACT_ADMIN': "📞 Admin bilan bog'lanish",
         'SELLER_BALANCE_INFO': "💰 Sizning balansingiz: {points} ball\n\nBallar faqat admin tomonidan qo'shiladi.",
-        'SELLER_STORE_INFO': "🏪 <b>{name}</b>\n\n📍 Manzil: {address}\n📊 Viloyat: {region}\n\n📦 Kartalar: {total} ta (skanlangan: {scanned})\n💳 Komissiya: {commission}%",
-        'SELLER_NO_STORE': "❗ Sizning do'koningiz topilmadi. Admin bilan bog'laning.",
         'SELLER_WEBAPP_BUTTON': "📊 Sotuvchi paneli",
         'SELLER_REG_SUCCESS': (
             "✅ <b>Ro'yxatdan muvaffaqiyatli o'tdingiz!</b>\n\n"
@@ -705,16 +702,13 @@ TRANSLATIONS = {
         'DASHBOARD_CHART_DISTRICT_DISTRIBUTION': "Статистика по районам",
         'DASHBOARD_CHART_REGIONAL_DISTRIBUTION': "Статистика по областям",
 
-        # Sotuvchi asosiy menyusi (RU)
-        'SELLER_MAIN_MENU': "👋 Здравствуйте, {name}!\n\n🏪 Магазин: {store}\n💰 Ваш баланс: {points} баллов\n\nВыберите действие:",
+        # Меню продавца (магазин убран — только продавец)
+        'SELLER_MAIN_MENU': "👋 Здравствуйте, {name}!\n\n💰 Ваш баланс: {points} баллов\n\nВыберите действие:",
         'SELLER_MY_BALANCE': "💰 Мой баланс",
         'SELLER_SALES_HISTORY': "📊 История продаж",
-        'SELLER_MY_STORE': "🏪 Мой магазин",
         'SELLER_OPEN_WEBAPP': "🌐 Открыть веб-приложение",
         'SELLER_CONTACT_ADMIN': "📞 Связаться с администратором",
         'SELLER_BALANCE_INFO': "💰 Ваш баланс: {points} баллов\n\nБаллы начисляются только администратором.",
-        'SELLER_STORE_INFO': "🏪 <b>{name}</b>\n\n📍 Адрес: {address}\n📊 Регион: {region}\n\n📦 Карт: {total} шт (отсканировано: {scanned})\n💳 Комиссия: {commission}%",
-        'SELLER_NO_STORE': "❗ Ваш магазин не найден. Свяжитесь с администратором.",
         'SELLER_WEBAPP_BUTTON': "📊 Панель продавца",
         'SELLER_REG_SUCCESS': (
             "✅ <b>Регистрация успешно пройдена!</b>\n\n"
