@@ -416,15 +416,9 @@ JAZZMIN_SETTINGS = {
         "auth",
     ],
     
-    # Кастомные ссылки в меню
+    # Кастомные ссылки в меню (Boshqaruv paneli olib tashlandi — user talab)
     "custom_links": {
         "core": [
-            {
-                "name": "Boshqaruv paneli",
-                "url": "/admin/dashboard/",
-                "icon": "fas fa-chart-line",
-                "permissions": ["auth.view_user"]
-            },
             {
                 "name": "Promo-kodni yaratish",
                 "url": "/admin/core/qrcode/generate/",
