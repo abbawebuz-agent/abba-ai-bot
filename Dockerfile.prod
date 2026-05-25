@@ -3,9 +3,17 @@ FROM python:3.11-slim
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Устанавливаем системные зависимости (включая зависимости для Playwright/Chromium)
+# 1) PostgreSQL APT repository — postgresql-client-18 olish uchun
+#    (Debian'ning default postgresql-client v17, server v18 — backup mismatch)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wget gnupg ca-certificates lsb-release \
+    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2) Системные зависимости (postgresql-client-18 — backup uchun mos versiya)
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
+    postgresql-client-18 \
     libpq-dev \
     gcc \
     nginx \
