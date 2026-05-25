@@ -2588,7 +2588,13 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 @admin.register(Promotion)
 class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
-    """Админка для акций/баннеров."""
+    """Админка для акций — admin paneldan yashirilgan (user talab).
+    Model DB da saqlanadi (data safety), faqat sidebar'dan yo'qoladi.
+    """
+
+    def has_module_permission(self, request):
+        return False
+
     list_display = [
         'image_preview', 'title', 'date_display', 'order', 'is_active', 'status_badge', 'created_at'
     ]
