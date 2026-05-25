@@ -2997,13 +2997,21 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     ]
     list_per_page = 50
 
+    # Yangi partiya yaratish formasi — minimal: faqat seller + miqdor
+    add_fieldsets = (
+        ("Partiya ma'lumotlari", {
+            'fields': ('seller', 'quantity'),
+            'description': (
+                "Sotuvchini tanlang va miqdorni kiriting. "
+                "Ballar (50 × miqdor) sotuvchiga avtomatik qo'shiladi."
+            ),
+        }),
+    )
+
+    # Mavjud partiyalar uchun — to'liq fieldsets
     fieldsets = (
         ("Partiya ma'lumotlari", {
             'fields': ('seller', 'quantity', 'points_per_code'),
-            'description': (
-                "Sotuvchini tanlang, miqdorni kiriting. "
-                "Ballar (50 × miqdor) sotuvchiga avtomatik qo'shiladi."
-            ),
         }),
         ('📊 QR tarixi', {
             'fields': ('batch_qr_history_link',),
@@ -3018,6 +3026,12 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
             'fields': ('created_by',),
         }),
     )
+
+    def get_fieldsets(self, request, obj=None):
+        # Yangi qo'shishda — qisqacha forma; tahrirda — to'liq
+        if obj is None:
+            return self.add_fieldsets
+        return self.fieldsets
 
     def seller_link(self, obj):
         if obj.seller_id:
