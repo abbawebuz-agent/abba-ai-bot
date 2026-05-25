@@ -218,6 +218,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'core.tasks.dispatch_monthly_role_reminder',
         'schedule': _crontab(minute='*/15', day_of_month='1'),
     },
+    # Har kuni 04:00 (Asia/Tashkent) — DB backup → Telegram channel
+    'daily-db-backup': {
+        'task': 'core.tasks.daily_db_backup',
+        'schedule': _crontab(hour=4, minute=0),
+    },
 }
 
 # Static files (CSS, JavaScript, Images)
@@ -256,6 +261,10 @@ ADMIN_TELEGRAM_IDS = [
     int(x.strip()) for x in env('ADMIN_TELEGRAM_IDS', default='').split(',')
     if x.strip().isdigit()
 ]
+
+# Backup channel — DB backuplar shu private kanalga yuboriladi
+# Chat ID format: "-100xxxxxxxxxx" (channel) yoki user ID
+BACKUP_CHANNEL_ID = env('BACKUP_CHANNEL_ID', default='')
 
 # Webhook Settings (для production)
 WEBHOOK_URL = env('WEBHOOK_URL', default='')

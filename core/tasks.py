@@ -721,3 +721,28 @@ def dispatch_scheduled_region_messages(self):
         logger.info('Запущена отложенная региональная рассылка id=%s', row['id'])
 
     return {'dispatched': dispatched, 'checked_at': now.isoformat()}
+
+
+@shared_task(bind=True, soft_time_limit=600)
+def daily_db_backup(self):
+    """Har kuni 04:00 da pg_dump → Telegram channel.
+
+    Settings.BACKUP_CHANNEL_ID kerak. Aks holda task silent skip.
+    """
+    from django.core.management import call_command
+    from django.conf import settings
+    import io
+
+    if not getattr(settings, 'BACKUP_CHANNEL_ID', ''):
+        logger.info("daily_db_backup: BACKUP_CHANNEL_ID sozlanmagan — skip")
+        return {'status': 'skipped', 'reason': 'no_channel_id'}
+
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        call_command('backup_db', stdout=out, stderr=err)
+        logger.info("daily_db_backup OK: %s", out.getvalue())
+        return {'status': 'ok'}
+    except Exception as exc:
+        logger.exception("daily_db_backup failed")
+        return {'status': 'error', 'error': str(exc)}
