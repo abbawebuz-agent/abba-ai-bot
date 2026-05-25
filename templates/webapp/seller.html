@@ -624,7 +624,7 @@ function MiniStat({ label, value, color }) {
 function BatchCard({ b, onClick }) {
   const pct = b.quantity ? Math.round(b.scanned / b.quantity * 100) : 0;
   const tone = pct > 70 ? 'good' : pct > 30 ? 'warn' : 'bad';
-  const statusTone = b.delivery_status === 'delivered' ? 'good' : b.delivery_status === 'shipped' ? 'warn' : 'neutral';
+  const statusTone = b.delivery_status === 'active' ? 'good' : 'neutral';
   return (<button onClick={() => onClick(b)} className="jip-press" style={{
     width:'100%',textAlign:'left',background:'#fff',border:`1px solid ${T.border}`,
     borderRadius:18,padding:16,cursor:'pointer',fontFamily:T.font,position:'relative',overflow:'hidden',

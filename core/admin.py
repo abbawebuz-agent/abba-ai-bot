@@ -1949,10 +1949,10 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                         store=store,
                         quantity=quantity,
                         points_per_code=points,
-                        status='pending',
+                        status='inactive',
                         created_by=request.user if request.user.is_authenticated else None,
                     )
-                    batch.name = QRCodeBatch.generate_name(store)
+                    batch.name = QRCodeBatch.generate_name(store=store)
                     batch.save(update_fields=['name'])
 
                     from core.tasks import generate_batch_zip
@@ -2862,7 +2862,7 @@ class QRCodeBatchInline(admin.TabularInline):
     def zip_download(self, obj):
         if obj.zip_file:
             return format_html('<a href="{}" target="_blank">⬇ ZIP</a>', obj.zip_file.url)
-        if obj.status == 'pending':
+        if obj.status == 'inactive':
             return '⏳ Generatsiya...'
         return '—'
     zip_download.short_description = 'ZIP'
@@ -3060,38 +3060,33 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         return format_html('<span style="color:{}; font-weight:600;">{}%</span>', color, rate)
     activation_display.short_description = 'Aktivatsiya'
 
-    actions = ['action_generate_zip', 'action_mark_shipped', 'action_mark_delivered']
+    actions = ['action_generate_zip', 'action_mark_active', 'action_mark_inactive']
 
     @admin.action(description="📦 ZIP generatsiya qilish (Celery)")
     def action_generate_zip(self, request, queryset):
         from .tasks import generate_batch_zip
         triggered, skipped = 0, 0
         for batch in queryset:
-            if batch.status in ('pending', 'failed'):
+            if batch.status != 'active':
                 generate_batch_zip.delay(batch.id)
                 triggered += 1
             else:
                 skipped += 1
         if triggered:
-            self.message_user(request, f"✅ {triggered} ta batch uchun ZIP generatsiya boshlandi.")
+            self.message_user(request, f"✅ {triggered} ta partiya uchun ZIP generatsiya boshlandi.")
         if skipped:
-            self.message_user(request, f"⚠️ {skipped} ta batch o'tkazildi (holati pending/failed emas).", level='warning')
+            self.message_user(request, f"⚠️ {skipped} ta partiya o'tkazildi (allaqachon faollashtirilgan).", level='warning')
 
-    @admin.action(description="🚚 Jo'natildi deb belgilash")
-    def action_mark_shipped(self, request, queryset):
+    @admin.action(description="✅ Faollashtirish")
+    def action_mark_active(self, request, queryset):
         now = timezone.now()
-        count = queryset.filter(delivery_status='not_shipped').update(
-            delivery_status='shipped', shipped_at=now
-        )
-        self.message_user(request, f"✅ {count} ta batch 'jo'natildi' deb belgilandi.")
+        count = queryset.update(status='active', delivery_status='active', delivered_at=now)
+        self.message_user(request, f"✅ {count} ta partiya faollashtirildi.")
 
-    @admin.action(description="✅ Yetkazib berildi deb belgilash")
-    def action_mark_delivered(self, request, queryset):
-        now = timezone.now()
-        count = queryset.filter(delivery_status='shipped').update(
-            delivery_status='delivered', delivered_at=now
-        )
-        self.message_user(request, f"✅ {count} ta batch 'yetkazib berildi' deb belgilandi.")
+    @admin.action(description="🚫 Faollashtirilmagan deb belgilash")
+    def action_mark_inactive(self, request, queryset):
+        count = queryset.update(status='inactive', delivery_status='inactive')
+        self.message_user(request, f"✅ {count} ta partiya faollashtirilmagan deb belgilandi.")
 
     def save_model(self, request, obj, form, change):
         import logging

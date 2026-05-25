@@ -630,15 +630,13 @@ class QRCodeBatch(models.Model):
     """
 
     STATUS_CHOICES = [
-        ('pending', 'Kutilmoqda'),
-        ('processing', 'Generatsiya jarayonida'),
-        ('completed', 'Tayyor'),
-        ('failed', 'Xatolik'),
+        ('active', 'Faollashtirilgan'),
+        ('inactive', 'Faollashtirilmagan'),
     ]
+    # Yetkazib berish ham faqat 2 ta holat — soddalashtirildi
     DELIVERY_STATUS_CHOICES = [
-        ('not_shipped', "Hali jo'natilmagan"),
-        ('shipped', "Jo'natildi"),
-        ('delivered', 'Yetkazib berildi'),
+        ('active', 'Faollashtirilgan'),
+        ('inactive', 'Faollashtirilmagan'),
     ]
 
     name = models.CharField(
@@ -675,7 +673,7 @@ class QRCodeBatch(models.Model):
     )
 
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='pending',
+        max_length=20, choices=STATUS_CHOICES, default='inactive',
         verbose_name='Holat',
     )
     zip_file = models.FileField(
@@ -686,7 +684,7 @@ class QRCodeBatch(models.Model):
     delivery_status = models.CharField(
         max_length=20,
         choices=DELIVERY_STATUS_CHOICES,
-        default='not_shipped',
+        default='inactive',
         verbose_name='Yetkazib berish holati',
     )
     shipped_at = models.DateTimeField(null=True, blank=True)

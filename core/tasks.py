@@ -38,12 +38,10 @@ def generate_batch_zip(self, batch_id: int):
         logger.error(f"generate_batch_zip: batch {batch_id} topilmadi")
         return
 
-    if batch.status not in ('pending', 'failed'):
-        logger.warning(f"generate_batch_zip: batch {batch_id} holati {batch.status!r} — o'tkazildi")
+    if batch.status == 'active':
+        logger.warning(f"generate_batch_zip: batch {batch_id} allaqachon active — o'tkazildi")
         return
-
-    batch.status = 'processing'
-    batch.save(update_fields=['status'])
+    # 'inactive' yoki qiymat yo'q — davom etamiz
     logger.info(f"generate_batch_zip: batch {batch_id} ({batch.name}) boshlandi, {batch.quantity} ta")
 
     try:
@@ -96,9 +94,9 @@ def _do_generate_batch_zip(batch: QRCodeBatch):
             except Exception as e:
                 logger.warning(f"  Rasm xatolik ({qr.serial_number}): {e}")
 
-    # 3. Batch'ni yangilaymiz
+    # 3. Batch'ni yangilaymiz — yangi status modeli: 'active' (faollashtirilgan)
     batch.zip_file.name = f"batches/{zip_filename}"
-    batch.status = 'completed'
+    batch.status = 'active'
     batch.completed_at = timezone.now()
     batch.save(update_fields=['zip_file', 'status', 'completed_at', 'error_message'])
     logger.info(f"  Batch {batch.id} tayyor: {zip_path}")
