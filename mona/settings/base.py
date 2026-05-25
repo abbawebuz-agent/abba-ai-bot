@@ -436,12 +436,6 @@ JAZZMIN_SETTINGS = {
                 "icon": "fas fa-cloud-upload-alt",
                 "permissions": ["auth.add_user"],  # superuser only via view check
             },
-            {
-                "name": "🧪 Backup test",
-                "url": "/admin/backup-test/",
-                "icon": "fas fa-vial",
-                "permissions": ["auth.add_user"],
-            },
         ]
     },
 
