@@ -1767,3 +1767,150 @@ class LiveStreamWinner(models.Model):
         if language == 'ru' and self.prize_text_ru:
             return self.prize_text_ru
         return self.prize_text_uz_latin or self.prize_text_ru or ''
+
+
+# ════════════════════════════════════════════════════════════════════
+# ActivityLog — markazlashtirilgan audit log tizimi
+# ════════════════════════════════════════════════════════════════════
+class ActivityLog(models.Model):
+    """Tizimdagi barcha amallarning markazlashtirilgan logi.
+
+    Saqlanadi:
+    - kim (admin/foydalanuvchi)
+    - qachon (timestamp)
+    - nima (action_type)
+    - qaysi obyekt (target_*)
+    - tafsilot (description, metadata)
+    - texnik (IP, user agent)
+    """
+
+    ACTION_LOGIN = 'login'
+    ACTION_LOGOUT = 'logout'
+    ACTION_LOGIN_FAILED = 'login_failed'
+    ACTION_CREATE = 'create'
+    ACTION_UPDATE = 'update'
+    ACTION_DELETE = 'delete'
+    ACTION_BACKUP = 'backup'
+    ACTION_EXPORT = 'export'
+    ACTION_WEBHOOK = 'webhook'
+    ACTION_ADMIN = 'admin_action'
+    ACTION_ERROR = 'error'
+    ACTION_CUSTOM = 'custom'
+
+    ACTION_CHOICES = [
+        (ACTION_LOGIN, '🔓 Tizimga kirish'),
+        (ACTION_LOGOUT, '🔒 Chiqish'),
+        (ACTION_LOGIN_FAILED, '❌ Kirish xato'),
+        (ACTION_CREATE, '➕ Yaratildi'),
+        (ACTION_UPDATE, '✏️ Yangilandi'),
+        (ACTION_DELETE, '🗑️ O‘chirildi'),
+        (ACTION_BACKUP, '💾 Backup'),
+        (ACTION_EXPORT, '📤 Export'),
+        (ACTION_WEBHOOK, '🤖 Webhook'),
+        (ACTION_ADMIN, '⚙️ Admin amal'),
+        (ACTION_ERROR, '⚠️ Xato'),
+        (ACTION_CUSTOM, '📝 Boshqa'),
+    ]
+
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='Vaqt')
+    user = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='activity_logs',
+        verbose_name='Kim',
+    )
+    tg_user = models.ForeignKey(
+        'TelegramUser',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='activity_logs',
+        verbose_name='Telegram foydalanuvchi',
+        help_text='Bot orqali amal qilgan foydalanuvchi',
+    )
+    action_type = models.CharField(
+        max_length=30, choices=ACTION_CHOICES,
+        default=ACTION_CUSTOM, db_index=True,
+        verbose_name='Amal turi',
+    )
+    target_model = models.CharField(
+        max_length=100, blank=True, db_index=True,
+        verbose_name='Obyekt turi',
+        help_text="Masalan: QRCodeBatch, TelegramUser",
+    )
+    target_id = models.PositiveIntegerField(null=True, blank=True, verbose_name='Obyekt ID')
+    target_repr = models.CharField(max_length=255, blank=True, verbose_name='Obyekt')
+    description = models.TextField(blank=True, verbose_name='Tavsif')
+    metadata = models.JSONField(default=dict, blank=True, verbose_name='Qo‘shimcha')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP')
+    user_agent = models.CharField(max_length=500, blank=True, verbose_name='Brauzer')
+
+    class Meta:
+        verbose_name = 'Log yozuvi'
+        verbose_name_plural = 'Faollik tarixi (Audit log)'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['-timestamp']),
+            models.Index(fields=['user', '-timestamp']),
+            models.Index(fields=['action_type', '-timestamp']),
+            models.Index(fields=['target_model', 'target_id']),
+        ]
+
+    def __str__(self):
+        who = self.user.username if self.user_id else (
+            f'TG:{self.tg_user.first_name}' if self.tg_user_id else 'system')
+        return f'[{self.timestamp:%d.%m %H:%M}] {who} · {self.get_action_type_display()}'
+
+
+def log_event(
+    action_type='custom',
+    user=None,
+    tg_user=None,
+    target=None,
+    description='',
+    request=None,
+    **metadata,
+):
+    """Audit log yozish uchun universal helper.
+
+    Misol:
+        from core.models import log_event
+        log_event(
+            action_type='backup',
+            user=request.user,
+            description='Manual backup yuborildi',
+            request=request,
+            channel_id=settings.BACKUP_CHANNEL_ID,
+        )
+
+    target — obyekt instance (QRCodeBatch, TelegramUser va h.k.) — avtomatik
+    target_model + target_id + target_repr to'ldiriladi.
+    """
+    try:
+        kwargs = {
+            'action_type': action_type,
+            'description': description or '',
+            'metadata': metadata or {},
+        }
+        if user and not isinstance(user, str):
+            # auth.User instance (anonymous bo'lmaslik kerak)
+            if getattr(user, 'is_authenticated', False):
+                kwargs['user'] = user
+        if tg_user:
+            kwargs['tg_user'] = tg_user
+        if target is not None:
+            kwargs['target_model'] = type(target).__name__
+            try:
+                kwargs['target_id'] = target.pk
+                kwargs['target_repr'] = str(target)[:255]
+            except Exception:
+                pass
+        if request is not None:
+            ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip() \
+                or request.META.get('REMOTE_ADDR') or None
+            kwargs['ip_address'] = ip
+            kwargs['user_agent'] = (request.META.get('HTTP_USER_AGENT') or '')[:500]
+        ActivityLog.objects.create(**kwargs)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('log_event failed (silent)')

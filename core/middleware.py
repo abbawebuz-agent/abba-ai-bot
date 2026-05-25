@@ -1,6 +1,20 @@
-"""
-Middleware для отключения кеширования в Telegram Web App.
-"""
+"""Custom middleware: kesh + activity log thread-local."""
+
+
+class CurrentRequestMiddleware:
+    """Joriy request ni thread-local'ga saqlaydi — activity log signallari uchun."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from .signals import set_current_request
+        set_current_request(request)
+        try:
+            response = self.get_response(request)
+        finally:
+            set_current_request(None)
+        return response
 
 
 class NoCacheMiddleware:

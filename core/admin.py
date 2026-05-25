@@ -40,6 +40,7 @@ from .models import (
     UzRegion, UzDistrict,
     Store, QRCodeBatch, SellerPointsTransaction,
     PendingSellerRequest, SellerRegistrationCode,
+    ActivityLog,
 )
 from .utils import generate_qr_code_image, generate_qr_codes_batch
 
@@ -3519,3 +3520,119 @@ class SellerRegistrationCodeAdmin(admin.ModelAdmin):
         name = obj.used_by.first_name or obj.used_by.username or str(obj.used_by.telegram_id)
         return format_html('<a href="/admin/core/telegramuser/{}/change/">{}</a>', obj.used_by_id, name)
     used_by_display.short_description = 'Kim ishlatdi'
+
+
+# ════════════════════════════════════════════════════════════════════
+# ActivityLog admin — markazlashtirilgan audit log ko'rinishi
+# ════════════════════════════════════════════════════════════════════
+@admin.register(ActivityLog)
+class ActivityLogAdmin(admin.ModelAdmin):
+    """Faollik tarixi (audit log) — readonly, faqat ko'rish va filter."""
+
+    list_display = ['timestamp_short', 'who_display', 'action_badge', 'target_link', 'desc_short', 'ip_address']
+    list_filter = ['action_type', ('timestamp', DateTimeRangeFilterBuilder(title='Vaqt')), 'target_model']
+    search_fields = ['user__username', 'tg_user__first_name', 'tg_user__telegram_id',
+                     'target_repr', 'description', 'ip_address']
+    readonly_fields = [
+        'timestamp', 'user', 'tg_user', 'action_type',
+        'target_model', 'target_id', 'target_repr',
+        'description', 'metadata_pretty', 'ip_address', 'user_agent',
+    ]
+    fields = readonly_fields
+    list_per_page = 100
+    date_hierarchy = 'timestamp'
+    ordering = ['-timestamp']
+
+    def has_add_permission(self, request):
+        return False  # Log faqat avtomatik yoziladi
+
+    def has_change_permission(self, request, obj=None):
+        return False  # Tahrir qilinmaydi
+
+    def has_delete_permission(self, request, obj=None):
+        # Faqat superuser eski loglarni o'chirishi mumkin
+        return request.user.is_superuser
+
+    def timestamp_short(self, obj):
+        return obj.timestamp.strftime('%d.%m.%Y %H:%M:%S')
+    timestamp_short.short_description = 'Vaqt'
+    timestamp_short.admin_order_field = 'timestamp'
+
+    def who_display(self, obj):
+        if obj.user_id:
+            return format_html(
+                '<span style="color:#2563eb;font-weight:600;">👤 {}</span>',
+                obj.user.username,
+            )
+        if obj.tg_user_id:
+            name = obj.tg_user.first_name or obj.tg_user.username or str(obj.tg_user.telegram_id)
+            return format_html(
+                '<span style="color:#7c3aed;font-weight:600;">📱 {}</span>',
+                name,
+            )
+        return format_html('<span style="color:#888;font-style:italic;">tizim</span>')
+    who_display.short_description = 'Kim'
+
+    def action_badge(self, obj):
+        colors = {
+            'login': ('#10b981', '#d1fae5'),
+            'logout': ('#64748b', '#f1f5f9'),
+            'login_failed': ('#dc2626', '#fee2e2'),
+            'create': ('#2563eb', '#dbeafe'),
+            'update': ('#d97706', '#fef3c7'),
+            'delete': ('#dc2626', '#fee2e2'),
+            'backup': ('#7c3aed', '#ede9fe'),
+            'export': ('#0891b2', '#cffafe'),
+            'webhook': ('#65a30d', '#ecfccb'),
+            'admin_action': ('#475569', '#e2e8f0'),
+            'error': ('#dc2626', '#fee2e2'),
+            'custom': ('#64748b', '#f1f5f9'),
+        }
+        fg, bg = colors.get(obj.action_type, ('#64748b', '#f1f5f9'))
+        label = obj.get_action_type_display()
+        return format_html(
+            '<span style="background:{};color:{};padding:3px 10px;border-radius:10px;'
+            'font-size:11px;font-weight:600;white-space:nowrap;">{}</span>',
+            bg, fg, label,
+        )
+    action_badge.short_description = 'Amal'
+    action_badge.admin_order_field = 'action_type'
+
+    def target_link(self, obj):
+        if not obj.target_model:
+            return '—'
+        text = obj.target_repr or f'#{obj.target_id}' if obj.target_id else obj.target_model
+        if obj.target_id and obj.target_model:
+            # Try to build admin URL
+            try:
+                url = reverse(
+                    f'admin:core_{obj.target_model.lower()}_change',
+                    args=[obj.target_id],
+                )
+                return format_html('<a href="{}">{}</a>', url, text[:50])
+            except Exception:
+                pass
+        return text[:50]
+    target_link.short_description = 'Obyekt'
+
+    def desc_short(self, obj):
+        text = (obj.description or '').strip()
+        if len(text) > 80:
+            text = text[:77] + '…'
+        return text
+    desc_short.short_description = 'Tavsif'
+
+    def metadata_pretty(self, obj):
+        if not obj.metadata:
+            return '—'
+        import json
+        try:
+            txt = json.dumps(obj.metadata, indent=2, ensure_ascii=False)
+        except Exception:
+            txt = str(obj.metadata)
+        return format_html(
+            '<pre style="background:#f8fafc;padding:10px;border-radius:6px;'
+            'font-size:11px;max-width:700px;overflow:auto;">{}</pre>',
+            txt,
+        )
+    metadata_pretty.short_description = 'Qo‘shimcha (JSON)'

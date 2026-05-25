@@ -768,6 +768,7 @@ def admin_backup_now_view(request):
         )
         return redirect('admin:index')
 
+    from core.models import log_event, ActivityLog as _AL
     out = io.StringIO()
     err = io.StringIO()
     try:
@@ -779,6 +780,13 @@ def admin_backup_now_view(request):
         messages.success(
             request,
             f"✅ Backup muvaffaqiyatli! Telegram kanalingizni tekshiring.\n\n{last_lines}"
+        )
+        log_event(
+            action_type=_AL.ACTION_BACKUP, user=request.user,
+            description=f"Manual backup → Telegram channel ({chat_id})",
+            request=request,
+            channel_id=str(chat_id),
+            log_tail=last_lines[:500],
         )
     except Exception as exc:
         tb = traceback.format_exc()
@@ -797,6 +805,15 @@ def admin_backup_now_view(request):
         if stderr_msg.strip():
             full_msg += f"STDERR:\n{stderr_msg}"
         messages.error(request, full_msg)
+        try:
+            from core.models import log_event, ActivityLog as _AL
+            log_event(
+                action_type=_AL.ACTION_ERROR, user=request.user,
+                description=f"Backup xato: {type(exc).__name__}: {str(exc)[:200]}",
+                request=request,
+            )
+        except Exception:
+            pass
     return redirect('admin:index')
 
 

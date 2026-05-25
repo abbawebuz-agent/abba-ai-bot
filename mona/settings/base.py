@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',  # Отслеживание пользователя для истории
+    'core.middleware.CurrentRequestMiddleware',  # ActivityLog signals uchun thread-local
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
