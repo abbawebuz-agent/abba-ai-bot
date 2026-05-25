@@ -2979,6 +2979,53 @@ class StoreAdmin(SimpleHistoryAdmin):
     qr_codes_stats.short_description = 'Aktivatsiya'
 
 
+def _notify_seller_new_batch(seller_id: int, batch_name: str, qty: int, points: int) -> None:
+    """Yangi partiya yaratilganda sotuvchiga Telegram orqali xabar yuboradi.
+
+    Sync funksiya — Telegram API ni urllib bilan to'g'ridan-to'g'ri chaqiradi
+    (aiogram event loop muammosiz). Background thread'da ishlaydi.
+    """
+    import threading, urllib.request, urllib.parse, json
+    from django.conf import settings
+
+    def _send():
+        try:
+            user = TelegramUser.objects.filter(pk=seller_id).first()
+            if not user or not user.telegram_id:
+                return
+            token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+            if not token:
+                return
+            lang_ru = (user.language or 'uz_latin') == 'ru'
+            if lang_ru:
+                text = (
+                    f"🎉 <b>Новая партия!</b>\n\n"
+                    f"📦 <code>{batch_name}</code>\n"
+                    f"🔢 Количество: <b>{qty}</b> карт\n"
+                    f"💰 Начислено: <b>+{points:,}</b> баллов".replace(',', ' ')
+                )
+            else:
+                text = (
+                    f"🎉 <b>Yangi partiya!</b>\n\n"
+                    f"📦 <code>{batch_name}</code>\n"
+                    f"🔢 Miqdor: <b>{qty}</b> karta\n"
+                    f"💰 Qo'shildi: <b>+{points:,}</b> ball".replace(',', ' ')
+                )
+            url = f'https://api.telegram.org/bot{token}/sendMessage'
+            data = urllib.parse.urlencode({
+                'chat_id': user.telegram_id,
+                'text': text,
+                'parse_mode': 'HTML',
+            }).encode()
+            req = urllib.request.Request(url, data=data)
+            urllib.request.urlopen(req, timeout=8)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("_notify_seller_new_batch background failed")
+
+    threading.Thread(target=_send, daemon=True).start()
+
+
 @admin.register(QRCodeBatch)
 class QRCodeBatchAdmin(SimpleHistoryAdmin):
     """JIP: Skretch-karta batch admin. Sotuvchini tanlang — store va ballar avtomatik."""
@@ -3146,6 +3193,11 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
                     request,
                     f"✅ '{obj.name}' batch yaratildi. Sotuvchiga {bonus_points:,} ball qo'shildi.",
                 )
+                # Sotuvchiga Telegram orqali xabar yuborish (background)
+                try:
+                    _notify_seller_new_batch(obj.seller_id, obj.name, obj.quantity, bonus_points)
+                except Exception as exc:
+                    logger.warning("Seller TG notify failed: %s", exc)
             except Exception as exc:
                 tb = traceback.format_exc()
                 logger.error("SellerPointsTransaction xato: %s\n%s", exc, tb)

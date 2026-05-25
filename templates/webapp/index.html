@@ -935,18 +935,34 @@ function JIPLogo() {
   </div>);
 }
 
+function openBotChat() {
+  haptic('light');
+  if (tg && typeof tg.close === 'function') tg.close();
+  else window.location.href = 'https://t.me/santexnik_JIP_bot';
+}
+
 function TopBar({ onRefresh, refreshing }) {
   return (<div style={{padding:'14px 16px 8px',background:'rgba(250,250,251,0.92)',
     backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',
     borderBottom:`1px solid ${T.divider}`,position:'sticky',top:0,zIndex:30}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,height:36}}>
       <JIPLogo/>
-      <button onClick={onRefresh} className="jip-press" style={{width:34,height:34,borderRadius:999,
-        background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
-        justifyContent:'center',cursor:'pointer',color:T.text,
-        transition:'transform 700ms cubic-bezier(.22,1,.36,1)',transform:refreshing?'rotate(360deg)':'rotate(0deg)'}}>
-        <Icon name="refresh" size={16}/>
-      </button>
+      <div style={{display:'flex',gap:8}}>
+        <button onClick={onRefresh} className="jip-press" style={{width:34,height:34,borderRadius:999,
+          background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
+          justifyContent:'center',cursor:'pointer',color:T.text,
+          transition:'transform 700ms cubic-bezier(.22,1,.36,1)',transform:refreshing?'rotate(360deg)':'rotate(0deg)'}}>
+          <Icon name="refresh" size={16}/>
+        </button>
+        <button onClick={openBotChat} className="jip-press" style={{width:34,height:34,borderRadius:999,
+          background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
+          justifyContent:'center',cursor:'pointer',color:T.text,position:'relative'}}
+          title="Открыть чат бота">
+          <Icon name="bell" size={16}/>
+          <span className="jip-pulse-dot" style={{position:'absolute',top:7,right:8,
+            width:7,height:7,borderRadius:999,background:T.primary,border:'2px solid #fff'}}/>
+        </button>
+      </div>
     </div>
   </div>);
 }

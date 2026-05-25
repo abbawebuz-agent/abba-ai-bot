@@ -1032,7 +1032,7 @@ function JIPLogo() {
   </div>);
 }
 
-function TopBar({ onRefresh, onMore, refreshing, onBack, backLabel }) {
+function TopBar({ onRefresh, onChatOpen, refreshing, onBack, backLabel }) {
   return (<div style={{padding:'14px 16px 8px',background:'rgba(250,250,251,0.92)',
     backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',
     borderBottom:`1px solid ${T.divider}`,position:'sticky',top:0,zIndex:30}}>
@@ -1049,9 +1049,10 @@ function TopBar({ onRefresh, onMore, refreshing, onBack, backLabel }) {
           transition:'transform 700ms cubic-bezier(.22,1,.36,1)',transform:refreshing?'rotate(360deg)':'rotate(0deg)'}}>
           <Icon name="refresh" size={16}/>
         </button>
-        <button onClick={onMore} className="jip-press" style={{width:34,height:34,borderRadius:999,
+        <button onClick={onChatOpen} className="jip-press" style={{width:34,height:34,borderRadius:999,
           background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
-          justifyContent:'center',cursor:'pointer',color:T.text,position:'relative'}}>
+          justifyContent:'center',cursor:'pointer',color:T.text,position:'relative'}}
+          title="Открыть чат бота">
           <Icon name="bell" size={16}/>
           <span className="jip-pulse-dot" style={{position:'absolute',top:7,right:8,
             width:7,height:7,borderRadius:999,background:T.primary,border:'2px solid #fff'}}/>
@@ -1094,45 +1095,21 @@ function BottomTabBar({ active, onChange }) {
   </div>);
 }
 
-function NotificationsSheet({ open, onClose }) {
-  const items = [
-    { id:'n1', icon:'info', tone:'brand', title:'Добро пожаловать!', body:'Это новый дизайн панели сотуйчи. Все данные подгружаются из реального магазина.', time:'сейчас' },
-    { id:'n2', icon:'info', tone:'neutral', title:'Совет', body:'Откройте вкладку "Партии" чтобы увидеть детали QR кодов', time:'1 мин' },
-  ];
-  const toneColors = {
-    good: { bg:T.goodSoft, fg:'#047857' },
-    brand: { bg:T.primarySoft, fg:T.primaryDeep },
-    warn: { bg:T.warnSoft, fg:'#92400e' },
-    neutral: { bg:T.borderSoft, fg:T.text },
-  };
-  return (<BottomSheet open={open} onClose={onClose} title="Уведомления">
-    <div style={{display:'grid',gap:10,paddingTop:6}}>
-      {items.map(n => {
-        const c = toneColors[n.tone];
-        return (<div key={n.id} style={{display:'flex',gap:12,padding:'12px 14px',borderRadius:14,
-          background:'#fff',border:`1px solid ${T.border}`}}>
-          <div style={{width:36,height:36,borderRadius:10,flexShrink:0,background:c.bg,color:c.fg,
-            display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name={n.icon} size={18}/>
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
-              <div style={{fontSize:13,fontWeight:600,color:T.ink,letterSpacing:'-0.01em'}}>{n.title}</div>
-              <div style={{fontSize:11,color:T.light,fontWeight:500,flexShrink:0}}>{n.time}</div>
-            </div>
-            <div style={{fontSize:12,color:T.mute,marginTop:2,fontWeight:500,lineHeight:1.35}}>{n.body}</div>
-          </div>
-        </div>);
-      })}
-    </div>
-  </BottomSheet>);
+// Bell ikona endi Telegram bot chatga qaytaradi (uvedomleniyalar TG da)
+function openBotChat() {
+  haptic('light');
+  if (tg && typeof tg.close === 'function') {
+    tg.close();
+  } else {
+    // Fallback — agar Telegram WebApp emas brauzer bo'lsa
+    window.location.href = 'https://t.me/santexnik_JIP_bot';
+  }
 }
 
 function App() {
   const [tab, setTab] = React.useState('dash');
   const [openBatch, setOpenBatch] = React.useState(null);
   const [refreshing, setRefreshing] = React.useState(false);
-  const [showNotif, setShowNotif] = React.useState(false);
   const [key, setKey] = React.useState(0);
 
   const currentTab = TABS.find(t => t.id === tab);
@@ -1165,7 +1142,7 @@ function App() {
 
   return (<div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#fafafa',
     fontFamily:T.font,color:T.ink,position:'relative'}}>
-    <TopBar onRefresh={doRefresh} onMore={()=>setShowNotif(true)} refreshing={refreshing}
+    <TopBar onRefresh={doRefresh} onChatOpen={openBotChat} refreshing={refreshing}
       onBack={openBatch?()=>setOpenBatch(null):null} backLabel={openBatch?'К партиям':null}/>
     <div ref={scrollerRef} className="jip-scroll" style={{flex:1,overflow:'auto',scrollBehavior:'smooth'}}>
       <div key={`${openBatch?'b-'+openBatch.id:tab}-${key}`} className="jip-fade-up">
@@ -1176,7 +1153,6 @@ function App() {
       </div>
     </div>
     <BottomTabBar active={tab} onChange={handleTab}/>
-    <NotificationsSheet open={showNotif} onClose={()=>setShowNotif(false)}/>
   </div>);
 }
 
