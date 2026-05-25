@@ -933,55 +933,44 @@ async def try_attach_seller_to_store(message: Message, user, state: FSMContext):
         admin_contact = '@jip_admin'
 
     # Allaqachon tasdiqlangan
-    if getattr(user, 'seller_approved', False):
-        try:
-            await state.clear()
-            await show_main_menu(message, user)
-        except Exception:
-            logger.exception("show_main_menu failed for approved seller")
-        return
+    # Tasdiqlangan/Tasdiqlanmagan — har ikkalasi uchun bir xil flow:
+    # ✅ Muvaffaqiyatli ro'yxat xabari + WebApp tugma.
+    # (Hozir seller_approved=True orqali ro'yxatga olingan, chunki bizning
+    #  flow process_seller_id ichida user.seller_approved=True qiladi.)
 
-    # Store biriktirish (agar mavjud bo'lsa, silent)
-    try:
-        @sync_to_async
-        def _find_and_attach():
-            from core.models import Store
-            store = Store.objects.filter(owner=user, is_active=True).first()
-            if not store:
-                store = Store.objects.filter(
-                    phone=user.phone_number, is_active=True, owner__isnull=True
-                ).first()
-                if store:
-                    store.owner = user
-                    store.save(update_fields=['owner'])
-            return store
-        await _find_and_attach()
-    except Exception:
-        logger.exception("Store attach failed")
-
-    # Adminlarga xabar (background) — user_id pass qilamiz, instance emas
+    # Adminlarga xabar (background) — yangi ro'yxatdan o'tgan sotuvchi haqida
     try:
         asyncio.create_task(_notify_admins_new_seller(user.id))
     except Exception:
         logger.exception("notify_admins schedule failed")
 
-    # Foydalanuvchiga: kutish xabari (har holda yuborish kerak)
+    # ✅ Muvaffaqiyatli ro'yxatdan o'tdingiz + WebApp tugma
     try:
+        web_app_url = get_web_app_url()
+        inline_kb = None
+        if web_app_url:
+            seller_url = f"{web_app_url.rstrip('/')}/seller/"
+            inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text=get_text(user, 'SELLER_WEBAPP_BUTTON'),
+                    web_app=types.WebAppInfo(url=seller_url),
+                ),
+            ]])
         await message.answer(
-            get_text(user, 'SELLER_PENDING_APPROVAL').format(admin_contact=admin_contact),
+            get_text(user, 'SELLER_REG_SUCCESS'),
             parse_mode='HTML',
+            reply_markup=inline_kb,
         )
     except Exception:
-        logger.exception("SELLER_PENDING_APPROVAL send failed")
-        # Fallback — HTML siz
+        logger.exception("SELLER_REG_SUCCESS send failed")
+        # Fallback — HTML siz, tugmasiz
         try:
             await message.answer(
-                "⏳ Sizning arizangiz adminga yuborildi.\n"
-                f"Admin tasdiqlagandan keyin sizga xabar yuboriladi.\n\n"
+                "✅ Ro'yxatdan muvaffaqiyatli o'tdingiz!\n\n"
                 f"Savollar uchun: {admin_contact}"
             )
         except Exception:
-            logger.exception("Fallback SELLER_PENDING send also failed")
+            logger.exception("Fallback REG_SUCCESS send also failed")
 
     try:
         await state.clear()
@@ -1640,9 +1629,9 @@ async def show_seller_menu(message: Message, user: TelegramUser):
     """Sotuvchi asosiy menyusi."""
     @sync_to_async
     def get_seller_data():
-        u = TelegramUser.objects.select_related('owned_stores__region').get(
-            telegram_id=message.from_user.id
-        )
+        # select_related faqat ForwardRel uchun ishlaydi — owned_stores reverse,
+        # alohida query (yetarli — bitta sotuvchi 1-2 ta store ga ega).
+        u = TelegramUser.objects.get(telegram_id=message.from_user.id)
         store = u.owned_stores.filter(is_active=True).select_related('region').first()
         return u.points, store
 

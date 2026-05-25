@@ -357,7 +357,12 @@ TRANSLATIONS = {
         'SELLER_BALANCE_INFO': "💰 Sizning balansingiz: {points} ball\n\nBallar faqat admin tomonidan qo'shiladi.",
         'SELLER_STORE_INFO': "🏪 <b>{name}</b>\n\n📍 Manzil: {address}\n📊 Viloyat: {region}\n\n📦 Kartalar: {total} ta (skanlangan: {scanned})\n💳 Komissiya: {commission}%",
         'SELLER_NO_STORE': "❗ Sizning do'koningiz topilmadi. Admin bilan bog'laning.",
-        'SELLER_WEBAPP_BUTTON': "📊 Do'kon paneli",
+        'SELLER_WEBAPP_BUTTON': "📊 Sotuvchi paneli",
+        'SELLER_REG_SUCCESS': (
+            "✅ <b>Ro'yxatdan muvaffaqiyatli o'tdingiz!</b>\n\n"
+            "Endi sotuvchi panelidan foydalanishingiz mumkin. "
+            "Quyidagi tugmani bosing va Web App ochiladi."
+        ),
     },
 
     'ru': {
@@ -710,7 +715,12 @@ TRANSLATIONS = {
         'SELLER_BALANCE_INFO': "💰 Ваш баланс: {points} баллов\n\nБаллы начисляются только администратором.",
         'SELLER_STORE_INFO': "🏪 <b>{name}</b>\n\n📍 Адрес: {address}\n📊 Регион: {region}\n\n📦 Карт: {total} шт (отсканировано: {scanned})\n💳 Комиссия: {commission}%",
         'SELLER_NO_STORE': "❗ Ваш магазин не найден. Свяжитесь с администратором.",
-        'SELLER_WEBAPP_BUTTON': "📊 Панель магазина",
+        'SELLER_WEBAPP_BUTTON': "📊 Панель продавца",
+        'SELLER_REG_SUCCESS': (
+            "✅ <b>Регистрация успешно пройдена!</b>\n\n"
+            "Теперь вы можете пользоваться панелью продавца. "
+            "Нажмите кнопку ниже, чтобы открыть Web App."
+        ),
     },
 }
 
