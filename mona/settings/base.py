@@ -357,13 +357,13 @@ LOGIN_URL = '/admin/login/'
 # Jazzmin Configuration
 JAZZMIN_SETTINGS = {
     # Заголовок сайта
-    "site_brand": "JIP",
-    "site_header": "JIP — Sodiqlik dasturi",
-    "site_title": "JIP Admin",
-    "welcome_sign": "Xush kelibsiz! JIP boshqaruv paneliga kiring",
-    "site_logo": "core_admin/img/logo.svg",
-    "login_logo": "core_admin/img/logo.svg",
-    "login_logo_dark": "core_admin/img/logo.svg",
+    "site_brand": "JIP GROUP",
+    "site_header": "JIP GROUP — Sodiqlik dasturi",
+    "site_title": "JIP GROUP Admin",
+    "welcome_sign": "Xush kelibsiz! JIP GROUP boshqaruv paneliga kiring",
+    "site_logo": "core_admin/img/jip_group_admin.jpg",
+    "login_logo": "core_admin/img/jip_group_admin.jpg",
+    "login_logo_dark": "core_admin/img/jip_group_admin.jpg",
     "site_logo_classes": "img-fluid jip-brand-logo",
     "site_icon": "core_admin/img/favicon.png",
     

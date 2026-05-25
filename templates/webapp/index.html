@@ -918,15 +918,17 @@ const TABS = [
 ];
 
 function JIPLogo() {
-  return (<div style={{display:'flex',alignItems:'center',gap:8}}>
-    <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg, ${T.primary}, ${T.primaryDeep})`,
-      color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',
-      fontWeight:800,fontSize:13,letterSpacing:'-0.04em',boxShadow:'0 4px 12px -4px rgba(79,70,229,0.6)'}}>
-      <span style={{marginRight:-1}}>J</span><span>I</span><span style={{marginLeft:-1}}>P</span>
+  return (<div style={{display:'flex',alignItems:'center',gap:10}}>
+    <div style={{width:38,height:38,borderRadius:9,background:'#fff',
+      border:`1px solid ${T.border}`,padding:3,
+      display:'flex',alignItems:'center',justifyContent:'center',
+      boxShadow:'0 2px 6px -2px rgba(15,23,42,0.12)'}}>
+      <img src="/static/webapp/img/jip_group.jpg" alt="JIP Group"
+        style={{width:'100%',height:'100%',objectFit:'contain'}}/>
     </div>
     <div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
-      <span style={{fontSize:13,fontWeight:700,color:T.ink,letterSpacing:'-0.02em'}}>JIP Loyalty</span>
-      <span style={{fontSize:10,fontWeight:600,color:T.mute,letterSpacing:'0.04em'}}>
+      <span style={{fontSize:14,fontWeight:800,color:T.ink,letterSpacing:'-0.02em'}}>JIP GROUP</span>
+      <span style={{fontSize:10,fontWeight:600,color:T.mute,letterSpacing:'0.04em',textTransform:'uppercase'}}>
         {IS_RU ? 'Сантехник' : 'Santexnik'}
       </span>
     </div>

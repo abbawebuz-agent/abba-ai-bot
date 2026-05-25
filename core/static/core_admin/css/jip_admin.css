@@ -55,11 +55,14 @@ body, .wrapper {
 .brand-link img.brand-image,
 .brand-link .brand-image,
 .brand-link .jip-brand-logo {
-  max-height: 36px !important;
+  max-height: 42px !important;
   width: auto !important;
   margin: 0 auto !important;
   display: block !important;
-  filter: brightness(1.15);
+  background: #fff !important;
+  border-radius: 8px !important;
+  padding: 4px 6px !important;
+  box-shadow: 0 4px 12px -4px rgba(0,0,0,0.3);
 }
 
 /* Sidebar nav items */
@@ -394,12 +397,15 @@ fieldset.module h2 {
 .login-logo::before { content: none !important; }
 .login-logo a { text-decoration: none !important; }
 .login-logo img {
-  max-width: 220px !important;
-  width: 80% !important;
+  max-width: 200px !important;
+  width: 70% !important;
   height: auto !important;
   display: block !important;
   margin: 0 auto 12px auto !important;
-  filter: drop-shadow(0 4px 20px rgba(59,130,246,0.4));
+  background: #fff !important;
+  border-radius: 16px !important;
+  padding: 16px 22px !important;
+  box-shadow: 0 12px 36px -8px rgba(59,130,246,0.35);
 }
 
 .login-box .form-control {
