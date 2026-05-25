@@ -429,7 +429,7 @@ def get_qr_history(request):
             scanned_by=user,
             is_scanned=True,
             is_deleted=False,
-        ).select_related('monthly_ticket').order_by('-scanned_at')
+        ).order_by('-scanned_at')
 
         if month_filter == 'current':
             from django.utils import timezone
@@ -438,14 +438,12 @@ def get_qr_history(request):
 
         history = []
         for qr in qr_codes:
-            ticket = getattr(qr, 'monthly_ticket', None)
             history.append({
                 'id': qr.id,
                 'code': qr.code,
                 'points': qr.points,
                 'scanned_at': qr.scanned_at.strftime('%d.%m.%Y') if qr.scanned_at else None,
                 'store_name': qr.store.name if qr.store_id else None,
-                'monthly_order': ticket.order if ticket else None,
             })
 
         return Response(history)
@@ -725,10 +723,8 @@ def register_qr_code(request):
             qr_code.scanned_by = user
             qr_code.save(update_fields=['is_scanned', 'scanned_at', 'scanned_by'])
 
-            # Выдаём билет месячного розыгрыша (по одному на каждый QR)
-            from core.monthly_promo import assign_monthly_ticket
-            assign_monthly_ticket(qr_code=qr_code, user=user)
-            
+            # Monthly promo ticket olib tashlandi (user talab).
+
             # Создаем запись об успешной попытке
             QRCodeScanAttempt.objects.create(
                 user=user,

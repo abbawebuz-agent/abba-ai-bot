@@ -2650,7 +2650,13 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 @admin.register(MonthlyPromoTicket)
 class MonthlyPromoTicketAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
-    """Билеты месячного розыгрыша (один билет на каждый отсканированный QR)."""
+    """Билеты месячного розыгрыша — admin paneldan yashirilgan
+    (user talab: olib tashlash). Model DB da saqlanadi, lekin yangi
+    biletlar yaratilmaydi (assign_monthly_ticket bot dan o'chirildi).
+    """
+
+    def has_module_permission(self, request):
+        return False
 
     list_display = [
         'month', 'user_type', 'order', 'qr_code_link',

@@ -1485,11 +1485,9 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                 qr_code.scanned_by = user
                 qr_code.save(update_fields=['is_scanned', 'scanned_at', 'scanned_by'])
 
-                # Выдаём билет месячного розыгрыша (по одному на каждый QR)
-                from core.monthly_promo import assign_monthly_ticket, count_user_chances
-                assign_monthly_ticket(qr_code=qr_code, user=user)
-                monthly_chances = count_user_chances(user=user)
-                
+                # Monthly promo ticket olib tashlandi (user talab) —
+                # assign_monthly_ticket endi chaqirilmaydi.
+
                 # Создаем запись об успешной попытке
                 QRCodeScanAttempt.objects.create(
                     user=user,
@@ -1498,16 +1496,15 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                 )
                 # Фиксируем успешный промокод
                 user.register_successful_promo(raw_code=qr_code_str, source='bot')
-                
+
                 # Инвалидируем кеш и пересчитываем баллы из БД (как в webapp)
                 user.invalidate_points_cache()
                 total_points = user.calculate_points(force=True)
-                
+
                 return {
                     'success': True,
                     'points': qr_code.points,
                     'total_points': total_points,
-                    'monthly_chances': monthly_chances,
                 }
         
         # Перед обработкой проверяем блокировку по промокодам
@@ -1551,13 +1548,11 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                 # Если регистрация не завершена, продолжаем ожидать промокод
                 await ask_promo_code(message, user, state)
         elif result.get('success'):
-            chances_line = ''
-            if result.get('monthly_chances') is not None:
-                chances_line = '\n\n' + get_text(user, 'MONTHLY_CHANCES_LINE', count=result['monthly_chances'])
+            # Monthly chances line olib tashlandi — endi yo'q.
             await message.answer(get_text(user, 'QR_ACTIVATED',
                 points=format_number(result['points']),
                 total_points=format_number(result['total_points'])
-            ) + chances_line)
+            ))
             # Если пользователь еще не зарегистрирован, продолжаем регистрацию
             if not user.phone_number or not user.latitude:
                 keyboard = types.ReplyKeyboardMarkup(
