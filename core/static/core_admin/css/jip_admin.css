@@ -1175,17 +1175,20 @@ td .viewlink {
    UI POLISH — singan/qiyshiq elementlarni tuzatish
    ============================================================ */
 
-/* 1) Sidebar — uzun matnlar */
-.nav-sidebar .nav-item > .nav-link p,
-.nav-sidebar .nav-item > .nav-link {
+/* 1) Sidebar — uzun matnlar normal wrap (word-break OLIB tashlandi —
+   harflarni vertikal ajratardi) */
+.nav-sidebar .nav-item > .nav-link p {
   white-space: normal !important;
   line-height: 1.3 !important;
   font-size: 13px !important;
-  word-break: break-word !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
 }
 .nav-sidebar .nav-item > .nav-link {
   padding-top: 8px !important;
   padding-bottom: 8px !important;
+  white-space: normal !important;
+  word-break: normal !important;
 }
 
 /* 2) Result list — column headers — short text, no awkward wrap */
@@ -1256,7 +1259,8 @@ img[src*="data:image/svg"] {
   padding: 12px 14px !important;
   vertical-align: middle !important;
   white-space: normal !important;
-  word-break: break-word !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
 }
 .app-list .table tr td a,
 #content-main .module table tr td a {
@@ -1277,7 +1281,8 @@ img[src*="data:image/svg"] {
   padding: 8px 10px !important;
   line-height: 1.4 !important;
   font-size: 12.5px !important;
-  word-break: break-word !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
 }
 #recent-actions-module .actionlist li .mini.quiet {
   display: block !important;
