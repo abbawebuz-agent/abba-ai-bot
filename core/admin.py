@@ -2987,9 +2987,9 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
         'activation_display', 'scanned_count', 'status', 'delivery_status',
         'zip_link', 'created_at',
     ]
-    list_filter = ['status', 'delivery_status', 'store__region']
-    search_fields = ['name', 'seller__first_name', 'seller__phone_number', 'store__name']
-    autocomplete_fields = ['seller', 'store']
+    list_filter = ['status', 'delivery_status']
+    search_fields = ['name', 'seller__first_name', 'seller__phone_number']
+    autocomplete_fields = ['seller']
     readonly_fields = [
         'name', 'points_per_code',
         'created_at', 'completed_at', 'zip_file', 'error_message',
@@ -2999,9 +2999,9 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
 
     fieldsets = (
         ("Batch ma'lumotlari", {
-            'fields': ('seller', 'store', 'quantity', 'points_per_code'),
+            'fields': ('seller', 'quantity', 'points_per_code'),
             'description': (
-                "Sotuvchi va Do'konni tanlang, miqdorni kiriting. "
+                "Sotuvchini tanlang, miqdorni kiriting. "
                 "Ballar (50 × miqdor) sotuvchiga avtomatik qo'shiladi."
             ),
         }),
@@ -3103,9 +3103,12 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
             if not obj.created_by_id:
                 obj.created_by = request.user
             obj.points_per_code = 50
-            # Generate name BEFORE first save — avoids (name='', store) UniqueConstraint issue
-            if is_new and not obj.name and obj.store_id:
-                obj.name = QRCodeBatch.generate_name(obj.store)
+            # Generate name BEFORE first save (seller asosida — store endi optional)
+            if is_new and not obj.name:
+                if obj.seller_id:
+                    obj.name = QRCodeBatch.generate_name(seller=obj.seller)
+                elif obj.store_id:
+                    obj.name = QRCodeBatch.generate_name(store=obj.store)
             super().save_model(request, obj, form, change)
         except Exception as exc:
             tb = traceback.format_exc()
@@ -3123,7 +3126,7 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
                 TelegramUser.objects.filter(pk=obj.seller_id).update(points=DbF('points') + bonus_points)
                 SellerPointsTransaction.objects.create(
                     seller=obj.seller,
-                    store=obj.store,
+                    store=None,  # Store endi kerak emas — ball to'g'ridan-to'g'ri sotuvchiga
                     transaction_type='bonus',
                     points=bonus_points,
                     note=f"Batch '{obj.name}' yaratildi ({obj.quantity} ta × 50 ball)",
@@ -3165,16 +3168,16 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
 @admin.register(SellerPointsTransaction)
 class SellerPointsTransactionAdmin(SimpleHistoryAdmin):
     """JIP: Sotuvchi ball tranzaksiyalari."""
-    list_display = ['created_at', 'seller', 'store', 'transaction_type', 'points', 'sales_amount_usd', 'created_by']
-    list_filter = ['transaction_type', 'store', 'created_at']
-    search_fields = ['seller__first_name', 'seller__phone_number', 'store__name', 'note']
-    autocomplete_fields = ['seller', 'store']
+    list_display = ['created_at', 'seller', 'transaction_type', 'points', 'sales_amount_usd', 'created_by']
+    list_filter = ['transaction_type', 'created_at']
+    search_fields = ['seller__first_name', 'seller__phone_number', 'note']
+    autocomplete_fields = ['seller']
     readonly_fields = ['created_at', 'created_by']
     list_per_page = 50
 
     fieldsets = (
-        ('Sotuvchi va do\'kon', {
-            'fields': ('seller', 'store'),
+        ('Sotuvchi', {
+            'fields': ('seller',),
         }),
         ('Tranzaksiya', {
             'fields': ('transaction_type', 'points', 'sales_amount_usd'),

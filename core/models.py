@@ -657,9 +657,12 @@ class QRCodeBatch(models.Model):
     )
     store = models.ForeignKey(
         Store,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name='batches',
-        verbose_name="Do'kon",
+        null=True,
+        blank=True,
+        verbose_name="Do'kon (deprecated)",
+        help_text="Eski tizim uchun. Yangi batch yaratishda kerak emas.",
     )
     quantity = models.IntegerField(
         validators=[MinValueValidator(1)],
@@ -710,29 +713,43 @@ class QRCodeBatch(models.Model):
         verbose_name_plural = "Batch'lar"
         ordering = ['-created_at']
         constraints = [
+            # Unique batch name per seller (store endi optional)
             models.UniqueConstraint(
-                fields=['name', 'store'], name='uniq_batch_name_per_store',
+                fields=['name', 'seller'], name='uniq_batch_name_per_seller',
             ),
         ]
         indexes = [
             models.Index(fields=['status', '-created_at']),
-            models.Index(fields=['store', 'delivery_status']),
+            models.Index(fields=['seller', 'delivery_status']),
         ]
 
     def __str__(self):
-        return f"{self.name} → {self.store.name} ({self.quantity} dona)"
+        target = (self.seller.first_name if self.seller_id else
+                  (self.store.name if self.store_id else 'NO-OWNER'))
+        return f"{self.name} → {target} ({self.quantity} dona)"
 
     @classmethod
-    def generate_name(cls, store):
-        """Avtomatik batch nomi: STORE{ID}-{MAY}-{2026}-{001}."""
+    def generate_name(cls, seller=None, store=None):
+        """Avtomatik batch nomi: S{ID}-{MAY}-{2026}-{001}.
+
+        Sotuvchi (seller) asosida nom yaratiladi. Store endi optional.
+        """
         now = timezone.now()
         month_str = now.strftime('%b').upper()
         year_str = now.year
-        prefix = f"STORE{store.id}-{month_str}-{year_str}"
-        existing = cls.objects.filter(
-            store=store,
-            name__startswith=prefix,
-        ).count()
+        if seller is not None:
+            prefix = f"S{seller.id}-{month_str}-{year_str}"
+            existing = cls.objects.filter(
+                seller=seller, name__startswith=prefix,
+            ).count()
+        elif store is not None:
+            prefix = f"STORE{store.id}-{month_str}-{year_str}"
+            existing = cls.objects.filter(
+                store=store, name__startswith=prefix,
+            ).count()
+        else:
+            prefix = f"BATCH-{month_str}-{year_str}"
+            existing = cls.objects.filter(name__startswith=prefix).count()
         return f"{prefix}-{existing + 1:03d}"
 
     def activation_rate(self):
@@ -1018,9 +1035,11 @@ class SellerPointsTransaction(models.Model):
     )
     store = models.ForeignKey(
         Store,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name='seller_transactions',
-        verbose_name="Do'kon",
+        null=True,
+        blank=True,
+        verbose_name="Do'kon (deprecated)",
     )
 
     transaction_type = models.CharField(

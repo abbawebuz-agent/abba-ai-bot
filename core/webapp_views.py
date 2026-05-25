@@ -1318,33 +1318,41 @@ def seller_webapp_view(request):
 @permission_classes([AllowAny])
 @no_cache_response
 def seller_dashboard(request):
-    """Sotuvchi dashboard: balans, statistika, do'kon ma'lumotlari."""
-    from django.db.models import Sum
+    """Sotuvchi dashboard: balans, batch statistika.
+
+    Yangi model: ball to'g'ridan-to'g'ri sotuvchiga biriktiriladi (store yo'q).
+    """
+    from django.db.models import Sum, Count, Q
 
     user, err = _get_seller_user(request)
     if err:
         return err
 
-    store = user.owned_stores.select_related('region').first()
-    if not store:
-        return Response({'error': "Do'kon topilmadi"}, status=status.HTTP_404_NOT_FOUND)
-
+    # Sotuvchining barcha ball tranzaksiyalari
     points_total = SellerPointsTransaction.objects.filter(
-        seller=user, store=store
+        seller=user,
     ).aggregate(total=Sum('points'))['total'] or 0
 
+    # Sotuvchining barcha batchlari (seller FK orqali)
+    batches = QRCodeBatch.objects.filter(seller=user)
+    qr_total = sum(b.quantity for b in batches)
+    qr_scanned = batches.aggregate(
+        scanned=Count('qr_codes', filter=Q(qr_codes__is_scanned=True, qr_codes__is_deleted=False))
+    )['scanned'] or 0
+
+    # Region — TelegramUser dan
     region_name = None
-    if store.region_id:
-        region_name = store.region.name_uz or store.region.name_ru or store.region.code
+    if user.region_id:
+        region_name = user.region.name_uz or user.region.name_ru or user.region.code
 
     return Response({
-        'store_name': store.name,
+        'store_name': user.first_name or 'Sotuvchi',  # endi do'kon emas — sotuvchi ismi
         'region': region_name,
-        'address': store.address,
+        'address': '',
         'points': int(points_total),
-        'commission': float(store.commission_percent),
-        'qr_total': store.total_qr_codes(),
-        'qr_scanned': store.scanned_qr_codes(),
+        'commission': 0,  # komissiya endi sotuvchi modelida emas
+        'qr_total': qr_total,
+        'qr_scanned': qr_scanned,
     })
 
 
@@ -1352,17 +1360,16 @@ def seller_dashboard(request):
 @permission_classes([AllowAny])
 @no_cache_response
 def seller_transactions(request):
-    """Sotuvchi ball tranzaksiyalari ro'yxati (oxirgi 50 ta)."""
+    """Sotuvchi ball tranzaksiyalari ro'yxati (oxirgi 50 ta).
+
+    Yangi model: store filter olib tashlandi, faqat seller bo'yicha.
+    """
     user, err = _get_seller_user(request)
     if err:
         return err
 
-    store = user.owned_stores.first()
-    if not store:
-        return Response({'results': []})
-
     txs = SellerPointsTransaction.objects.filter(
-        seller=user, store=store
+        seller=user,
     ).order_by('-created_at')[:50]
 
     results = [
@@ -1383,16 +1390,15 @@ def seller_transactions(request):
 @permission_classes([AllowAny])
 @no_cache_response
 def seller_batches(request):
-    """Sotuvchi do'koniga tegishli batch'lar ro'yxati (oxirgi 20 ta)."""
+    """Sotuvchining batch'lar ro'yxati (oxirgi 20 ta).
+
+    Yangi model: store filter olib tashlandi, faqat seller bo'yicha.
+    """
     user, err = _get_seller_user(request)
     if err:
         return err
 
-    store = user.owned_stores.first()
-    if not store:
-        return Response({'results': []})
-
-    batches = QRCodeBatch.objects.filter(store=store).order_by('-created_at')[:20]
+    batches = QRCodeBatch.objects.filter(seller=user).order_by('-created_at')[:20]
 
     results = [
         {
@@ -1469,12 +1475,8 @@ def seller_batch_qr_detail(request, batch_id):
     if err:
         return err
 
-    store = user.owned_stores.first()
-    if not store:
-        return Response({'error': "Do'kon topilmadi"}, status=status.HTTP_404_NOT_FOUND)
-
     try:
-        batch = QRCodeBatch.objects.get(pk=batch_id, store=store)
+        batch = QRCodeBatch.objects.get(pk=batch_id, seller=user)
     except QRCodeBatch.DoesNotExist:
         return Response({'error': 'Batch topilmadi'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1502,20 +1504,23 @@ def seller_batch_qr_detail(request, batch_id):
 @permission_classes([AllowAny])
 @no_cache_response
 def seller_top_santexniks(request):
-    """Sotuvchi do'konida QR skanlagan top santexniklar."""
+    """Sotuvchining batchlaridan QR skanlagan top santexniklar.
+
+    Store o'rniga endi seller.batches dagi QRlarni ko'ramiz.
+    """
     from django.db.models import Count, Sum
 
     user, err = _get_seller_user(request)
     if err:
         return err
 
-    store = user.owned_stores.first()
-    if not store:
+    seller_batch_ids = list(QRCodeBatch.objects.filter(seller=user).values_list('id', flat=True))
+    if not seller_batch_ids:
         return Response({'results': []})
 
     top = (
         TelegramUser.objects.filter(
-            scanned_qrcodes__store=store,
+            scanned_qrcodes__batch_id__in=seller_batch_ids,
             scanned_qrcodes__is_scanned=True,
             scanned_qrcodes__is_deleted=False,
             user_type='santenik',
@@ -1547,26 +1552,27 @@ def seller_commission_calc(request):
     """Komissiya kalkulyatori — sotuv summasi → komissiya hisobi.
 
     Query: ?sales=10000 (USD)
+    Store yo'q — default komissiya 5% (yoki kelajakda sotuvchi modeliga qo'shiladi).
     """
     user, err = _get_seller_user(request)
     if err:
         return err
-
-    store = user.owned_stores.first()
-    if not store:
-        return Response({'error': "Do'kon topilmadi"}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         sales = float(request.GET.get('sales', 0) or 0)
     except ValueError:
         sales = 0
 
-    commission_percent = float(store.commission_percent or 0)
+    # Default komissiya — eski store dan olib bo'lsa olamiz, aks holda 5%
+    commission_percent = 5.0
+    store = user.owned_stores.first()
+    if store and store.commission_percent:
+        commission_percent = float(store.commission_percent)
     commission_amount = round(sales * commission_percent / 100, 2)
 
     return Response({
         'sales': sales,
         'commission_percent': commission_percent,
         'commission_amount': commission_amount,
-        'store_name': store.name,
+        'store_name': user.first_name or 'Sotuvchi',
     })
