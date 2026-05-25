@@ -1093,18 +1093,11 @@
 
 <div class="dashboard-v">
 
-    <!-- Premium Header Toolbar -->
-    {% if pending_sellers_count %}
-    <div style="background:linear-gradient(90deg,#fef3c7,#fffbeb); border:1.5px solid #f59e0b; border-radius:10px; padding:12px 18px; margin-bottom:14px; display:flex; align-items:center; gap:14px;">
-        <svg width="20" height="20" fill="none" stroke="#d97706" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-        <span style="font-size:14px; font-weight:700; color:#92400e;">
-            ⏳ {{ pending_sellers_count }} ta sotuvchi admin tasdiqlashini kutmoqda
-        </span>
-        <a href="/admin/core/telegramuser/?user_type=sotuvchi&seller_approved__exact=0"
-           style="margin-left:auto; background:#d97706; color:#fff; padding:5px 14px; border-radius:6px; font-size:12px; font-weight:700; text-decoration:none; white-space:nowrap;">
-            Ko'rish →
-        </a>
-    </div>
+    <!-- Pending sellers banner olib tashlandi — sotuvchilar endi
+         SellerRegistrationCode orqali avtomatik tasdiqlanadi. -->
+    {% comment %}
+    {% if pending_sellers_count %}...{% endif %}
+    {% endcomment %}
     {% endif %}
 
     <div class="dashboard-header">

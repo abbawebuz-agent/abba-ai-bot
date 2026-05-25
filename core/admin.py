@@ -3381,7 +3381,27 @@ class LiveStreamAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 @admin.register(PendingSellerRequest)
 class PendingSellerRequestAdmin(admin.ModelAdmin):
-    """Tasdiqlanmagan sotuvchi arizalari — alohida admin bo'limi."""
+    """Tasdiqlanmagan sotuvchi arizalari — admin sidebar dan yashirin.
+
+    User talab: admin panelda zaproslar funksiyasi kere emas.
+    Endi sotuvchilar SellerRegistrationCode orqali o'zlarini tasdiqlaydi,
+    admin tasdiqlashi kerak emas.
+    """
+
+    def has_module_permission(self, request):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     list_display = ('user_info', 'phone_number', 'region_name', 'district_name', 'registered_at', 'approval_action')
     list_display_links = ('user_info',)
