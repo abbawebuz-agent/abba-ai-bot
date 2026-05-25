@@ -39,7 +39,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '') or os.environ.get('TELEGRAM_BOT_TOKEN', '')
-        chat_id = os.environ.get('BACKUP_CHANNEL_ID', '')
+        chat_id = (
+            getattr(settings, 'BACKUP_CHANNEL_ID', '')
+            or os.environ.get('BACKUP_CHANNEL_ID', '')
+        )
 
         if not opts['no_upload']:
             if not token:

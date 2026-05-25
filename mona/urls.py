@@ -722,44 +722,81 @@ def root_redirect(request):
     return redirect('/admin/')
 
 
-def admin_backup_now_view(request):
-    """Admin paneldagi "Backup ni Telegramga yuklash" tugma.
-
-    Background thread'da pg_dump → Telegram channel yuboradi.
-    Foydalanuvchiga darhol javob qaytaradi.
-    """
-    import threading, io
+def admin_backup_test_view(request):
+    """Test BACKUP_CHANNEL_ID + bot ulanish (diagnostika)."""
+    import io
     from django.contrib import messages
-    from django.conf import settings
     from django.core.management import call_command
 
     if not request.user.is_superuser:
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden("Faqat superuser uchun")
 
-    if not getattr(settings, 'BACKUP_CHANNEL_ID', ''):
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        call_command('test_backup_channel', stdout=out, stderr=err)
+        log = out.getvalue() or err.getvalue()
+        messages.success(request, f"🧪 Test natijasi:\n\n{log}")
+    except Exception as exc:
+        log = (out.getvalue() or '') + '\n' + (err.getvalue() or '')
+        messages.error(request, f"❌ Test xato:\n\n{exc}\n\nLog:\n{log}")
+    return redirect('admin:index')
+
+
+def admin_backup_now_view(request):
+    """Admin paneldagi "Backup ni Telegramga yuklash" tugma.
+
+    SYNC: pg_dump → Telegram channel. Xato bo'lsa real message ko'rsatadi.
+    """
+    import io, logging, traceback
+    from django.contrib import messages
+    from django.conf import settings
+    from django.core.management import call_command
+
+    logger = logging.getLogger(__name__)
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    chat_id = getattr(settings, 'BACKUP_CHANNEL_ID', '') or os.environ.get('BACKUP_CHANNEL_ID', '')
+    if not chat_id:
         messages.error(
             request,
             "❌ BACKUP_CHANNEL_ID sozlanmagan. Railway Variables'da qo'shing."
         )
         return redirect('admin:index')
 
-    def _run_backup():
-        try:
-            out = io.StringIO()
-            err = io.StringIO()
-            call_command('backup_db', stdout=out, stderr=err)
-            import logging
-            logging.getLogger(__name__).info("admin_backup_now OK: %s", out.getvalue())
-        except Exception:
-            import logging
-            logging.getLogger(__name__).exception("admin_backup_now failed")
-
-    threading.Thread(target=_run_backup, daemon=True).start()
-    messages.success(
-        request,
-        "✅ Backup ishga tushirildi! 30-60 soniya ichida Telegram kanalingizda paydo bo'ladi."
-    )
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        call_command('backup_db', stdout=out, stderr=err)
+        log = out.getvalue() or err.getvalue()
+        logger.info("admin_backup_now OK:\n%s", log)
+        # Show last 3 lines as success message
+        last_lines = '\n'.join(log.strip().splitlines()[-3:])
+        messages.success(
+            request,
+            f"✅ Backup muvaffaqiyatli! Telegram kanalingizni tekshiring.\n\n{last_lines}"
+        )
+    except Exception as exc:
+        tb = traceback.format_exc()
+        logger.error("admin_backup_now FAILED:\n%s\n\nSTDOUT:\n%s\nSTDERR:\n%s",
+                     tb, out.getvalue(), err.getvalue())
+        # Show error to admin
+        err_msg = str(exc)[:500]
+        stdout_msg = (out.getvalue() or '')[-500:]
+        stderr_msg = (err.getvalue() or '')[-500:]
+        full_msg = (
+            f"❌ Backup xato:\n\n"
+            f"{type(exc).__name__}: {err_msg}\n\n"
+        )
+        if stdout_msg.strip():
+            full_msg += f"STDOUT:\n{stdout_msg}\n\n"
+        if stderr_msg.strip():
+            full_msg += f"STDERR:\n{stderr_msg}"
+        messages.error(request, full_msg)
     return redirect('admin:index')
 
 
@@ -771,6 +808,7 @@ urlpatterns = [
     path('admin/dashboard/user/<int:user_id>/', admin.site.admin_view(user_detail_view), name='user_detail_page'),
     path('admin/dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
+    path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
