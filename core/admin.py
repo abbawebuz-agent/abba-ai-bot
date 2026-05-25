@@ -1154,12 +1154,29 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                                     pass
 
                     sent, failed = asyncio.run(send_all())
+
+                    # RegionMessageLog yozuv (kichik rassılka uchun ham)
+                    from django.utils import timezone as _tz
+                    RegionMessageLog.objects.create(
+                        region_code=region_code,
+                        user_type_filter=user_type_filter,
+                        language_filter=language_filter,
+                        total=len(filtered),
+                        sent_count=sent,
+                        failed_count=failed,
+                        status='completed',
+                        initiated_by=request.user,
+                        message_text=message_text,
+                        completed_at=_tz.now(),
+                    )
+
                     self.message_user(
                         request,
-                        f'Отправлено: {sent}, ошибок: {failed} (всего {len(filtered)} пользователей)',
+                        f'✅ Yuborildi: {sent}, xatolar: {failed} (jami {len(filtered)} ta foydalanuvchi). '
+                        f'Tarixni quyidagi sahifada ko\'rishingiz mumkin.',
                         messages.SUCCESS
                     )
-                    return redirect('admin:core_telegramuser_changelist')
+                    return redirect('admin:core_regionmessagelog_changelist')
         else:
             form = RegionMessageForm()
 
