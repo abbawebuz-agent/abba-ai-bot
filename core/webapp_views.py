@@ -1345,12 +1345,15 @@ def seller_dashboard(request):
     if user.region_id:
         region_name = user.region.name_uz or user.region.name_ru or user.region.code
 
+    full_name = ' '.join(filter(None, [user.first_name, user.last_name])) or 'Sotuvchi'
+
     return Response({
-        'store_name': user.first_name or 'Sotuvchi',  # endi do'kon emas — sotuvchi ismi
+        'seller_name': full_name,
+        'seller_first_name': user.first_name or 'Sotuvchi',
+        'seller_phone': user.phone_number or '',
+        'seller_username': user.username or '',
         'region': region_name,
-        'address': '',
         'points': int(points_total),
-        'commission': 0,  # komissiya endi sotuvchi modelida emas
         'qr_total': qr_total,
         'qr_scanned': qr_scanned,
     })

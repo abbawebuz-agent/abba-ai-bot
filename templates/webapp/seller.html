@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<title>JIP Loyalty — Sotuvchi</title>
+<title>JIP Loyalty — Продавец</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -421,16 +421,19 @@ function ChartCard({ data, labels }) {
   </Card>);
 }
 
-function StoreInfo({ store }) {
+function SellerInfo({ data }) {
   const rows = [
-    { icon:'store', label:'Магазин', value: store.store_name },
-    { icon:'map',   label:'Регион',  value: store.region || '—' },
-    { icon:'home',  label:'Адрес',   value: store.address || '—' },
+    { icon:'user',  label:'Имя',     value: data.seller_name || data.seller_first_name || '—' },
+    { icon:'phone', label:'Телефон', value: data.seller_phone || '—' },
+    { icon:'map',   label:'Регион',  value: data.region || '—' },
   ];
+  if (data.seller_username) {
+    rows.push({ icon:'info', label:'Username', value: '@' + data.seller_username });
+  }
   return (<Card padding={0}>
     <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
       <div>
-        <div style={{fontSize:11,fontWeight:700,color:T.mute,letterSpacing:'0.08em',textTransform:'uppercase'}}>Профиль магазина</div>
+        <div style={{fontSize:11,fontWeight:700,color:T.mute,letterSpacing:'0.08em',textTransform:'uppercase'}}>Профиль продавца</div>
         <div style={{fontSize:14,fontWeight:600,color:T.ink,marginTop:2}}>Партнёр JIP Loyalty</div>
       </div>
       <Pill tone="good" size="sm">
@@ -480,16 +483,15 @@ function DashboardTab() {
       <HeroBalance balance={dash.points} delta={hist.period_change}/>
       <ChartCard data={hist.values} labels={hist.labels}/>
       <SectionTitle style={{margin:'6px 0 0 4px'}}>Показатели</SectionTitle>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
         {[
           <StatTile key="a" icon="qr" label="Всего QR" value={(dash.qr_total||0).toLocaleString('ru-RU')}/>,
           <StatTile key="b" icon="check" label="Активировано" value={(dash.qr_scanned||0).toLocaleString('ru-RU')} tone="brand"/>,
-          <StatTile key="c" icon="sparkles" label="Активация" value={activation} suffix="%" tone={aTone} accent={activation>50?'Хорошо':null}/>,
-          <StatTile key="d" icon="coin" label="Комиссия" value={dash.commission} suffix="%"/>,
+          <StatTile key="c" icon="sparkles" label="Активация" value={activation} suffix="%" tone={aTone}/>,
         ].map((el, i) => (<div key={i} className="jip-fade-up" style={{animationDelay:`${200+i*70}ms`}}>{el}</div>))}
       </div>
-      <SectionTitle style={{margin:'6px 0 0 4px'}}>Магазин</SectionTitle>
-      <StoreInfo store={dash}/>
+      <SectionTitle style={{margin:'6px 0 0 4px'}}>Продавец</SectionTitle>
+      <SellerInfo data={dash}/>
       <div style={{background:T.primarySoft,border:`1px solid #dcd9ff`,borderRadius:14,padding:'12px 14px',
         display:'flex',gap:12,alignItems:'center'}}>
         <div style={{width:32,height:32,borderRadius:10,background:'#fff',color:T.primary,
@@ -915,10 +917,10 @@ function CalculatorTab() {
       <div style={{display:'flex',alignItems:'center',gap:12}}>
         <div style={{width:42,height:42,borderRadius:12,background:T.primarySoft,color:T.primaryDeep,
           display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Icon name="store" size={20}/>
+          <Icon name="user" size={20}/>
         </div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,color:T.mute,fontWeight:500}}>Магазин</div>
+          <div style={{fontSize:13,color:T.mute,fontWeight:500}}>Продавец</div>
           <div style={{fontSize:15,fontWeight:700,color:T.ink,letterSpacing:'-0.01em',
             overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{info.store_name}</div>
         </div>
@@ -1007,7 +1009,7 @@ function CalculatorTab() {
 // APP SHELL
 // ═══════════════════════════════════════════════════════════
 const TABS = [
-  { id:'dash',  label:'Главная',  icon:'home',   title:'JIP Loyalty',      eyebrow:'Сотуйчи · Магазин' },
+  { id:'dash',  label:'Главная',  icon:'home',   title:'JIP Loyalty',      eyebrow:'Панель продавца' },
   { id:'tx',    label:'Баллы',    icon:'coin',   title:'Транзакции',       eyebrow:'История начислений' },
   { id:'batch', label:'Партии',   icon:'box',    title:'Партии QR',        eyebrow:'Активные и завершённые' },
   { id:'top',   label:'Топ',      icon:'trophy', title:'Топ сантехники',   eyebrow:'Рейтинг моих мастеров' },
@@ -1025,7 +1027,7 @@ function JIPLogo() {
     </div>
     <div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
       <span style={{fontSize:14,fontWeight:800,color:T.ink,letterSpacing:'-0.02em'}}>JIP GROUP</span>
-      <span style={{fontSize:10,fontWeight:600,color:T.mute,letterSpacing:'0.04em',textTransform:'uppercase'}}>Sotuvchi</span>
+      <span style={{fontSize:10,fontWeight:600,color:T.mute,letterSpacing:'0.04em',textTransform:'uppercase'}}>Продавец</span>
     </div>
   </div>);
 }
