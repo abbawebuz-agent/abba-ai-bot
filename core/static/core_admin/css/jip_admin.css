@@ -1170,3 +1170,236 @@ td .viewlink {
     padding: 8px 12px !important;
   }
 }
+
+/* ============================================================
+   UI POLISH — singan/qiyshiq elementlarni tuzatish
+   ============================================================ */
+
+/* 1) Sidebar — uzun matnlar */
+.nav-sidebar .nav-item > .nav-link p,
+.nav-sidebar .nav-item > .nav-link {
+  white-space: normal !important;
+  line-height: 1.3 !important;
+  font-size: 13px !important;
+  word-break: break-word !important;
+}
+.nav-sidebar .nav-item > .nav-link {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+/* 2) Result list — column headers — short text, no awkward wrap */
+#result_list thead th {
+  padding: 10px 12px !important;
+  font-size: 10px !important;
+  letter-spacing: 0.6px !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+  vertical-align: middle !important;
+}
+#result_list thead th .text {
+  white-space: normal !important;
+}
+
+/* 3) Result list — cell padding, vertical-align */
+#result_list tbody td {
+  vertical-align: middle !important;
+  padding: 12px 14px !important;
+  white-space: normal !important;
+}
+
+/* 4) Filter card right side — narrower so table has more room */
+#changelist-filter {
+  max-width: 230px !important;
+  font-size: 13px !important;
+}
+#changelist-filter .card-body {
+  padding: 12px !important;
+}
+#changelist-filter .card-header {
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+}
+
+/* 5) Table column code values — monospace + nowrap for hash codes */
+#result_list td a strong,
+#result_list td a code {
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace !important;
+  font-size: 12.5px !important;
+  letter-spacing: 0 !important;
+}
+
+/* 6) Broken images placeholder (gift list etc.) */
+img[src=""],
+img:not([src]),
+img[src*="data:image/svg"] {
+  background: var(--jip-borderSoft, #f1f5f9) !important;
+  border-radius: 6px !important;
+}
+
+/* 7) Object tools (Add button row) — better alignment */
+.object-tools {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+}
+.object-tools li {
+  margin: 0 !important;
+}
+
+/* 8) Admin index — app list cards: rows same height, text ellipsis */
+.app-list .table tr td:first-child,
+#content-main .module table tr td:first-child {
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  padding: 12px 14px !important;
+  vertical-align: middle !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+.app-list .table tr td a,
+#content-main .module table tr td a {
+  display: inline-block;
+  max-width: 240px;
+  vertical-align: middle;
+}
+
+/* 9) Admin index — table cell with action buttons — align right */
+.app-list .table tr td:last-child,
+#content-main .module table tr td:last-child {
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+/* 10) Recent actions sidebar — text wrapping fix */
+#recent-actions-module .actionlist li {
+  padding: 8px 10px !important;
+  line-height: 1.4 !important;
+  font-size: 12.5px !important;
+  word-break: break-word !important;
+}
+#recent-actions-module .actionlist li .mini.quiet {
+  display: block !important;
+  font-size: 11px !important;
+  color: var(--jip-text-muted) !important;
+  margin-top: 2px !important;
+}
+
+/* 11) Page title row — breadcrumb + actions on same line cleanly */
+.content-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  padding: 16px 24px !important;
+}
+.content-header h1 {
+  margin: 0 !important;
+}
+
+/* 12) Filter card buttons (Search/Reset) — equal width, rounded */
+#changelist-filter .btn-primary,
+#changelist-filter .btn-secondary {
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+/* 13) Selector helper text — "Выбрано X из Y" — same line */
+.actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+/* 14) Submit row (form bottom) — better spacing */
+.submit-row {
+  padding: 16px 20px !important;
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  background: var(--jip-borderSoft, #f8fafc) !important;
+  border-top: 1px solid var(--jip-border) !important;
+  border-radius: 0 0 12px 12px !important;
+}
+.submit-row input[type="submit"],
+.submit-row button {
+  padding: 9px 18px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+/* 15) Badge text — ensure not breaking on whitespace */
+.badge, .label {
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* 16) Search bar — clean look */
+#changelist-search input[type="text"] {
+  border: 1px solid var(--jip-border) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+}
+#changelist-search input[type="submit"] {
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+}
+
+/* 17) Form fields — clean alignment */
+.form-row {
+  padding: 8px 0 !important;
+}
+.form-row label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--jip-text) !important;
+}
+.form-row .help, .form-row .helptext {
+  font-size: 11px !important;
+  color: var(--jip-text-muted) !important;
+  margin-top: 2px !important;
+}
+
+/* 18) Inline groups — better visual hierarchy */
+.inline-group h2 {
+  font-size: 13px !important;
+  padding: 12px 16px !important;
+  background: var(--jip-borderSoft, #f8fafc) !important;
+  color: var(--jip-text) !important;
+}
+
+/* 19) Pagination — clean buttons */
+.paginator {
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+  padding: 14px 0 !important;
+  flex-wrap: wrap !important;
+  font-size: 13px !important;
+}
+.paginator a, .paginator .this-page {
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  min-width: 32px !important;
+  text-align: center !important;
+  font-size: 12px !important;
+}
+
+/* 20) Filter date inputs — narrower */
+#changelist-filter input[type="text"][placeholder*="date"],
+#changelist-filter input[type="text"][placeholder*="Date"],
+#changelist-filter input[type="text"][placeholder*="Сана"] {
+  width: 100% !important;
+  max-width: 200px !important;
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+}
