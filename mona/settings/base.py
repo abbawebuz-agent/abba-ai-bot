@@ -429,13 +429,19 @@ JAZZMIN_SETTINGS = {
                 "url": "/admin/core/qrcode/generate/",
                 "icon": "fas fa-qrcode",
                 "permissions": ["core.generate_qrcodes"]
-            }
+            },
+            {
+                "name": "📥 Backup → Telegram",
+                "url": "/admin/backup-now/",
+                "icon": "fas fa-cloud-upload-alt",
+                "permissions": ["auth.add_user"],  # superuser only via view check
+            },
         ]
     },
-    
+
     # Настройки прав доступа
     "permissions": {
-        "custom_links": ["auth.view_user", "core.generate_qrcodes"],
+        "custom_links": ["auth.view_user", "core.generate_qrcodes", "auth.add_user"],
     },
     
     # Настройки UI

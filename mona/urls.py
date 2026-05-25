@@ -722,6 +722,47 @@ def root_redirect(request):
     return redirect('/admin/')
 
 
+def admin_backup_now_view(request):
+    """Admin paneldagi "Backup ni Telegramga yuklash" tugma.
+
+    Background thread'da pg_dump → Telegram channel yuboradi.
+    Foydalanuvchiga darhol javob qaytaradi.
+    """
+    import threading, io
+    from django.contrib import messages
+    from django.conf import settings
+    from django.core.management import call_command
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    if not getattr(settings, 'BACKUP_CHANNEL_ID', ''):
+        messages.error(
+            request,
+            "❌ BACKUP_CHANNEL_ID sozlanmagan. Railway Variables'da qo'shing."
+        )
+        return redirect('admin:index')
+
+    def _run_backup():
+        try:
+            out = io.StringIO()
+            err = io.StringIO()
+            call_command('backup_db', stdout=out, stderr=err)
+            import logging
+            logging.getLogger(__name__).info("admin_backup_now OK: %s", out.getvalue())
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("admin_backup_now failed")
+
+    threading.Thread(target=_run_backup, daemon=True).start()
+    messages.success(
+        request,
+        "✅ Backup ishga tushirildi! 30-60 soniya ichida Telegram kanalingizda paydo bo'ladi."
+    )
+    return redirect('admin:index')
+
+
 urlpatterns = [
     path('', root_redirect, name='root'),
     path('i18n/', include('django.conf.urls.i18n')),
@@ -729,6 +770,7 @@ urlpatterns = [
     path('admin/dashboard/export/', admin.site.admin_view(dashboard_export_view), name='dashboard_export'),
     path('admin/dashboard/user/<int:user_id>/', admin.site.admin_view(user_detail_view), name='user_detail_page'),
     path('admin/dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
+    path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
