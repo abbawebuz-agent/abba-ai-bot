@@ -23,9 +23,6 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-productio
 INSTALLED_APPS = [
     # Unfold — django.contrib.admin dan OLDIN bo'lishi shart
     'unfold',
-    'unfold.contrib.filters',
-    'unfold.contrib.forms',
-    'unfold.contrib.inlines',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -371,197 +368,30 @@ LOGIN_URL = '/admin/login/'
 # ============================================================
 # UNFOLD Admin Configuration (modern branch)
 # ============================================================
-
 def environment_callback(request):
-    """Admin panelda environment badge ko'rsatadi"""
     return ["Production", "danger"]
 
 UNFOLD = {
     "SITE_TITLE": "JIP GROUP",
     "SITE_HEADER": "JIP GROUP — Sodiqlik dasturi",
-    "SITE_SUBHEADER": "Boshqaruv paneli",
     "SITE_URL": "/",
     "SITE_ICON": "/static/core_admin/img/favicon.png",
     "SITE_LOGO": "/static/core_admin/img/jip_group_admin.jpg",
-    "SITE_LOGO_COLLAPSED": "/static/core_admin/img/favicon.png",
-    "SITE_SYMBOL": "security",
-    "SITE_FAVICONS": [
-        {
-            "rel": "icon",
-            "sizes": "32x32",
-            "type": "image/png",
-            "href": "/static/core_admin/img/favicon.png",
-        },
-    ],
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
-    "SHOW_BACK_BUTTON": True,
-    "ENVIRONMENT": "mona.settings.base.environment_callback",
-    "DASHBOARD_CALLBACK": "core.admin_callbacks.dashboard_callback",
-
-    # ── Rang palitra (JIP violet/indigo) ──────────────────
     "COLORS": {
-        "font": {
-            "subtle-light": "107 114 128",
-            "subtle-dark": "156 163 175",
-            "default-light": "75 85 99",
-            "default-dark": "209 213 219",
-            "important-light": "17 24 39",
-            "important-dark": "243 244 246",
-        },
         "primary": {
             "50":  "238 242 255",
             "100": "224 231 255",
             "200": "199 210 254",
             "300": "165 180 252",
             "400": "129 140 248",
-            "500": "99 102 241",   # indigo-500
-            "600": "79 70 229",    # indigo-600 (asosiy)
+            "500": "99 102 241",
+            "600": "79 70 229",
             "700": "67 56 202",
             "800": "55 48 163",
             "900": "49 46 129",
             "950": "30 27 75",
         },
     },
-
-    # ── Extensions ──────────────────────────────────────────
-    "EXTENSIONS": {
-        "modeltranslation": {
-            "flags": {"uz": "🇺🇿", "ru": "🇷🇺"},
-        },
-    },
-
-    # ── Sidebar Navigation ──────────────────────────────────
-    "SIDEBAR": {
-        "show_search": True,
-        "show_all_applications": False,
-        "navigation": [
-            {
-                "title": "Boshqaruv",
-                "separator": True,
-                "collapsible": False,
-                "items": [
-                    {
-                        "title": "Bosh sahifa",
-                        "icon": "home",
-                        "link": "/admin/",
-                    },
-                    {
-                        "title": "Foydalanuvchilar",
-                        "icon": "group",
-                        "link": "/admin/auth/user/",
-                    },
-                ],
-            },
-            {
-                "title": "Santexniklar",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Telegram foydalanuvchilar",
-                        "icon": "person",
-                        "link": "/admin/core/telegramuser/",
-                    },
-                    {
-                        "title": "Sotuvchi IDlari",
-                        "icon": "badge",
-                        "link": "/admin/core/sellerregistrationcode/",
-                    },
-                ],
-            },
-            {
-                "title": "Partiyalar & Tranzaksiyalar",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Partiyalar",
-                        "icon": "inventory_2",
-                        "link": "/admin/core/qrcodebatch/",
-                    },
-                    {
-                        "title": "Skretch-kartalar",
-                        "icon": "qr_code",
-                        "link": "/admin/core/qrcode/",
-                    },
-                    {
-                        "title": "Sotuvchi tranzaksiyalari",
-                        "icon": "payments",
-                        "link": "/admin/core/sellerpointstransaction/",
-                    },
-                ],
-            },
-            {
-                "title": "Sovg'alar",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Sovg'alar ro'yxati",
-                        "icon": "card_giftcard",
-                        "link": "/admin/core/gift/",
-                    },
-                    {
-                        "title": "Sovg'alarni olish",
-                        "icon": "redeem",
-                        "link": "/admin/core/giftredemption/",
-                    },
-                ],
-            },
-            {
-                "title": "Xabarlar",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Jonli efirlar",
-                        "icon": "live_tv",
-                        "link": "/admin/core/livestream/",
-                    },
-                    {
-                        "title": "Videoinstruksiyalar",
-                        "icon": "play_circle",
-                        "link": "/admin/core/videoinstruction/",
-                    },
-                    {
-                        "title": "Maxfiylik siyosati",
-                        "icon": "policy",
-                        "link": "/admin/core/privacypolicy/",
-                    },
-                    {
-                        "title": "Admin kontakt sozlamalari",
-                        "icon": "contact_phone",
-                        "link": "/admin/core/admincontactsettings/",
-                    },
-                ],
-            },
-            {
-                "title": "Tizim",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Faollik tarixi",
-                        "icon": "history",
-                        "link": "/admin/core/activitylog/",
-                    },
-                    {
-                        "title": "📥 Backup → Telegram",
-                        "icon": "cloud_upload",
-                        "link": "/admin/backup-now/",
-                    },
-                    {
-                        "title": "Promo-kodni yaratish",
-                        "icon": "qr_code_2",
-                        "link": "/admin/core/qrcode/generate/",
-                    },
-                ],
-            },
-        ],
-    },
-
-    # ── Tabs (change form uchun) ─────────────────────────────
-    "TABS": [],
 }
-
