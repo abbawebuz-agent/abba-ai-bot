@@ -26,7 +26,6 @@ INSTALLED_APPS = [
     'unfold.contrib.filters',
     'unfold.contrib.forms',
     'unfold.contrib.inlines',
-    'unfold.contrib.simple_history',  # simple_history bilan integratsiya
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

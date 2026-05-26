@@ -6,7 +6,6 @@ import os
 from django.contrib import admin
 from rangefilter.filters import DateTimeRangeFilterBuilder, DateRangeFilterBuilder
 from unfold.admin import ModelAdmin as UnfoldModelAdmin
-from unfold.contrib.simple_history.admin import SimpleHistoryAdminMixin
 
 
 class NoDeleteAdminMixin:
@@ -34,7 +33,7 @@ from django.db import models
 from django.db.models import ProtectedError
 from simple_history.admin import SimpleHistoryAdmin as _BaseSimpleHistoryAdmin
 
-class SimpleHistoryAdmin(SimpleHistoryAdminMixin, UnfoldModelAdmin):
+class SimpleHistoryAdmin(UnfoldModelAdmin, _BaseSimpleHistoryAdmin):
     """Unfold + SimpleHistory birlashgan base class"""
     pass
 from .models import (
