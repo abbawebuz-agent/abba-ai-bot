@@ -1,0 +1,80 @@
+{% load static %}{% comment %}JIP Admin SPA — Claude Design 1:1{% endcomment %}<!DOCTYPE html>
+<html lang="ru" data-sidebar="dark" data-density="comfortable" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JIP Admin — Loyalty Platform</title>
+<link rel="icon" type="image/png" href="{% static 'core_admin/img/favicon.png' %}"/>
+
+<!-- Geist font -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"/>
+
+<!-- JIP Design System tokens -->
+<link rel="stylesheet" href="{% static 'admin_ui/spa/tokens.css' %}"/>
+
+<!-- Yandex.Metrika -->
+<script type="text/javascript">
+(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=107195245','ym');
+ym(107195245,'init',{ssr:true,webvisor:true,clickmap:true,trackLinks:true,accurateTrackBounce:true});
+</script>
+</head>
+<body>
+
+<!-- ── Django context injected as JS globals ── -->
+<script>
+window.DJANGO_USER = {
+  username: '{{ request.user.username|escapejs }}',
+  name: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
+  is_superuser: {% if request.user.is_superuser %}true{% else %}false{% endif %},
+  is_staff: {% if request.user.is_staff %}true{% else %}false{% endif %},
+};
+
+window.DJANGO_ADMIN_BASE = '/admin/';
+window.DJANGO_SPA_BASE   = '/jip-admin/';
+window.CSRF_TOKEN        = '{{ csrf_token }}';
+
+// Real stats from Django (overrides mock data in data.js)
+window.DJANGO_STATS = {
+  users_total:    {{ stats.users_total|default:0 }},
+  users_santenik: {{ stats.users_santenik|default:0 }},
+  users_sotuvchi: {{ stats.users_sotuvchi|default:0 }},
+  batches_total:  {{ stats.batches_total|default:0 }},
+  batches_active: {{ stats.batches_active|default:0 }},
+  qr_total:       {{ stats.qr_total|default:0 }},
+  qr_scanned:     {{ stats.qr_scanned|default:0 }},
+  gifts_pending:  {{ stats.gifts_pending|default:0 }},
+  txns_total:     {{ stats.txns_total|default:0 }},
+  audit_total:    {{ stats.audit_total|default:0 }},
+};
+</script>
+
+<div id="root"></div>
+
+<!-- React 18 + Babel standalone (same versions as design) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+        integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+        integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+        integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+        crossorigin="anonymous"></script>
+
+<!-- Mock data (stats patched by window.DJANGO_STATS above in app.jsx) -->
+<script src="{% static 'admin_ui/spa/data.js' %}"></script>
+
+<!-- SPA components (load order matters!) -->
+<script type="text/babel" src="{% static 'admin_ui/spa/tweaks-panel.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/ui.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/shell.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/pages-core.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/pages-qr.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/pages-comm.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/pages-meta.jsx' %}"></script>
+<script type="text/babel" src="{% static 'admin_ui/spa/app.jsx' %}"></script>
+
+</body>
+</html>
