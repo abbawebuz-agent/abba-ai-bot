@@ -372,7 +372,6 @@ LOGIN_URL = '/admin/login/'
 # UNFOLD Admin Configuration (modern branch)
 # ============================================================
 from django.templatetags.static import static
-from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 def environment_callback(request):
@@ -447,12 +446,12 @@ UNFOLD = {
                     {
                         "title": _("Bosh sahifa"),
                         "icon": "home",
-                        "link": reverse_lazy("admin:index"),
+                        "link": "/admin/",
                     },
                     {
                         "title": _("Foydalanuvchilar"),
                         "icon": "group",
-                        "link": reverse_lazy("admin:auth_user_changelist"),
+                        "link": "/admin/auth/user/",
                     },
                 ],
             },
@@ -464,12 +463,12 @@ UNFOLD = {
                     {
                         "title": _("Telegram foydalanuvchilar"),
                         "icon": "person",
-                        "link": reverse_lazy("admin:core_telegramuser_changelist"),
+                        "link": "/admin/core/telegramuser/",
                     },
                     {
                         "title": _("Sotuvchi IDlari"),
                         "icon": "badge",
-                        "link": reverse_lazy("admin:core_sellerregistrationcode_changelist"),
+                        "link": "/admin/core/sellerregistrationcode/",
                     },
                 ],
             },
@@ -481,17 +480,17 @@ UNFOLD = {
                     {
                         "title": _("Partiyalar"),
                         "icon": "inventory_2",
-                        "link": reverse_lazy("admin:core_qrcodebatch_changelist"),
+                        "link": "/admin/core/qrcodebatch/",
                     },
                     {
                         "title": _("Skretch-kartalar"),
                         "icon": "qr_code",
-                        "link": reverse_lazy("admin:core_qrcode_changelist"),
+                        "link": "/admin/core/qrcode/",
                     },
                     {
                         "title": _("Sotuvchi tranzaksiyalari"),
                         "icon": "payments",
-                        "link": reverse_lazy("admin:core_sellerpointstransaction_changelist"),
+                        "link": "/admin/core/sellerpointstransaction/",
                     },
                 ],
             },
@@ -503,12 +502,12 @@ UNFOLD = {
                     {
                         "title": _("Sovg'alar ro'yxati"),
                         "icon": "card_giftcard",
-                        "link": reverse_lazy("admin:core_gift_changelist"),
+                        "link": "/admin/core/gift/",
                     },
                     {
                         "title": _("Sovg'alarni olish"),
                         "icon": "redeem",
-                        "link": reverse_lazy("admin:core_giftredemption_changelist"),
+                        "link": "/admin/core/giftredemption/",
                     },
                 ],
             },
@@ -520,22 +519,22 @@ UNFOLD = {
                     {
                         "title": _("Jonli efirlar"),
                         "icon": "live_tv",
-                        "link": reverse_lazy("admin:core_livestream_changelist"),
+                        "link": "/admin/core/livestream/",
                     },
                     {
                         "title": _("Videoinstruksiyalar"),
                         "icon": "play_circle",
-                        "link": reverse_lazy("admin:core_videoinstruction_changelist"),
+                        "link": "/admin/core/videoinstruction/",
                     },
                     {
                         "title": _("Maxfiylik siyosati"),
                         "icon": "policy",
-                        "link": reverse_lazy("admin:core_privacypolicy_changelist"),
+                        "link": "/admin/core/privacypolicy/",
                     },
                     {
                         "title": _("Admin kontakt sozlamalari"),
                         "icon": "contact_phone",
-                        "link": reverse_lazy("admin:core_admincontactsettings_changelist"),
+                        "link": "/admin/core/admincontactsettings/",
                     },
                 ],
             },
@@ -547,7 +546,7 @@ UNFOLD = {
                     {
                         "title": _("Faollik tarixi"),
                         "icon": "history",
-                        "link": reverse_lazy("admin:core_activitylog_changelist"),
+                        "link": "/admin/core/activitylog/",
                     },
                     {
                         "title": _("📥 Backup → Telegram"),
