@@ -21,7 +21,12 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-productio
 
 # Application definition
 INSTALLED_APPS = [
-    'jazzmin',  # Jazzmin должен быть перед django.contrib.admin
+    # Unfold — django.contrib.admin dan OLDIN bo'lishi shart
+    'unfold',
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
+    'unfold.contrib.inlines',
+    'unfold.contrib.simple_history',  # simple_history bilan integratsiya
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -364,156 +369,203 @@ CSRF_TRUSTED_ORIGINS = [
 LOGIN_REDIRECT_URL = '/admin/'
 LOGIN_URL = '/admin/login/'
 
-# Jazzmin Configuration
-JAZZMIN_SETTINGS = {
-    # Заголовок сайта
-    "site_brand": "JIP GROUP",
-    "site_header": "JIP GROUP — Sodiqlik dasturi",
-    "site_title": "JIP GROUP Admin",
-    "welcome_sign": "Xush kelibsiz! JIP GROUP boshqaruv paneliga kiring",
-    "site_logo": "core_admin/img/jip_group_admin.jpg",
-    "login_logo": "core_admin/img/jip_group_admin.jpg",
-    "login_logo_dark": "core_admin/img/jip_group_admin.jpg",
-    "site_logo_classes": "img-fluid jip-brand-logo",
-    "site_icon": "core_admin/img/favicon.png",
-    
-    # Цветовая схема
-    "theme": "default",  # Можно использовать "dark" для темной темы
-    "dark_mode_theme": None,
-    
-    # Настройки боковой панели
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
-    # Показывать приложения по пермишну
-    "show_ui_builder": False,
-    # Настройки для отображения моделей по правам доступа
-    "default_model_icon": "fas fa-circle",
-    
-    # Иконки
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        "core.TelegramUser": "fas fa-user-tie",
-        "core.PendingSellerRequest": "fas fa-user-clock",
-        "core.QRCode": "fas fa-qrcode",
-        "core.Gift": "fas fa-gift",
-        "core.GiftRedemption": "fas fa-shopping-cart",
-        "core.BroadcastMessage": "fas fa-bullhorn",
-        "core.Store": "fas fa-store",
-        "core.QRCodeBatch": "fas fa-layer-group",
-        "core.SellerPointsTransaction": "fas fa-coins",
-        "core.Seller": "fas fa-briefcase",
-        "core.Category": "fas fa-tags",
-        "core.PointsTransaction": "fas fa-exchange-alt",
-    },
-    
-    # Настройки меню
-    "order_with_respect_to": [
-        "core",
-        "auth",
+# ============================================================
+# UNFOLD Admin Configuration (modern branch)
+# ============================================================
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+
+def environment_callback(request):
+    """Admin panelda environment badge ko'rsatadi"""
+    return ["Production", "danger"]
+
+UNFOLD = {
+    "SITE_TITLE": "JIP GROUP",
+    "SITE_HEADER": "JIP GROUP — Sodiqlik dasturi",
+    "SITE_SUBHEADER": "Boshqaruv paneli",
+    "SITE_URL": "/",
+    "SITE_ICON": lambda request: static("core_admin/img/favicon.png"),
+    "SITE_LOGO": lambda request: static("core_admin/img/jip_group_admin.jpg"),
+    "SITE_LOGO_COLLAPSED": lambda request: static("core_admin/img/favicon.png"),
+    "SITE_SYMBOL": "security",
+    "SITE_FAVICONS": [
+        {
+            "rel": "icon",
+            "sizes": "32x32",
+            "type": "image/png",
+            "href": lambda request: static("core_admin/img/favicon.png"),
+        },
     ],
-    
-    # Кастомные ссылки в меню (Boshqaruv paneli olib tashlandi — user talab)
-    "custom_links": {
-        "core": [
-            {
-                "name": "Promo-kodni yaratish",
-                "url": "/admin/core/qrcode/generate/",
-                "icon": "fas fa-qrcode",
-                "permissions": ["core.generate_qrcodes"]
-            },
-            {
-                "name": "📥 Backup → Telegram",
-                "url": "/admin/backup-now/",
-                "icon": "fas fa-cloud-upload-alt",
-                "permissions": ["auth.add_user"],  # superuser only via view check
-            },
-        ]
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "SHOW_BACK_BUTTON": True,
+    "ENVIRONMENT": "mona.settings.base.environment_callback",
+    "DASHBOARD_CALLBACK": "core.admin_callbacks.dashboard_callback",
+
+    # ── Rang palitra (JIP violet/indigo) ──────────────────
+    "COLORS": {
+        "font": {
+            "subtle-light": "107 114 128",
+            "subtle-dark": "156 163 175",
+            "default-light": "75 85 99",
+            "default-dark": "209 213 219",
+            "important-light": "17 24 39",
+            "important-dark": "243 244 246",
+        },
+        "primary": {
+            "50":  "238 242 255",
+            "100": "224 231 255",
+            "200": "199 210 254",
+            "300": "165 180 252",
+            "400": "129 140 248",
+            "500": "99 102 241",   # indigo-500
+            "600": "79 70 229",    # indigo-600 (asosiy)
+            "700": "67 56 202",
+            "800": "55 48 163",
+            "900": "49 46 129",
+            "950": "30 27 75",
+        },
     },
 
-    # Настройки прав доступа
-    "permissions": {
-        "custom_links": ["auth.view_user", "core.generate_qrcodes", "auth.add_user"],
+    # ── Extensions ──────────────────────────────────────────
+    "EXTENSIONS": {
+        "modeltranslation": {
+            "flags": {"uz": "🇺🇿", "ru": "🇷🇺"},
+        },
     },
-    
-    # Настройки UI
-    "custom_css": "core_admin/css/jip_admin.css",
-    "custom_js": "core_admin/js/changelist_filters.js",
-    "use_google_fonts_cdn": True,
-    "show_ui_builder": False,
-    
-    # Настройки футера
-    "copyright": "JIP Admin Panel",
-    
-    # Настройки поиска
-    "search_model": ["auth.User", "core.TelegramUser"],
-    
-    # Настройки пользовательского интерфейса
-    "user_avatar": None,
-    "topmenu_links": [
-        {"name": "Bosh sahifa", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Boshqaruv paneli", "url": "dashboard", "permissions": ["auth.view_user"]},
-    ],
-    
-    # Настройки языков — переключатель в админке (узбекский по умолчанию)
-    "language_chooser": True,
-    
-    # Настройки изменений
-    "changeform_format": "horizontal_tabs",
-    "changeform_format_overrides": {
-        "auth.user": "collapsible",
-        "auth.group": "vertical_tabs",
-    },
-    
-    # Настройки списков
-    "list_per_page": 25,
-    "list_max_show_all": 100,
-    
-    # Настройки действий
-    "actions_on_top": True,
-    "actions_on_bottom": True,
-    "actions_selection_counter": True,
-    
-    # Настройки фильтров
-    "related_modal_active": False,
-    
-    # Настройки форм
-    "show_related": True,
-}
 
-# Настройки UI для Jazzmin (опционально)
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "brand-primary",
-    "accent": "accent-primary",
-    "navbar": "navbar-dark",
-    "no_navbar_border": True,
-    "navbar_fixed": True,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": True,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
-    "theme": "default",
-    "dark_mode_theme": None,
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    }
+    # ── Sidebar Navigation ──────────────────────────────────
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": _("Boshqaruv"),
+                "separator": True,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": _("Bosh sahifa"),
+                        "icon": "home",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                    {
+                        "title": _("Foydalanuvchilar"),
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Santexniklar"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Telegram foydalanuvchilar"),
+                        "icon": "person",
+                        "link": reverse_lazy("admin:core_telegramuser_changelist"),
+                    },
+                    {
+                        "title": _("Sotuvchi IDlari"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:core_sellerregistrationcode_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Partiyalar & Tranzaksiyalar"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Partiyalar"),
+                        "icon": "inventory_2",
+                        "link": reverse_lazy("admin:core_qrcodebatch_changelist"),
+                    },
+                    {
+                        "title": _("Skretch-kartalar"),
+                        "icon": "qr_code",
+                        "link": reverse_lazy("admin:core_qrcode_changelist"),
+                    },
+                    {
+                        "title": _("Sotuvchi tranzaksiyalari"),
+                        "icon": "payments",
+                        "link": reverse_lazy("admin:core_sellerpointstransaction_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Sovg'alar"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Sovg'alar ro'yxati"),
+                        "icon": "card_giftcard",
+                        "link": reverse_lazy("admin:core_gift_changelist"),
+                    },
+                    {
+                        "title": _("Sovg'alarni olish"),
+                        "icon": "redeem",
+                        "link": reverse_lazy("admin:core_giftredemption_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Xabarlar"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Jonli efirlar"),
+                        "icon": "live_tv",
+                        "link": reverse_lazy("admin:core_livestream_changelist"),
+                    },
+                    {
+                        "title": _("Videoinstruksiyalar"),
+                        "icon": "play_circle",
+                        "link": reverse_lazy("admin:core_videoinstruction_changelist"),
+                    },
+                    {
+                        "title": _("Maxfiylik siyosati"),
+                        "icon": "policy",
+                        "link": reverse_lazy("admin:core_privacypolicy_changelist"),
+                    },
+                    {
+                        "title": _("Admin kontakt sozlamalari"),
+                        "icon": "contact_phone",
+                        "link": reverse_lazy("admin:core_admincontactsettings_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Tizim"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Faollik tarixi"),
+                        "icon": "history",
+                        "link": reverse_lazy("admin:core_activitylog_changelist"),
+                    },
+                    {
+                        "title": _("📥 Backup → Telegram"),
+                        "icon": "cloud_upload",
+                        "link": "/admin/backup-now/",
+                    },
+                    {
+                        "title": _("Promo-kodni yaratish"),
+                        "icon": "qr_code_2",
+                        "link": "/admin/core/qrcode/generate/",
+                    },
+                ],
+            },
+        ],
+    },
+
+    # ── Tabs (change form uchun) ─────────────────────────────
+    "TABS": [],
 }
 

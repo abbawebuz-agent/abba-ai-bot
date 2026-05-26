@@ -5,6 +5,8 @@ import zipfile
 import os
 from django.contrib import admin
 from rangefilter.filters import DateTimeRangeFilterBuilder, DateRangeFilterBuilder
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
+from unfold.contrib.simple_history.admin import SimpleHistoryAdminMixin
 
 
 class NoDeleteAdminMixin:
@@ -30,7 +32,11 @@ from django.contrib import messages
 from django.conf import settings
 from django.db import models
 from django.db.models import ProtectedError
-from simple_history.admin import SimpleHistoryAdmin
+from simple_history.admin import SimpleHistoryAdmin as _BaseSimpleHistoryAdmin
+
+class SimpleHistoryAdmin(SimpleHistoryAdminMixin, UnfoldModelAdmin):
+    """Unfold + SimpleHistory birlashgan base class"""
+    pass
 from .models import (
     TelegramUser, QRCode, QRCodeScanAttempt, PromoCodeAttempt,
     Gift, GiftRedemption, BroadcastMessage, RegionMessageLog, Promotion, PrivacyPolicy,
@@ -95,7 +101,7 @@ class PromoCodeAttemptInline(admin.TabularInline):
 
 
 @admin.register(UzRegion)
-class UzRegionAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class UzRegionAdmin(NoDeleteAdminMixin, UnfoldModelAdmin):
     """Справочник вилоятов — admin paneldan yashirilgan (user talab).
     Autocomplete uchun ishlatiladi (TelegramUser, Store), shu sababli
     search_fields qoldirildi. Model DB da saqlanadi.
@@ -110,7 +116,7 @@ class UzRegionAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(UzDistrict)
-class UzDistrictAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class UzDistrictAdmin(NoDeleteAdminMixin, UnfoldModelAdmin):
     """Справочник туманов — admin paneldan yashirilgan (user talab).
     Autocomplete uchun ishlatiladi (Store.district). Model DB da saqlanadi.
     """
@@ -2352,7 +2358,7 @@ class GiftRedemptionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 
 @admin.register(RegionMessageLog)
-class RegionMessageLogAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class RegionMessageLogAdmin(NoDeleteAdminMixin, UnfoldModelAdmin):
     """Логи рассылок по областям (результаты Celery-задач)."""
     list_display = [
         'region_code', 'total', 'sent_count', 'failed_count', 'status',
@@ -3311,7 +3317,7 @@ admin.site.index_title = 'Boshqaruv paneli'
 
 
 @admin.register(MonthlyReminderSettings)
-class MonthlyReminderSettingsAdmin(admin.ModelAdmin):
+class MonthlyReminderSettingsAdmin(UnfoldModelAdmin):
     """Singleton-настройки ежемесячного напоминания (1-е число)."""
     list_display = ['__str__', 'is_active', 'time_of_day', 'updated_at']
     fieldsets = (
@@ -3343,7 +3349,7 @@ class MonthlyReminderSettingsAdmin(admin.ModelAdmin):
 
 
 @admin.register(MonthlyReminderLog)
-class MonthlyReminderLogAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class MonthlyReminderLogAdmin(NoDeleteAdminMixin, UnfoldModelAdmin):
     """Логи ежемесячного напоминания (read-only)."""
     list_display = [
         'month_key', 'status', 'total', 'sent_count', 'failed_count',
@@ -3423,7 +3429,7 @@ class LiveStreamAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 
 @admin.register(PendingSellerRequest)
-class PendingSellerRequestAdmin(admin.ModelAdmin):
+class PendingSellerRequestAdmin(UnfoldModelAdmin):
     """Tasdiqlanmagan sotuvchi arizalari — admin sidebar dan yashirin.
 
     User talab: admin panelda zaproslar funksiyasi kere emas.
@@ -3490,7 +3496,7 @@ class PendingSellerRequestAdmin(admin.ModelAdmin):
 
 
 @admin.register(SellerRegistrationCode)
-class SellerRegistrationCodeAdmin(admin.ModelAdmin):
+class SellerRegistrationCodeAdmin(UnfoldModelAdmin):
     """Sotuvchi IDlari — 8 raqamli auto-generated."""
     list_display = ['code_display', 'label', 'status_badge', 'used_by_display', 'used_at', 'created_at']
     list_filter = ['is_used']
@@ -3568,7 +3574,7 @@ class SellerRegistrationCodeAdmin(admin.ModelAdmin):
 # ActivityLog admin — markazlashtirilgan audit log ko'rinishi
 # ════════════════════════════════════════════════════════════════════
 @admin.register(ActivityLog)
-class ActivityLogAdmin(admin.ModelAdmin):
+class ActivityLogAdmin(UnfoldModelAdmin):
     """Faollik tarixi (audit log) — readonly, faqat ko'rish va filter."""
 
     list_display = ['timestamp_short', 'who_display', 'action_badge', 'target_link', 'desc_short', 'ip_address']
