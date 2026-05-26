@@ -28,21 +28,25 @@ def dashboard_callback(request, context):
                     "title": "Jami foydalanuvchilar",
                     "metric": str(total_users),
                     "footer": "Telegram orqali ro'yxatdan o'tganlar",
+                    "link": "/admin/core/telegramuser/",
                 },
                 {
                     "title": "Faol partiyalar",
                     "metric": str(active_batches),
                     "footer": "Hozirda faol partiyalar soni",
+                    "link": "/admin/core/qrcodebatch/",
                 },
                 {
                     "title": "Jami skanlar",
                     "metric": str(total_scans),
                     "footer": "Ishlatilgan QR kodlar",
+                    "link": "/admin/core/qrcode/?is_scanned__exact=1",
                 },
                 {
                     "title": "Kutilayotgan sovg'alar",
                     "metric": str(pending_gifts),
                     "footer": "Tasdiqlash kutilmoqda",
+                    "link": "/admin/core/giftredemption/?status__exact=pending",
                 },
             ],
         })

@@ -386,6 +386,7 @@ UNFOLD = {
     "SITE_LOGO": "/static/core_admin/img/jip_group_admin.jpg",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
+    "DASHBOARD_CALLBACK": "core.admin_callbacks.dashboard_callback",
     "COLORS": {
         "primary": {
             "50":  "238 242 255",

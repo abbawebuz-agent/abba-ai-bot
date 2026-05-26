@@ -5,7 +5,12 @@
 {{ block.super }}
 {% if show_clear_scans_button %}
 <li>
-    <a href="{{ clear_scans_url }}" class="btn btn-block btn-warning btn-sm">{% translate "Cancel Scans" %}</a>
+    <a href="{{ clear_scans_url }}"
+       style="display:inline-flex;align-items:center;padding:6px 14px;background:#d97706;
+              color:#fff;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;"
+       onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#d97706'">
+        ⚠️ {% translate "Cancel Scans" %}
+    </a>
 </li>
 {% endif %}
 {% endblock %}

@@ -4,7 +4,11 @@
 {% block object-tools-items %}
     {{ block.super }}
     {% if send_region_message_url %}
-    <a href="{{ send_region_message_url }}" class="btn btn-primary ms-2">
+    <a href="{{ send_region_message_url }}"
+       style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+              background:#4f46e5;color:#fff;border-radius:6px;font-size:13px;
+              font-weight:600;text-decoration:none;white-space:nowrap;"
+       onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
         📍 Отправить по области
     </a>
     {% endif %}

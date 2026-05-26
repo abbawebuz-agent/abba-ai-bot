@@ -3,9 +3,11 @@
 {% block object-tools-items %}
     {% if show_export_scanned_history %}
         <a href="{% url 'admin:core_qrcode_export_history_xlsx' %}?{{ request.GET.urlencode }}"
-           class="btn btn-sm btn-success"
-           style="margin-right: 0.5rem;">
-            Экспорт истории (Excel)
+           style="display:inline-flex;align-items:center;padding:5px 12px;background:#16a34a;
+                  color:#fff;border-radius:5px;font-size:13px;font-weight:600;
+                  text-decoration:none;margin-right:0.5rem;"
+           onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
+            📥 Экспорт истории (Excel)
         </a>
     {% endif %}
     {% if show_export_monthly %}

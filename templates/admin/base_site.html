@@ -26,19 +26,4 @@
 
 {% block extrajs %}
 {{ block.super }}
-<script>
-(function() {
-  var href = "{% if request.user.username == 'callcenter' %}/admin/dashboard/?tab=redemptions{% else %}/admin/dashboard/{% endif %}";
-  var li = document.createElement('li');
-  li.className = 'nav-item';
-  li.innerHTML = '<a href="' + href + '" style="display:inline-flex;align-items:center;gap:6px;margin:0 8px;padding:5px 14px;background:#417690;color:#fff;border-radius:4px;font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.background=\'#2b5068\'" onmouseout="this.style.background=\'#417690\'">'
-    + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>'
-    + ' Dashboard</a>';
-
-  var navbar = document.querySelector('ul.navbar-nav.ml-auto');
-  if (navbar) {
-    navbar.insertBefore(li, navbar.firstChild);
-  }
-})();
-</script>
 {% endblock %}
