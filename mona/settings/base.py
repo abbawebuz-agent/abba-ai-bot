@@ -371,7 +371,6 @@ LOGIN_URL = '/admin/login/'
 # ============================================================
 # UNFOLD Admin Configuration (modern branch)
 # ============================================================
-from django.utils.translation import gettext_lazy as _
 
 def environment_callback(request):
     """Admin panelda environment badge ko'rsatadi"""
@@ -438,122 +437,122 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": _("Boshqaruv"),
+                "title": "Boshqaruv",
                 "separator": True,
                 "collapsible": False,
                 "items": [
                     {
-                        "title": _("Bosh sahifa"),
+                        "title": "Bosh sahifa",
                         "icon": "home",
                         "link": "/admin/",
                     },
                     {
-                        "title": _("Foydalanuvchilar"),
+                        "title": "Foydalanuvchilar",
                         "icon": "group",
                         "link": "/admin/auth/user/",
                     },
                 ],
             },
             {
-                "title": _("Santexniklar"),
+                "title": "Santexniklar",
                 "separator": True,
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Telegram foydalanuvchilar"),
+                        "title": "Telegram foydalanuvchilar",
                         "icon": "person",
                         "link": "/admin/core/telegramuser/",
                     },
                     {
-                        "title": _("Sotuvchi IDlari"),
+                        "title": "Sotuvchi IDlari",
                         "icon": "badge",
                         "link": "/admin/core/sellerregistrationcode/",
                     },
                 ],
             },
             {
-                "title": _("Partiyalar & Tranzaksiyalar"),
+                "title": "Partiyalar & Tranzaksiyalar",
                 "separator": True,
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Partiyalar"),
+                        "title": "Partiyalar",
                         "icon": "inventory_2",
                         "link": "/admin/core/qrcodebatch/",
                     },
                     {
-                        "title": _("Skretch-kartalar"),
+                        "title": "Skretch-kartalar",
                         "icon": "qr_code",
                         "link": "/admin/core/qrcode/",
                     },
                     {
-                        "title": _("Sotuvchi tranzaksiyalari"),
+                        "title": "Sotuvchi tranzaksiyalari",
                         "icon": "payments",
                         "link": "/admin/core/sellerpointstransaction/",
                     },
                 ],
             },
             {
-                "title": _("Sovg'alar"),
+                "title": "Sovg'alar",
                 "separator": True,
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Sovg'alar ro'yxati"),
+                        "title": "Sovg'alar ro'yxati",
                         "icon": "card_giftcard",
                         "link": "/admin/core/gift/",
                     },
                     {
-                        "title": _("Sovg'alarni olish"),
+                        "title": "Sovg'alarni olish",
                         "icon": "redeem",
                         "link": "/admin/core/giftredemption/",
                     },
                 ],
             },
             {
-                "title": _("Xabarlar"),
+                "title": "Xabarlar",
                 "separator": True,
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Jonli efirlar"),
+                        "title": "Jonli efirlar",
                         "icon": "live_tv",
                         "link": "/admin/core/livestream/",
                     },
                     {
-                        "title": _("Videoinstruksiyalar"),
+                        "title": "Videoinstruksiyalar",
                         "icon": "play_circle",
                         "link": "/admin/core/videoinstruction/",
                     },
                     {
-                        "title": _("Maxfiylik siyosati"),
+                        "title": "Maxfiylik siyosati",
                         "icon": "policy",
                         "link": "/admin/core/privacypolicy/",
                     },
                     {
-                        "title": _("Admin kontakt sozlamalari"),
+                        "title": "Admin kontakt sozlamalari",
                         "icon": "contact_phone",
                         "link": "/admin/core/admincontactsettings/",
                     },
                 ],
             },
             {
-                "title": _("Tizim"),
+                "title": "Tizim",
                 "separator": True,
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Faollik tarixi"),
+                        "title": "Faollik tarixi",
                         "icon": "history",
                         "link": "/admin/core/activitylog/",
                     },
                     {
-                        "title": _("📥 Backup → Telegram"),
+                        "title": "📥 Backup → Telegram",
                         "icon": "cloud_upload",
                         "link": "/admin/backup-now/",
                     },
                     {
-                        "title": _("Promo-kodni yaratish"),
+                        "title": "Promo-kodni yaratish",
                         "icon": "qr_code_2",
                         "link": "/admin/core/qrcode/generate/",
                     },
