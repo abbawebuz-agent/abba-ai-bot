@@ -371,7 +371,6 @@ LOGIN_URL = '/admin/login/'
 # ============================================================
 # UNFOLD Admin Configuration (modern branch)
 # ============================================================
-from django.templatetags.static import static
 from django.utils.translation import gettext_lazy as _
 
 def environment_callback(request):
@@ -383,16 +382,16 @@ UNFOLD = {
     "SITE_HEADER": "JIP GROUP — Sodiqlik dasturi",
     "SITE_SUBHEADER": "Boshqaruv paneli",
     "SITE_URL": "/",
-    "SITE_ICON": lambda request: static("core_admin/img/favicon.png"),
-    "SITE_LOGO": lambda request: static("core_admin/img/jip_group_admin.jpg"),
-    "SITE_LOGO_COLLAPSED": lambda request: static("core_admin/img/favicon.png"),
+    "SITE_ICON": "/static/core_admin/img/favicon.png",
+    "SITE_LOGO": "/static/core_admin/img/jip_group_admin.jpg",
+    "SITE_LOGO_COLLAPSED": "/static/core_admin/img/favicon.png",
     "SITE_SYMBOL": "security",
     "SITE_FAVICONS": [
         {
             "rel": "icon",
             "sizes": "32x32",
             "type": "image/png",
-            "href": lambda request: static("core_admin/img/favicon.png"),
+            "href": "/static/core_admin/img/favicon.png",
         },
     ],
     "SHOW_HISTORY": True,
