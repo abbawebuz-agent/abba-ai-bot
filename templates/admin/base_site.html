@@ -4,8 +4,13 @@
 {% block extrahead %}
 {{ block.super }}
 <link rel="icon" type="image/png" href="{% static 'core_admin/img/favicon.png' %}">
+<!-- JIP Modern Theme 2026 — Claude Design implementation -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="{% static 'admin_ui/css/jip_theme_2026.css' %}">
 <style>
-  /* Причина изменения в истории (Simple History) — сохранять переносы строк */
+  /* Simple History: причина изменения — перенос строк */
   #change-history td:last-child,
   .object-history-table td:last-child { white-space: pre-line; }
 </style>

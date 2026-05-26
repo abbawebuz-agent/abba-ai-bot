@@ -1,0 +1,1268 @@
+/* ============================================================
+   JIP Admin — Modern SaaS Theme 2026
+   Claude Design implementation for django-unfold
+
+   Target: #nav-sidebar, #main, #header-inner, #content, forms, tables
+   Font: Geist (Google Fonts)
+   Color palette: Indigo-primary dark SaaS (Linear / Vercel / Stripe style)
+   ============================================================ */
+
+/* ── 1. FONT ──────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
+
+/* ── 2. DESIGN TOKENS ─────────────────────────────────────── */
+:root {
+  --jip-font: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --jip-mono: 'Geist Mono', ui-monospace, 'Menlo', monospace;
+
+  /* Light theme */
+  --jip-bg:          #f6f8fb;
+  --jip-surface-1:   #ffffff;
+  --jip-surface-2:   #f1f4f9;
+  --jip-surface-3:   #e8ecf4;
+  --jip-sidebar-bg:  #ffffff;
+  --jip-topbar-bg:   rgba(246, 248, 251, 0.85);
+  --jip-border:      #e5e8ef;
+  --jip-text:        #374151;
+  --jip-text-strong: #111827;
+  --jip-text-muted:  #6b7280;
+  --jip-text-dim:    #9ca3af;
+  --jip-primary:     #6366f1;
+  --jip-primary-h:   #4f46e5;
+  --jip-primary-s:   rgba(99,102,241,0.12);
+  --jip-success:     #10b981;
+  --jip-warning:     #f59e0b;
+  --jip-danger:      #ef4444;
+  --jip-info:        #3b82f6;
+  --jip-shadow:      0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  --jip-radius:      8px;
+  --jip-radius-lg:   12px;
+}
+
+/* Dark theme — activated by Alpine.js adding .dark to <html> */
+html.dark {
+  --jip-bg:          #0a0d14;
+  --jip-surface-1:   #11151e;
+  --jip-surface-2:   #161b27;
+  --jip-surface-3:   #1d2330;
+  --jip-sidebar-bg:  #070a11;
+  --jip-topbar-bg:   rgba(10, 13, 20, 0.85);
+  --jip-border:      rgba(255,255,255,0.07);
+  --jip-text:        #c5cad8;
+  --jip-text-strong: #e8eaf0;
+  --jip-text-muted:  #8a92a6;
+  --jip-text-dim:    #5a6275;
+  --jip-primary:     #6366f1;
+  --jip-primary-h:   #818cf8;
+  --jip-primary-s:   rgba(99,102,241,0.15);
+  --jip-shadow:      0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2);
+}
+
+/* ── 3. BASE ──────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: var(--jip-font) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--jip-bg) !important;
+  color: var(--jip-text) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── 4. SIDEBAR ───────────────────────────────────────────── */
+#nav-sidebar {
+  background-color: var(--jip-sidebar-bg) !important;
+  border-right: 1px solid var(--jip-border) !important;
+  transition: background-color 0.2s ease;
+}
+
+/* Sidebar top brand area */
+#nav-sidebar > div > div:first-child {
+  border-bottom: 1px solid var(--jip-border) !important;
+  background-color: var(--jip-sidebar-bg) !important;
+}
+
+/* Brand logo container */
+#nav-sidebar .border-b {
+  border-bottom-color: var(--jip-border) !important;
+  background-color: var(--jip-sidebar-bg) !important;
+}
+
+/* Sidebar content background */
+#nav-sidebar .flex.flex-col {
+  background-color: var(--jip-sidebar-bg) !important;
+}
+
+/* Sidebar dark overlay strip */
+html.dark #nav-sidebar .dark\:bg-base-950\/20 {
+  background-color: transparent !important;
+}
+
+/* ── Sidebar nav section headers ── */
+#nav-sidebar .app-auth.module h2 a,
+#nav-sidebar .app-core.module h2 a,
+#nav-sidebar [class*="app-"] h2 a,
+.app-auth.module h2 a,
+.app-core.module h2 a {
+  font-family: var(--jip-font) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.9px !important;
+  text-transform: uppercase !important;
+  color: var(--jip-text-dim) !important;
+  margin-top: 20px !important;
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+
+/* ── Sidebar nav links ── */
+#nav-sidebar li a,
+#nav-sidebar .flex.items-center.h-9\.5 {
+  font-family: var(--jip-font) !important;
+  font-size: 13.5px !important;
+  font-weight: 450 !important;
+  color: var(--jip-text-muted) !important;
+  border-radius: 6px !important;
+  padding: 7px 10px !important;
+  transition: background-color 0.12s ease, color 0.12s ease !important;
+  text-decoration: none !important;
+}
+
+#nav-sidebar li a:hover {
+  background-color: var(--jip-primary-s) !important;
+  color: var(--jip-text-strong) !important;
+}
+
+/* Active nav link (Unfold adds current class) */
+#nav-sidebar li a.active,
+#nav-sidebar li.selected a,
+#nav-sidebar li a[class*="text-primary"] {
+  background-color: var(--jip-primary-s) !important;
+  color: var(--jip-primary) !important;
+  font-weight: 550 !important;
+}
+
+/* Nav item spacing */
+#nav-sidebar ol.flex.flex-col.gap-1 {
+  gap: 2px !important;
+}
+
+/* ── Sidebar groups ── */
+#nav-sidebar .h-0.flex-grow {
+  padding: 0 8px 16px 8px !important;
+}
+
+#nav-sidebar .px-6 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ── 5. TOPBAR ────────────────────────────────────────────── */
+/* Topbar wrapper */
+#main > div:first-child {
+  background-color: var(--jip-topbar-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 40 !important;
+}
+
+html:not(.dark) #main > div:first-child {
+  background-color: rgba(246,248,251,0.92) !important;
+}
+
+html.dark #main > div:first-child {
+  background-color: rgba(10,13,20,0.88) !important;
+}
+
+/* Topbar title */
+#header-inner h1 {
+  font-family: var(--jip-font) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--jip-text-strong) !important;
+  letter-spacing: -0.2px !important;
+}
+
+/* Topbar divider */
+#header-inner .block.bg-base-200,
+#header-inner span.bg-base-200 {
+  background-color: var(--jip-border) !important;
+  width: 1px !important;
+  height: 20px !important;
+}
+
+html.dark #header-inner .block.bg-base-200,
+html.dark #header-inner span.bg-base-200 {
+  background-color: var(--jip-border) !important;
+}
+
+/* Topbar icons */
+#header-inner .material-symbols-outlined {
+  color: var(--jip-text-muted) !important;
+  cursor: pointer !important;
+  transition: color 0.12s ease !important;
+}
+
+#header-inner .material-symbols-outlined:hover {
+  color: var(--jip-text-strong) !important;
+}
+
+/* Theme dropdown */
+#header-inner nav.absolute {
+  background-color: var(--jip-surface-1) !important;
+  border: 1px solid var(--jip-border) !important;
+  box-shadow: var(--jip-shadow), 0 8px 24px rgba(0,0,0,0.12) !important;
+  border-radius: 8px !important;
+}
+
+#header-inner nav.absolute a {
+  color: var(--jip-text) !important;
+  font-size: 13px !important;
+  border-radius: 5px !important;
+}
+
+#header-inner nav.absolute a:hover {
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-strong) !important;
+}
+
+/* ── 6. MAIN CONTENT AREA ─────────────────────────────────── */
+#main {
+  background-color: var(--jip-bg) !important;
+  min-height: 100vh;
+}
+
+#content {
+  font-family: var(--jip-font) !important;
+}
+
+/* Breadcrumb area */
+#main .container.flex.items-center {
+  font-family: var(--jip-font) !important;
+}
+
+/* ── 7. DASHBOARD — MODEL INDEX TABLE ─────────────────────── */
+/* App section wrapper */
+.app-auth.module > div,
+.app-core.module > div,
+.module > div[class*="bg-base"] {
+  background-color: var(--jip-surface-1) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  border: 1px solid var(--jip-border) !important;
+  box-shadow: var(--jip-shadow) !important;
+  overflow: hidden !important;
+  margin-bottom: 16px !important;
+}
+
+/* Model list table */
+.app-auth.module table,
+.app-core.module table,
+#content-main table.border {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Table header (app name) */
+.app-auth.module caption a,
+.app-core.module caption a,
+#content-main caption a.section {
+  font-family: var(--jip-font) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  color: var(--jip-text-dim) !important;
+  display: block !important;
+  padding: 14px 16px 10px !important;
+}
+
+/* Table rows */
+#content-main .module table tr,
+.app-auth.module table tr,
+.app-core.module table tr {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  transition: background-color 0.1s ease !important;
+}
+
+#content-main .module table tr:hover,
+.app-auth.module table tr:hover,
+.app-core.module table tr:hover {
+  background-color: var(--jip-primary-s) !important;
+}
+
+/* Table cells */
+#content-main .module table th,
+#content-main .module table td {
+  border-color: var(--jip-border) !important;
+  color: var(--jip-text) !important;
+  font-family: var(--jip-font) !important;
+  font-size: 13.5px !important;
+  padding: 10px 16px !important;
+}
+
+#content-main .module table th a,
+#content-main .module table td a:not(.addlink):not(.changelink):not(.viewlink) {
+  color: var(--jip-text-strong) !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+}
+
+#content-main .module table td a:not(.addlink):not(.changelink):not(.viewlink):hover {
+  color: var(--jip-primary) !important;
+}
+
+/* ── 8. CHANGELIST TABLE ──────────────────────────────────── */
+#result_list {
+  background-color: var(--jip-surface-1) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--jip-shadow) !important;
+  font-family: var(--jip-font) !important;
+}
+
+#result_list thead th {
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-dim) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.7px !important;
+  text-transform: uppercase !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  padding: 10px 14px !important;
+  white-space: nowrap !important;
+}
+
+#result_list thead th a {
+  color: var(--jip-text-dim) !important;
+  text-decoration: none !important;
+}
+
+#result_list thead th a:hover {
+  color: var(--jip-text-strong) !important;
+}
+
+#result_list tbody tr {
+  border-bottom: 1px solid var(--jip-border) !important;
+  transition: background-color 0.1s ease !important;
+}
+
+#result_list tbody tr:hover {
+  background-color: var(--jip-primary-s) !important;
+}
+
+#result_list tbody td,
+#result_list tbody th {
+  padding: 11px 14px !important;
+  color: var(--jip-text) !important;
+  font-size: 13.5px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+}
+
+#result_list tbody td a {
+  color: var(--jip-text-strong) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+}
+
+#result_list tbody td a:hover {
+  color: var(--jip-primary) !important;
+}
+
+/* Checkbox column */
+#result_list thead th.action-checkbox,
+#result_list tbody td.action-checkbox {
+  padding: 10px 12px !important;
+}
+
+/* Table row selected */
+#result_list tbody tr.selected {
+  background-color: var(--jip-primary-s) !important;
+}
+
+/* ── 9. CARDS ─────────────────────────────────────────────── */
+/* Unfold KPI cards */
+.kpi-card,
+.module.kpi,
+[class*="kpi"],
+div[class*="card"] {
+  font-family: var(--jip-font) !important;
+}
+
+/* Generic module (fieldset replacement) */
+.module {
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--jip-shadow) !important;
+  background-color: var(--jip-surface-1) !important;
+  margin-bottom: 20px !important;
+}
+
+/* ── 10. FORM ELEMENTS ────────────────────────────────────── */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="tel"],
+textarea,
+select {
+  font-family: var(--jip-font) !important;
+  font-size: 13.5px !important;
+  background-color: var(--jip-surface-1) !important;
+  color: var(--jip-text-strong) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius) !important;
+  padding: 8px 12px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  border-color: var(--jip-primary) !important;
+  box-shadow: 0 0 0 3px var(--jip-primary-s) !important;
+  background-color: var(--jip-surface-1) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--jip-text-dim) !important;
+}
+
+/* Unfold form inputs — override Tailwind classes */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-strong) !important;
+  border-color: var(--jip-border) !important;
+}
+
+/* Labels */
+label {
+  font-family: var(--jip-font) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--jip-text-strong) !important;
+}
+
+/* Help text */
+.help, .helptext, p.help {
+  font-size: 12px !important;
+  color: var(--jip-text-muted) !important;
+  margin-top: 3px !important;
+}
+
+/* Form fieldsets */
+fieldset {
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background-color: var(--jip-surface-1) !important;
+  box-shadow: var(--jip-shadow) !important;
+  margin-bottom: 20px !important;
+}
+
+fieldset h2 {
+  font-family: var(--jip-font) !important;
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-dim) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.9px !important;
+  text-transform: uppercase !important;
+  padding: 12px 18px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  margin: 0 !important;
+}
+
+/* Form row */
+.form-row, .field-row {
+  border-bottom: 1px solid var(--jip-border) !important;
+  padding: 14px 18px !important;
+}
+
+.form-row:last-child, .field-row:last-child {
+  border-bottom: none !important;
+}
+
+/* Submit row */
+.submit-row {
+  background-color: var(--jip-surface-2) !important;
+  border-top: 1px solid var(--jip-border) !important;
+  padding: 14px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  border-radius: 0 0 var(--jip-radius-lg) var(--jip-radius-lg) !important;
+}
+
+/* ── 11. BUTTONS ──────────────────────────────────────────── */
+.submit-row input[type="submit"],
+.submit-row button,
+input[type="submit"] {
+  font-family: var(--jip-font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 8px 18px !important;
+  border-radius: var(--jip-radius) !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease !important;
+  letter-spacing: 0.1px !important;
+}
+
+input[type="submit"][name="_save"],
+input[type="submit"][value*="Save"],
+input[type="submit"][value*="Saqlash"],
+.submit-row input[type="submit"]:first-of-type {
+  background-color: var(--jip-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px rgba(99,102,241,0.3) !important;
+}
+
+input[type="submit"][name="_save"]:hover,
+.submit-row input[type="submit"]:first-of-type:hover {
+  background-color: var(--jip-primary-h) !important;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+input[type="submit"][name="_addanother"],
+input[type="submit"][name="_continue"] {
+  background-color: var(--jip-surface-3) !important;
+  color: var(--jip-text-strong) !important;
+  border: 1px solid var(--jip-border) !important;
+  box-shadow: none !important;
+}
+
+input[type="submit"][name="_addanother"]:hover,
+input[type="submit"][name="_continue"]:hover {
+  background-color: var(--jip-surface-2) !important;
+}
+
+input[type="submit"][name="_delete_or_confirm"],
+.deletelink {
+  background-color: rgba(239,68,68,0.1) !important;
+  color: var(--jip-danger) !important;
+  border: 1px solid rgba(239,68,68,0.25) !important;
+}
+
+/* ── Action links (Add / Change / View) ── */
+a.addlink,
+td .addlink,
+.object-tools a.addlink {
+  background-color: var(--jip-primary) !important;
+  color: #fff !important;
+  font-family: var(--jip-font) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: background-color 0.12s ease !important;
+}
+
+a.addlink:hover, td .addlink:hover {
+  background-color: var(--jip-primary-h) !important;
+  color: #fff !important;
+}
+
+a.changelink, td .changelink {
+  background-color: var(--jip-surface-3) !important;
+  color: var(--jip-text-strong) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: background-color 0.12s ease !important;
+  border: 1px solid var(--jip-border) !important;
+}
+
+a.changelink:hover, td .changelink:hover {
+  background-color: var(--jip-primary-s) !important;
+  color: var(--jip-primary) !important;
+  border-color: var(--jip-primary) !important;
+}
+
+a.viewlink, td .viewlink {
+  color: var(--jip-text-muted) !important;
+  font-size: 12.5px !important;
+  text-decoration: none !important;
+  transition: color 0.12s ease !important;
+}
+
+a.viewlink:hover, td .viewlink:hover {
+  color: var(--jip-primary) !important;
+}
+
+/* Object tools (top right action buttons) */
+.object-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  list-style: none !important;
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+}
+
+.object-tools li {
+  margin: 0 !important;
+}
+
+.object-tools a {
+  font-family: var(--jip-font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 16px !important;
+  border-radius: 7px !important;
+  text-decoration: none !important;
+  background-color: var(--jip-primary) !important;
+  color: #fff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease !important;
+  box-shadow: 0 1px 3px rgba(99,102,241,0.25) !important;
+}
+
+.object-tools a:hover {
+  background-color: var(--jip-primary-h) !important;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.35) !important;
+  color: #fff !important;
+}
+
+/* ── 12. PAGINATION ───────────────────────────────────────── */
+.paginator {
+  font-family: var(--jip-font) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 16px 0 8px !important;
+  color: var(--jip-text-muted) !important;
+  font-size: 13px !important;
+  flex-wrap: wrap !important;
+}
+
+.paginator a,
+.paginator .this-page {
+  padding: 6px 11px !important;
+  border-radius: 6px !important;
+  min-width: 32px !important;
+  text-align: center !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+}
+
+.paginator a {
+  background-color: var(--jip-surface-1) !important;
+  color: var(--jip-text) !important;
+  border: 1px solid var(--jip-border) !important;
+}
+
+.paginator a:hover {
+  background-color: var(--jip-primary-s) !important;
+  color: var(--jip-primary) !important;
+  border-color: var(--jip-primary) !important;
+}
+
+.paginator .this-page {
+  background-color: var(--jip-primary) !important;
+  color: #fff !important;
+  border: 1px solid transparent !important;
+}
+
+/* ── 13. BREADCRUMBS ──────────────────────────────────────── */
+.breadcrumbs, div.breadcrumbs {
+  font-family: var(--jip-font) !important;
+  font-size: 12.5px !important;
+  color: var(--jip-text-muted) !important;
+  padding: 8px 0 !important;
+  background: transparent !important;
+}
+
+.breadcrumbs a {
+  color: var(--jip-text-muted) !important;
+  text-decoration: none !important;
+}
+
+.breadcrumbs a:hover {
+  color: var(--jip-primary) !important;
+}
+
+.breadcrumbs > a + a::before,
+.breadcrumbs > span::before {
+  content: '/' !important;
+  margin: 0 6px !important;
+  color: var(--jip-text-dim) !important;
+}
+
+/* ── 14. SEARCH BAR ───────────────────────────────────────── */
+#changelist-search {
+  margin-bottom: 16px !important;
+}
+
+#changelist-search input[type="text"] {
+  border: 1px solid var(--jip-border) !important;
+  border-radius: 7px !important;
+  font-size: 13.5px !important;
+  padding: 8px 12px !important;
+  background-color: var(--jip-surface-1) !important;
+  color: var(--jip-text-strong) !important;
+  font-family: var(--jip-font) !important;
+  min-width: 280px !important;
+}
+
+#changelist-search input[type="text"]:focus {
+  border-color: var(--jip-primary) !important;
+  box-shadow: 0 0 0 3px var(--jip-primary-s) !important;
+}
+
+#changelist-search input[type="submit"] {
+  background-color: var(--jip-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: var(--jip-font) !important;
+}
+
+#changelist-search input[type="submit"]:hover {
+  background-color: var(--jip-primary-h) !important;
+}
+
+/* ── 15. FILTER SIDEBAR ───────────────────────────────────── */
+#changelist-filter {
+  background-color: var(--jip-surface-1) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  box-shadow: var(--jip-shadow) !important;
+  font-family: var(--jip-font) !important;
+  overflow: hidden !important;
+}
+
+#changelist-filter h2 {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.9px !important;
+  text-transform: uppercase !important;
+  color: var(--jip-text-dim) !important;
+  background-color: var(--jip-surface-2) !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  margin: 0 !important;
+}
+
+#changelist-filter h3 {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--jip-text-muted) !important;
+  margin: 12px 0 4px !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+#changelist-filter ul {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#changelist-filter li a {
+  display: block !important;
+  padding: 5px 8px !important;
+  border-radius: 5px !important;
+  color: var(--jip-text) !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
+  transition: background-color 0.1s ease !important;
+}
+
+#changelist-filter li a:hover {
+  background-color: var(--jip-primary-s) !important;
+  color: var(--jip-primary) !important;
+}
+
+#changelist-filter li.selected a {
+  background-color: var(--jip-primary-s) !important;
+  color: var(--jip-primary) !important;
+  font-weight: 600 !important;
+}
+
+#changelist-filter .card-body, #changelist-filter > * {
+  padding: 12px 14px !important;
+}
+
+/* ── 16. ACTIONS BAR ──────────────────────────────────────── */
+.actions {
+  background-color: var(--jip-surface-2) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius) !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 14px !important;
+  font-family: var(--jip-font) !important;
+  font-size: 13px !important;
+}
+
+.actions select {
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  padding: 6px 10px !important;
+}
+
+.actions button, .actions input[type="submit"] {
+  background-color: var(--jip-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: var(--jip-font) !important;
+}
+
+/* ── 17. MESSAGES / ALERTS ────────────────────────────────── */
+ul.messagelist {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 0 16px !important;
+}
+
+ul.messagelist li {
+  padding: 12px 16px !important;
+  border-radius: var(--jip-radius) !important;
+  font-family: var(--jip-font) !important;
+  font-size: 13.5px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  margin-bottom: 8px !important;
+}
+
+ul.messagelist li.success {
+  background-color: rgba(16,185,129,0.1) !important;
+  color: #065f46 !important;
+  border: 1px solid rgba(16,185,129,0.25) !important;
+}
+
+html.dark ul.messagelist li.success {
+  background-color: rgba(16,185,129,0.12) !important;
+  color: #6ee7b7 !important;
+}
+
+ul.messagelist li.warning {
+  background-color: rgba(245,158,11,0.1) !important;
+  color: #92400e !important;
+  border: 1px solid rgba(245,158,11,0.25) !important;
+}
+
+html.dark ul.messagelist li.warning {
+  background-color: rgba(245,158,11,0.12) !important;
+  color: #fcd34d !important;
+}
+
+ul.messagelist li.error {
+  background-color: rgba(239,68,68,0.1) !important;
+  color: #991b1b !important;
+  border: 1px solid rgba(239,68,68,0.25) !important;
+}
+
+html.dark ul.messagelist li.error {
+  background-color: rgba(239,68,68,0.12) !important;
+  color: #fca5a5 !important;
+}
+
+/* ── 18. INLINE GROUPS ────────────────────────────────────── */
+.inline-group {
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--jip-shadow) !important;
+  background-color: var(--jip-surface-1) !important;
+  margin-bottom: 20px !important;
+}
+
+.inline-group h2 {
+  font-family: var(--jip-font) !important;
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-dim) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.9px !important;
+  text-transform: uppercase !important;
+  padding: 12px 18px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  margin: 0 !important;
+}
+
+.inline-group .tabular.inline-related thead th {
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-dim) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.7px !important;
+  text-transform: uppercase !important;
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+}
+
+.inline-group .tabular.inline-related tbody tr:hover {
+  background-color: var(--jip-primary-s) !important;
+}
+
+.add-row a {
+  color: var(--jip-primary) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: var(--jip-font) !important;
+}
+
+/* ── 19. LOGIN PAGE ───────────────────────────────────────── */
+body.login {
+  background: linear-gradient(135deg, #060810 0%, #0d1120 50%, #060810 100%) !important;
+  min-height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Unfold login container */
+#container.login-container,
+.login-container,
+#content-main.login {
+  max-width: 400px !important;
+}
+
+/* ── 20. CONTENT HEADER (page title) ─────────────────────── */
+#content-main > h1,
+#content h1:first-child,
+.content-header h1 {
+  font-family: var(--jip-font) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--jip-text-strong) !important;
+  letter-spacing: -0.4px !important;
+  margin-bottom: 20px !important;
+}
+
+/* ── 21. RECENT ACTIONS ───────────────────────────────────── */
+#content-related,
+#recent-actions-module {
+  background-color: var(--jip-surface-1) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  box-shadow: var(--jip-shadow) !important;
+  overflow: hidden !important;
+  font-family: var(--jip-font) !important;
+}
+
+#recent-actions-module h2 {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.9px !important;
+  text-transform: uppercase !important;
+  color: var(--jip-text-dim) !important;
+  background-color: var(--jip-surface-2) !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  margin: 0 !important;
+}
+
+#recent-actions-module .actionlist {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#recent-actions-module .actionlist li {
+  padding: 10px 16px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  font-size: 13px !important;
+  color: var(--jip-text) !important;
+  transition: background-color 0.1s ease !important;
+}
+
+#recent-actions-module .actionlist li:last-child {
+  border-bottom: none !important;
+}
+
+#recent-actions-module .actionlist li:hover {
+  background-color: var(--jip-primary-s) !important;
+}
+
+#recent-actions-module .actionlist a {
+  color: var(--jip-text-strong) !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+}
+
+#recent-actions-module .actionlist a:hover {
+  color: var(--jip-primary) !important;
+}
+
+#recent-actions-module .actionlist .mini {
+  font-size: 11.5px !important;
+  color: var(--jip-text-muted) !important;
+  font-family: var(--jip-mono) !important;
+}
+
+/* ── 22. SCROLLBAR ────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--jip-border) !important;
+  border-radius: 3px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--jip-text-dim) !important;
+}
+
+/* ── 23. SIMPLE HISTORY TABLE ─────────────────────────────── */
+.object-history-table {
+  font-family: var(--jip-font) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  overflow: hidden !important;
+}
+
+.object-history-table thead th {
+  background-color: var(--jip-surface-2) !important;
+  color: var(--jip-text-dim) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.7px !important;
+  text-transform: uppercase !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+}
+
+.object-history-table tbody td {
+  padding: 10px 14px !important;
+  color: var(--jip-text) !important;
+  font-size: 13px !important;
+  border-bottom: 1px solid var(--jip-border) !important;
+  white-space: pre-line !important;
+}
+
+/* ── 24. UNFOLD-SPECIFIC OVERRIDES ───────────────────────── */
+
+/* Unfold Tailwind dark mode — force our colors */
+html.dark .dark\:bg-base-900 {
+  background-color: var(--jip-surface-1) !important;
+}
+
+html.dark .dark\:bg-base-800 {
+  background-color: var(--jip-surface-2) !important;
+}
+
+html.dark .dark\:bg-base-950\/20 {
+  background-color: transparent !important;
+}
+
+html.dark body.antialiased {
+  background-color: var(--jip-bg) !important;
+}
+
+html.dark #page {
+  background-color: var(--jip-bg) !important;
+}
+
+/* Dark bg overrides for table rows */
+html.dark .bg-white {
+  background-color: var(--jip-surface-1) !important;
+}
+
+html.dark .dark\:border-base-800 {
+  border-color: var(--jip-border) !important;
+}
+
+/* Sidebar dark override */
+html.dark #nav-sidebar.dark\:bg-base-900 {
+  background-color: var(--jip-sidebar-bg) !important;
+}
+
+html.dark #nav-sidebar {
+  background-color: var(--jip-sidebar-bg) !important;
+}
+
+/* Topbar dark override */
+html.dark #main > div.border-b {
+  background-color: rgba(10,13,20,0.88) !important;
+  border-color: var(--jip-border) !important;
+}
+
+/* Light mode topbar */
+html:not(.dark) #main > div.border-b {
+  background-color: rgba(246,248,251,0.95) !important;
+  border-color: var(--jip-border) !important;
+}
+
+/* Dark text variants */
+html.dark .dark\:text-font-important-dark,
+html.dark .text-font-important-light {
+  color: var(--jip-text-strong) !important;
+}
+
+html.dark .dark\:text-font-default-dark,
+html.dark .text-font-default-light {
+  color: var(--jip-text) !important;
+}
+
+/* ── 25. DASHBOARD CALLBACK KPI ───────────────────────────── */
+/* If Unfold dashboard template renders custom divs */
+[class*="kpi"],
+.kpi-wrapper,
+.stats-grid {
+  font-family: var(--jip-font) !important;
+}
+
+/* ── 26. QR GENERATE PAGE (custom) ───────────────────────── */
+.qr-generate-form {
+  background-color: var(--jip-surface-1) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+  padding: 24px !important;
+}
+
+/* ── 27. BADGE SYSTEM (custom colors in templates) ────────── */
+.badge-success { background: rgba(16,185,129,0.12) !important; color: #059669 !important; border: 1px solid rgba(16,185,129,0.2) !important; }
+.badge-warning { background: rgba(245,158,11,0.12) !important; color: #d97706 !important; border: 1px solid rgba(245,158,11,0.2) !important; }
+.badge-danger  { background: rgba(239,68,68,0.12) !important;  color: #dc2626 !important; border: 1px solid rgba(239,68,68,0.2) !important; }
+.badge-info    { background: rgba(59,130,246,0.12) !important; color: #2563eb !important; border: 1px solid rgba(59,130,246,0.2) !important; }
+.badge-primary { background: rgba(99,102,241,0.12) !important; color: #6366f1 !important; border: 1px solid rgba(99,102,241,0.2) !important; }
+.badge-neutral { background: rgba(107,114,128,0.1) !important; color: #6b7280 !important; border: 1px solid rgba(107,114,128,0.15) !important; }
+
+html.dark .badge-success { color: #6ee7b7 !important; }
+html.dark .badge-warning { color: #fcd34d !important; }
+html.dark .badge-danger  { color: #fca5a5 !important; }
+html.dark .badge-info    { color: #93c5fd !important; }
+html.dark .badge-primary { color: #a5b4fc !important; }
+html.dark .badge-neutral { color: #9ca3af !important; }
+
+/* ── 28. STATUS CHIPS (inline spans in templates) ─────────── */
+span[class*="status-"],
+span.pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  padding: 3px 9px !important;
+  border-radius: 999px !important;
+  font-family: var(--jip-font) !important;
+  white-space: nowrap !important;
+}
+
+span.status-active, span.pill-success { background: rgba(16,185,129,0.12); color: #059669; }
+span.status-pending, span.pill-warning { background: rgba(245,158,11,0.12); color: #d97706; }
+span.status-cancelled, span.status-inactive, span.pill-danger { background: rgba(239,68,68,0.12); color: #dc2626; }
+
+/* ── 29. CONTENT PADDING ──────────────────────────────────── */
+.px-4.pb-8.lg\:px-8,
+.px-4.pb-8 {
+  padding-top: 8px !important;
+}
+
+/* ── 30. ANIMATION ────────────────────────────────────────── */
+@keyframes jip-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#content {
+  animation: jip-fade-in 0.2s ease !important;
+}
+
+/* ── 31. SEND MESSAGE CUSTOM PAGES ────────────────────────── */
+.send-message-form {
+  background-color: var(--jip-surface-1) !important;
+  border: 1px solid var(--jip-border) !important;
+  border-radius: var(--jip-radius-lg) !important;
+}
+
+.message-preview {
+  background: linear-gradient(135deg, var(--jip-primary-s), rgba(79,70,229,0.1)) !important;
+  border: 1px solid rgba(99,102,241,0.2) !important;
+  border-radius: var(--jip-radius-lg) !important;
+}
+
+/* ── 32. RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 1280px) {
+  #nav-sidebar {
+    width: 240px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #content {
+    padding: 12px 16px !important;
+  }
+
+  #result_list {
+    overflow-x: auto !important;
+    display: block !important;
+  }
+
+  .submit-row {
+    padding: 12px 16px !important;
+  }
+
+  fieldset h2 {
+    font-size: 11px !important;
+  }
+}

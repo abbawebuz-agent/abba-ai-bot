@@ -387,6 +387,7 @@ UNFOLD = {
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "DASHBOARD_CALLBACK": "core.admin_callbacks.dashboard_callback",
+    # Indigo primary palette (matches Claude Design tokens)
     "COLORS": {
         "primary": {
             "50":  "238 242 255",
