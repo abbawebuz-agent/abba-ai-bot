@@ -5,7 +5,9 @@ import os
 from celery import Celery
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mona.settings')
+# MUHIM: 'mona.settings.production' ishlatish kerak — 'mona.settings' bo'sh paket!
+# mona/__init__.py bu faylni import qiladi, shuning uchun to'g'ri default qo'yish kerak.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mona.settings.production')
 
 app = Celery('mona')
 
