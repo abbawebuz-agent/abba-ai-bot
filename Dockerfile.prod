@@ -31,8 +31,11 @@ RUN cd frontend && npm install
 # Копируем весь проект
 COPY . .
 
-# React/Vite build
+# React/Vite build (panel frontend)
 RUN cd frontend && npm run build
+
+# Admin SPA: JSX → JS (esbuild, Babel runtime kerak emas)
+RUN node scripts/build_admin_spa.js
 
 # Directories for media & static
 RUN mkdir -p /app/media /app/staticfiles
