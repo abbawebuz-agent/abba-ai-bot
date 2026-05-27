@@ -51,22 +51,15 @@ window.DJANGO_STATS = {
 
 <div id="root"></div>
 
-<!-- React 18 (Babel runtime kerak emas — JSX build paytida compile qilingan) -->
-<script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<!-- React 18 self-hosted (no CDN dependency) -->
+<script src="{% static 'admin_ui/spa/react.production.min.js' %}"></script>
+<script src="{% static 'admin_ui/spa/react-dom.production.min.js' %}"></script>
 
-<!-- Mock data -->
+<!-- Mock / seed data -->
 <script src="{% static 'admin_ui/spa/data.js' %}"></script>
 
-<!-- Pre-compiled SPA components (esbuild: JSX → JS, order matters!) -->
-<script src="{% static 'admin_ui/spa/tweaks-panel.js' %}"></script>
-<script src="{% static 'admin_ui/spa/ui.js' %}"></script>
-<script src="{% static 'admin_ui/spa/shell.js' %}"></script>
-<script src="{% static 'admin_ui/spa/pages-core.js' %}"></script>
-<script src="{% static 'admin_ui/spa/pages-qr.js' %}"></script>
-<script src="{% static 'admin_ui/spa/pages-comm.js' %}"></script>
-<script src="{% static 'admin_ui/spa/pages-meta.js' %}"></script>
-<script src="{% static 'admin_ui/spa/app.js' %}"></script>
+<!-- Single compiled SPA bundle (all JSX → JS, esbuild) -->
+<script src="{% static 'admin_ui/spa/bundle.js' %}"></script>
 
 </body>
 </html>
