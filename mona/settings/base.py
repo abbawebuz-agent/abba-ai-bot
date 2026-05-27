@@ -363,10 +363,11 @@ SIMPLE_JWT = {
 }
 
 # CSRF для Telegram Web App
+_railway_public_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
 CSRF_TRUSTED_ORIGINS = [
     "https://web.telegram.org",
     "https://telegram.org",
-]
+] + ([f"https://{_railway_public_domain}"] if _railway_public_domain else [])
 
 # Admin redirect after login
 LOGIN_REDIRECT_URL = '/admin/'

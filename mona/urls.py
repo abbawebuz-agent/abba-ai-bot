@@ -723,6 +723,11 @@ def root_redirect(request):
     return redirect('/admin/')
 
 
+def health_check(request):
+    """Railway/Docker healthcheck endpoint — no auth, always 200."""
+    return HttpResponse('OK', content_type='text/plain', status=200)
+
+
 def admin_backup_test_view(request):
     """Test BACKUP_CHANNEL_ID + bot ulanish (diagnostika)."""
     import io
@@ -820,6 +825,7 @@ def admin_backup_now_view(request):
 
 urlpatterns = [
     path('', root_redirect, name='root'),
+    path('health/', health_check, name='health_check'),
     path('i18n/', include('django.conf.urls.i18n')),
     path('webhook/<str:token>/', telegram_webhook_view, name='telegram_webhook'),
     path('admin/dashboard/export/', admin.site.admin_view(dashboard_export_view), name='dashboard_export'),
