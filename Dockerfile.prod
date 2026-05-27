@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir -r requirements-prod.txt
 
 # Node.js dependencies (cache-friendly layer)
 COPY frontend/package.json frontend/package.json
-RUN cd frontend && npm ci --prefer-offline
+RUN cd frontend && npm install
 
 # Копируем весь проект
 COPY . .
