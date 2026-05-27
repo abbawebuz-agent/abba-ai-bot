@@ -15,20 +15,39 @@ window.JIP = {
     audit_total:    0,
   },
 
-  users: [],
-  batches: [],
-  qrcodes: [],
-  stores: [],
-  gifts: [],
-  redemptions: [],
-  transactions: [],
-  sellerCodes: [],
-  livestreams: [],
-  videos: [],
-  activity: [],
-  regionLog: [],
-  monthlyLog: [],
-  contacts: [],
+  users:          [],
+  batches:        [],
+  qrcodes:        [],
+  stores:         [],
+  gifts:          [],
+  redemptions:    [],
+  transactions:   [],
+  txns:           [],   // alias used by pages-comm TransactionsPage
+  sellerCodes:    [],
+  livestreams:    [],
+  videos:         [],
+  activity:       [],
+  regionLog:      [],
+  monthlyLog:     [],
+  contacts:       [],
+
+  // Admin auth pages
+  authUsers:      [],
+  authGroups:     [],
+
+  // Dashboard — recent actions widget
+  recentActions:  [],
+
+  // Messaging pages
+  regions:           [],
+  districtsByRegion: {},
+  regionMessages:    [],
+
+  // Meta pages
+  adminContacts:  [],
+  log:            [],
+  policies:       [],
+  reminderLogs:   [],
 
   // Chart seed data (weekly scans, monthly registrations)
   charts: {
