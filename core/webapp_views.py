@@ -145,33 +145,19 @@ def get_translations(request):
 @permission_classes([AllowAny])
 @no_cache_response
 def get_gifts(request):
-    """Получает список активных подарков с фильтрацией по типу пользователя."""
+    """Получает список активных подарков."""
     try:
         telegram_id = request.GET.get('telegram_id')
         language = 'uz_latin'
 
-        # Базовый запрос для активных подарков
         gifts_query = Gift.objects.filter(is_active=True)
 
-        # Если передан telegram_id, фильтруем по типу пользователя и берём язык один раз (избегаем N+1 в сериализаторе)
         if telegram_id:
             try:
                 user = TelegramUser.objects.get(telegram_id=int(telegram_id))
                 language = user.language or 'uz_latin'
-                # Показываем подарки для типа пользователя или без типа (для всех)
-                if user.user_type:
-                    gifts_query = gifts_query.filter(
-                        models.Q(user_type=user.user_type) | models.Q(user_type__isnull=True)
-                    )
-                else:
-                    # Если у пользователя нет типа, показываем только подарки без типа
-                    gifts_query = gifts_query.filter(user_type__isnull=True)
             except TelegramUser.DoesNotExist:
-                # Если пользователь не найден, показываем только подарки без типа
-                gifts_query = gifts_query.filter(user_type__isnull=True)
-        else:
-            # Если telegram_id не передан, показываем только подарки без типа
-            gifts_query = gifts_query.filter(user_type__isnull=True)
+                pass
 
         gifts = gifts_query.order_by('order', 'points_cost')
         serializer = GiftSerializer(
@@ -230,14 +216,7 @@ def request_gift(request):
         user = TelegramUser.objects.get(telegram_id=int(telegram_id))
         gift = Gift.objects.get(id=gift_id, is_active=True)
         
-        # Проверяем, доступен ли подарок для типа пользователя
-        if gift.user_type and gift.user_type != user.user_type:
-            from bot.translations import get_text
-            error_message = get_text(user, 'GIFT_NOT_AVAILABLE_FOR_USER_TYPE')
-            return Response(
-                {'error': error_message},
-                status=status.HTTP_403_FORBIDDEN
-            )
+
         
         # Проверяем баланс (вычисляемый, без кеша для точности)
         current_points = user.calculate_points(force=True)
