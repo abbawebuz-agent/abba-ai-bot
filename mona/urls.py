@@ -822,23 +822,26 @@ def admin_backup_now_view(request):
     return redirect('admin:index')
 
 
-def jip_admin_spa_view(request):
+def jip_admin_spa_view(request, **kwargs):
     """JIP Admin SPA — serves the React admin panel with real DB stats injected."""
     if not request.user.is_authenticated or not request.user.is_staff:
-        return redirect(f'/admin/login/?next=/jip-admin/')
-    from core.models import QRCodeBatch, SellerPointsTransaction, ActivityLog
-    stats = {
-        'users_total':    TelegramUser.objects.count(),
-        'users_santenik': TelegramUser.objects.filter(user_type='santenik').count(),
-        'users_sotuvchi': TelegramUser.objects.filter(user_type='sotuvchi').count(),
-        'batches_total':  QRCodeBatch.objects.count(),
-        'batches_active': QRCodeBatch.objects.filter(status='active').count(),
-        'qr_total':       QRCode.objects.count(),
-        'qr_scanned':     QRCode.objects.filter(is_used=True).count(),
-        'gifts_pending':  GiftRedemption.objects.filter(status='pending').count(),
-        'txns_total':     SellerPointsTransaction.objects.count(),
-        'audit_total':    ActivityLog.objects.count(),
-    }
+        return redirect('/admin/login/?next=/jip-admin/')
+    try:
+        from core.models import QRCodeBatch, SellerPointsTransaction, ActivityLog
+        stats = {
+            'users_total':    TelegramUser.objects.count(),
+            'users_santenik': TelegramUser.objects.filter(user_type='santenik').count(),
+            'users_sotuvchi': TelegramUser.objects.filter(user_type='sotuvchi').count(),
+            'batches_total':  QRCodeBatch.objects.count(),
+            'batches_active': QRCodeBatch.objects.filter(status='active').count(),
+            'qr_total':       QRCode.objects.count(),
+            'qr_scanned':     QRCode.objects.filter(is_used=True).count(),
+            'gifts_pending':  GiftRedemption.objects.filter(status='pending').count(),
+            'txns_total':     SellerPointsTransaction.objects.count(),
+            'audit_total':    ActivityLog.objects.count(),
+        }
+    except Exception:
+        stats = {}
     return TemplateResponse(request, 'jip_admin/index.html', {'stats': stats})
 
 
