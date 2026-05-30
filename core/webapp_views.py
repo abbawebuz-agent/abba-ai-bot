@@ -44,7 +44,7 @@ def webapp_view(request):
     # Мы будем получать язык через JavaScript и передавать в контекст
     
     # Если передан telegram_id в GET параметрах, получаем язык из БД
-    telegram_id = request.GET.get('telegram_id')
+    telegram_id = request.GET.get('telegram_id') or request.GET.get('tg_id')
     if telegram_id:
         try:
             user = TelegramUser.objects.get(telegram_id=int(telegram_id))
