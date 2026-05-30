@@ -351,22 +351,22 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGIN_URL = '/admin/login/'
 
 # ============================================================
-# Jazzmin Configuration
+# Jazzmin Configuration (1c0c2bb versiyasidan)
 # ============================================================
 JAZZMIN_SETTINGS = {
-    # Заголовок сайта
-    "site_brand": "JIP",
-    "site_logo": None,
-    "login_logo": None,
-    "login_logo_dark": None,
-    "site_logo_classes": "img-fluid",
+    "site_brand": "JIP GROUP",
+    "site_header": "JIP GROUP — Sodiqlik dasturi",
+    "site_title": "JIP GROUP Admin",
+    "welcome_sign": "Xush kelibsiz! JIP GROUP boshqaruv paneliga kiring",
+    "site_logo": "core_admin/img/jip_group_admin.jpg",
+    "login_logo": "core_admin/img/jip_group_admin.jpg",
+    "login_logo_dark": "core_admin/img/jip_group_admin.jpg",
+    "site_logo_classes": "img-fluid jip-brand-logo",
     "site_icon": "core_admin/img/favicon.png",
 
-    # Цветовая схема
     "theme": "default",
     "dark_mode_theme": None,
 
-    # Настройки боковой панели
     "show_sidebar": True,
     "navigation_expanded": True,
     "hide_apps": [],
@@ -374,59 +374,55 @@ JAZZMIN_SETTINGS = {
     "show_ui_builder": False,
     "default_model_icon": "fas fa-circle",
 
-    # Иконки
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "core.TelegramUser": "fas fa-user-tie",
+        "core.PendingSellerRequest": "fas fa-user-clock",
         "core.QRCode": "fas fa-qrcode",
         "core.Gift": "fas fa-gift",
         "core.GiftRedemption": "fas fa-shopping-cart",
         "core.BroadcastMessage": "fas fa-bullhorn",
+        "core.Store": "fas fa-store",
+        "core.QRCodeBatch": "fas fa-layer-group",
+        "core.SellerPointsTransaction": "fas fa-coins",
     },
 
-    # Настройки меню
-    "order_with_respect_to": [
-        "core",
-        "auth",
-    ],
+    "order_with_respect_to": ["core", "auth"],
 
-    # Кастомные ссылки в меню
     "custom_links": {
         "core": [
-            {
-                "name": "Boshqaruv paneli",
-                "url": "/admin/dashboard/",
-                "icon": "fas fa-chart-line",
-                "permissions": ["auth.view_user"]
-            },
             {
                 "name": "Promo-kodni yaratish",
                 "url": "/admin/core/qrcode/generate/",
                 "icon": "fas fa-qrcode",
                 "permissions": ["core.generate_qrcodes"]
-            }
+            },
+            {
+                "name": "📥 Backup → Telegram",
+                "url": "/admin/backup-now/",
+                "icon": "fas fa-cloud-upload-alt",
+                "permissions": ["auth.add_user"],
+            },
         ]
     },
 
-    # Настройки UI
-    "custom_css": None,
+    "permissions": {
+        "custom_links": ["auth.view_user", "core.generate_qrcodes", "auth.add_user"],
+    },
+
+    "custom_css": "core_admin/css/jip_admin.css",
     "custom_js": "core_admin/js/changelist_filters.js",
     "use_google_fonts_cdn": True,
-    "show_ui_builder": False,
 
-    # Настройки футера
     "copyright": "JIP Admin Panel",
-
-    # Настройки поиска
     "search_model": ["auth.User", "core.TelegramUser"],
-
-    # Настройки пользовательского интерфейса
     "user_avatar": None,
+
     "topmenu_links": [
-        {"name": "Главная", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Дашборд", "url": "dashboard", "permissions": ["auth.view_user"]},
+        {"name": "Bosh sahifa", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Boshqaruv paneli", "url": "dashboard", "permissions": ["auth.view_user"]},
     ],
 
     "language_chooser": True,
@@ -439,11 +435,9 @@ JAZZMIN_SETTINGS = {
 
     "list_per_page": 25,
     "list_max_show_all": 100,
-
     "actions_on_top": True,
     "actions_on_bottom": True,
     "actions_selection_counter": True,
-
     "related_modal_active": False,
     "show_related": True,
 }
@@ -453,19 +447,19 @@ JAZZMIN_UI_TWEAKS = {
     "footer_small_text": False,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": False,
+    "brand_colour": "brand-primary",
     "accent": "accent-primary",
     "navbar": "navbar-dark",
-    "no_navbar_border": False,
-    "navbar_fixed": False,
+    "no_navbar_border": True,
+    "navbar_fixed": True,
     "layout_boxed": False,
     "footer_fixed": False,
-    "sidebar_fixed": False,
+    "sidebar_fixed": True,
     "sidebar": "sidebar-dark-primary",
     "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
-    "sidebar_nav_compact_style": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": True,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
     "theme": "default",
