@@ -21,8 +21,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-productio
 
 # Application definition
 INSTALLED_APPS = [
-    # Unfold — django.contrib.admin dan OLDIN bo'lishi shart
-    'unfold',
+    'jazzmin',  # Jazzmin должен быть перед django.contrib.admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,15 +32,12 @@ INSTALLED_APPS = [
     'channels',
     'simple_history',  # История изменений моделей
     'rangefilter',  # Фильтр по диапазону дат в админке
-    'corsheaders',
-    'rest_framework_simplejwt',
     'core',
     'bot',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise для статических файлов
     'core.middleware.NoCacheMiddleware',  # Отключение кеша для Telegram Web App
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -374,34 +370,131 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGIN_URL = '/admin/login/'
 
 # ============================================================
-# UNFOLD Admin Configuration (modern branch)
+# Jazzmin Configuration
 # ============================================================
-def environment_callback(request):
-    return ["Production", "danger"]
+JAZZMIN_SETTINGS = {
+    # Заголовок сайта
+    "site_brand": "JIP",
+    "site_logo": None,
+    "login_logo": None,
+    "login_logo_dark": None,
+    "site_logo_classes": "img-fluid",
+    "site_icon": "core_admin/img/favicon.png",
 
-UNFOLD = {
-    "SITE_TITLE": "JIP GROUP",
-    "SITE_HEADER": "JIP GROUP — Sodiqlik dasturi",
-    "SITE_URL": "/",
-    "SITE_ICON": "/static/core_admin/img/favicon.png",
-    "SITE_LOGO": "/static/core_admin/img/jip_group_admin.jpg",
-    "SHOW_HISTORY": True,
-    "SHOW_VIEW_ON_SITE": True,
-    "DASHBOARD_CALLBACK": "core.admin_callbacks.dashboard_callback",
-    # Indigo primary palette (matches Claude Design tokens)
-    "COLORS": {
-        "primary": {
-            "50":  "238 242 255",
-            "100": "224 231 255",
-            "200": "199 210 254",
-            "300": "165 180 252",
-            "400": "129 140 248",
-            "500": "99 102 241",
-            "600": "79 70 229",
-            "700": "67 56 202",
-            "800": "55 48 163",
-            "900": "49 46 129",
-            "950": "30 27 75",
-        },
+    # Цветовая схема
+    "theme": "default",
+    "dark_mode_theme": None,
+
+    # Настройки боковой панели
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "show_ui_builder": False,
+    "default_model_icon": "fas fa-circle",
+
+    # Иконки
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "core.TelegramUser": "fas fa-user-tie",
+        "core.QRCode": "fas fa-qrcode",
+        "core.Gift": "fas fa-gift",
+        "core.GiftRedemption": "fas fa-shopping-cart",
+        "core.BroadcastMessage": "fas fa-bullhorn",
+    },
+
+    # Настройки меню
+    "order_with_respect_to": [
+        "core",
+        "auth",
+    ],
+
+    # Кастомные ссылки в меню
+    "custom_links": {
+        "core": [
+            {
+                "name": "Boshqaruv paneli",
+                "url": "/admin/dashboard/",
+                "icon": "fas fa-chart-line",
+                "permissions": ["auth.view_user"]
+            },
+            {
+                "name": "Promo-kodni yaratish",
+                "url": "/admin/core/qrcode/generate/",
+                "icon": "fas fa-qrcode",
+                "permissions": ["core.generate_qrcodes"]
+            }
+        ]
+    },
+
+    # Настройки UI
+    "custom_css": None,
+    "custom_js": "core_admin/js/changelist_filters.js",
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+
+    # Настройки футера
+    "copyright": "JIP Admin Panel",
+
+    # Настройки поиска
+    "search_model": ["auth.User", "core.TelegramUser"],
+
+    # Настройки пользовательского интерфейса
+    "user_avatar": None,
+    "topmenu_links": [
+        {"name": "Главная", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Дашборд", "url": "dashboard", "permissions": ["auth.view_user"]},
+    ],
+
+    "language_chooser": True,
+
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "auth.user": "collapsible",
+        "auth.group": "vertical_tabs",
+    },
+
+    "list_per_page": 25,
+    "list_max_show_all": 100,
+
+    "actions_on_top": True,
+    "actions_on_bottom": True,
+    "actions_selection_counter": True,
+
+    "related_modal_active": False,
+    "show_related": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": False,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
     },
 }

@@ -4,7 +4,7 @@ django-environ==0.11.2
 djangorestframework==3.14.0
 channels==4.0.0
 channels-redis==4.1.0
-django-unfold==0.51.0  # Zamonaviy Django Admin UI (modern branch)
+django-jazzmin==2.6.0  # Современный дизайн для Django Admin
 django-simple-history==3.4.0  # История изменений моделей в БД
 django-admin-rangefilter==0.13.5  # Фильтр по диапазону дат в админке
 
@@ -45,7 +45,5 @@ python-dateutil==2.8.2
 # Monitoring / Error tracking
 sentry-sdk[django,aiohttp]==2.36.0
 
-# Admin panel API
-djangorestframework-simplejwt==5.3.1
-django-cors-headers==4.3.1
+
 

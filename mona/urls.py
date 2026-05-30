@@ -26,7 +26,6 @@ from core.dashboard_stats import (
     compute_store_analytics,
 )
 from core.dashboard_exports import generate_full_dashboard_excel, generate_module_excel, generate_regional_excel
-from core.views_jip_admin import jip_admin_spa
 from core.models import UzRegion, TelegramUser, QRCode, Gift, GiftRedemption, UzDistrict
 
 
@@ -836,7 +835,6 @@ urlpatterns = [
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
-    path('jip-admin/', jip_admin_spa, name='jip_admin_spa'),
 ]
 
 # WhiteNoise обрабатывает статические файлы автоматически через middleware

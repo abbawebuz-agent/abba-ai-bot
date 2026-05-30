@@ -4,13 +4,8 @@
 {% block extrahead %}
 {{ block.super }}
 <link rel="icon" type="image/png" href="{% static 'core_admin/img/favicon.png' %}">
-<!-- JIP Modern Theme 2026 — Claude Design implementation -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="{% static 'admin_ui/css/jip_theme_2026.css' %}">
 <style>
-  /* Simple History: причина изменения — перенос строк */
+  /* Причина изменения в истории (Simple History) — сохранять переносы строк */
   #change-history td:last-child,
   .object-history-table td:last-child { white-space: pre-line; }
 </style>
@@ -31,4 +26,16 @@
 
 {% block extrajs %}
 {{ block.super }}
+<script>
+(function() {
+  var href = "{% if request.user.username == 'callcenter' %}/admin/dashboard/?tab=redemptions{% else %}/admin/dashboard/{% endif %}";
+  var li = document.createElement('li');
+  li.className = 'nav-item';
+  li.innerHTML = '<a href="' + href + '" style="display:inline-flex;align-items:center;gap:6px;margin:0 8px;padding:5px 14px;background:#417690;color:#fff;border-radius:4px;font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.background=\'#2b5068\'" onmouseout="this.style.background=\'#417690\'">'
+    + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>'
+    + ' Dashboard</a>';
+  var navbar = document.querySelector('ul.navbar-nav.ml-auto');
+  if (navbar) navbar.insertBefore(li, navbar.firstChild);
+})();
+</script>
 {% endblock %}
