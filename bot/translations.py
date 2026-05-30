@@ -60,13 +60,38 @@ TRANSLATIONS = {
             "⏳ Arizangiz hali ko'rib chiqilmoqda.\n"
             "Admin tasdiqlashini kuting. Savollar uchun: {admin_contact}"
         ),
-        'PRIVACY_POLICY_TEXT': "📄 Iltimos, aksiya shartlari hamda shaxsiy ma’lumotlaringizni qayta ishlash qoidalari bilan tanishing va roziligingizni tasdiqlang.",
-        'ACCEPT_PRIVACY': "✅ Shartlar bilan tanishdim va roziman",
-        'DECLINE_PRIVACY': "❌ Rad etish",
-        'ACCEPT_PRIVACY_QUESTION': "",
-        'PRIVACY_ACCEPTED': "✅ Maxfiylik siyosatiga rozilik berildi!",
-        'PRIVACY_DECLINED': "❌ Maxfiylik siyosatiga rozilik berilmadi",
-        'PRIVACY_REQUIRED': "❌ Ro‘yxatdan o‘tish uchun maxfiylik siyosatiga rozilik berish talab etiladi.",
+        ‘PRIVACY_POLICY_TEXT’: "📄 Iltimos, aksiya shartlari hamda shaxsiy ma’lumotlaringizni qayta ishlash qoidalari bilan tanishing va roziligingizni tasdiqlang.",
+        ‘ACCEPT_PRIVACY’: "✅ Shartlar bilan tanishdim va roziman",
+        ‘DECLINE_PRIVACY’: "❌ Rad etish",
+        ‘ACCEPT_PRIVACY_QUESTION’: "",
+        ‘PRIVACY_ACCEPTED’: "✅ Maxfiylik siyosatiga rozilik berildi!",
+        ‘PRIVACY_DECLINED’: "❌ Maxfiylik siyosatiga rozilik berilmadi",
+        ‘PRIVACY_REQUIRED’: "❌ Ro’yxatdan o’tish uchun maxfiylik siyosatiga rozilik berish talab etiladi.",
+        # Telefon + tasdiqlash kodi
+        ‘ASK_PHONE_TEMPLATE’: (
+            "📱 <b>Telefon raqamingizni kiriting:</b>\n\n"
+            "Namuna: <code>+998 90 123 45 67</code>\n\n"
+            "Yoki quyidagi tugma orqali avtomatik yuboring:"
+        ),
+        ‘PHONE_FORMAT_ERROR’: (
+            "❌ Noto’g’ri format.\n\n"
+            "Iltimos, raqamni quyidagi shaklda kiriting:\n"
+            "<code>+998 XX XXX XX XX</code>\n\n"
+            "Yoki tugma orqali yuboring."
+        ),
+        ‘VERIFY_CODE_SENT’: (
+            "📩 <b>Tasdiqlash kodi yuborildi!</b>\n\n"
+            "Kodi: <b>{code}</b>\n\n"
+            "Ushbu kodni kiriting. Noto’g’ri kiritilsa qayta urinib ko’ring.\n"
+            "Yangi kod <b>1 daqiqa</b>dan so’ng so’ralishi mumkin."
+        ),
+        ‘VERIFY_CODE_WRONG’: "❌ Kod noto’g’ri. Qayta kiriting yoki yangi kod oling.",
+        ‘VERIFY_CODE_CORRECT’: "✅ Telefon raqami tasdiqlandi!",
+        ‘VERIFY_CODE_COOLDOWN’: "⏳ {seconds} soniya kuting, keyin yangi kod so’rang.",
+        ‘VERIFY_CODE_RESEND_BTN’: "🔄 Yangi kod olish",
+        # Viloyat tanlash
+        ‘CHOOSE_REGION’: "📍 Yashash viloyatingizni tanlang:",
+        ‘REGION_SAVED’: "✅ Viloyat saqlandi: <b>{region}</b>",
         'SEND_PHONE_BUTTON': "📱 Telefon raqamini yuborish",
         'REGISTRATION_COMPLETE_MESSAGE': "✅ Ro'yxatdan o'tish muvaffaqiyatli yakunlandi! Endi botdan foydalanishingiz mumkin.",
         'SEND_PROMO_CODE': "Iltimos, o'z promo-kodingizni kiriting.",
@@ -397,6 +422,31 @@ TRANSLATIONS = {
         'PRIVACY_ACCEPTED': "✅ Согласие на политику конфиденциальности получено!",
         'PRIVACY_DECLINED': "❌ Согласие на политику конфиденциальности не получено",
         'PRIVACY_REQUIRED': "❌ Для регистрации необходимо согласие с политикой конфиденциальности.",
+        # Телефон + код подтверждения
+        'ASK_PHONE_TEMPLATE': (
+            "📱 <b>Введите ваш номер телефона:</b>\n\n"
+            "Пример: <code>+998 90 123 45 67</code>\n\n"
+            "Или отправьте автоматически кнопкой ниже:"
+        ),
+        'PHONE_FORMAT_ERROR': (
+            "❌ Неверный формат.\n\n"
+            "Введите номер в формате:\n"
+            "<code>+998 XX XXX XX XX</code>\n\n"
+            "Или используйте кнопку."
+        ),
+        'VERIFY_CODE_SENT': (
+            "📩 <b>Код подтверждения отправлен!</b>\n\n"
+            "Код: <b>{code}</b>\n\n"
+            "Введите этот код. При ошибке — попробуйте снова.\n"
+            "Новый код можно запросить через <b>1 минуту</b>."
+        ),
+        'VERIFY_CODE_WRONG': "❌ Неверный код. Попробуйте снова или запросите новый.",
+        'VERIFY_CODE_CORRECT': "✅ Номер телефона подтверждён!",
+        'VERIFY_CODE_COOLDOWN': "⏳ Подождите {seconds} секунд перед запросом нового кода.",
+        'VERIFY_CODE_RESEND_BTN': "🔄 Получить новый код",
+        # Выбор региона
+        'CHOOSE_REGION': "📍 Выберите ваш регион:",
+        'REGION_SAVED': "✅ Регион сохранён: <b>{region}</b>",
         'SELLER_STORE_NOT_FOUND': "❗ Ваш номер телефона не привязан ни к одному магазину. Пожалуйста, свяжитесь с администратором: {admin_contact}",
         'SELLER_STORE_CONFIRM': "🏪 Ваш магазин: <b>{store_name}</b>\n\nАдрес: {address}\n\nВерно?",
         'SELLER_STORE_CONFIRMED': "✅ Вы привязаны к магазину: <b>{store_name}</b>",

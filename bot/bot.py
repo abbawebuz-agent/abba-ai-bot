@@ -4,6 +4,9 @@ Telegram bot implementation using aiogram.
 import asyncio
 import logging
 import os
+import re
+import random
+import time
 from types import SimpleNamespace
 import django
 from aiogram import Bot, Dispatcher, types
@@ -143,14 +146,17 @@ if dp:
 class RegistrationStates(StatesGroup):
     """Состояния для регистрации пользователя."""
     waiting_for_language = State()
+    waiting_for_privacy = State()
+    waiting_for_phone = State()
+    waiting_for_verification_code = State()
+    waiting_for_location = State()
+    waiting_for_region = State()
+    waiting_for_promo_code = State()
+    # Legacy states (kept for compatibility, not used in new flow)
     waiting_for_name = State()
     waiting_for_user_type = State()
     waiting_for_seller_id = State()
-    waiting_for_privacy = State()
-    waiting_for_phone = State()
-    waiting_for_location = State()
-    waiting_for_store_confirmation = State()  # JIP: sotuvchi uchun Store biriktirish
-    waiting_for_promo_code = State()
+    waiting_for_store_confirmation = State()
 
 
 class GiftRedemptionStates(StatesGroup):
@@ -207,52 +213,36 @@ def format_number(number):
 @sync_to_async
 def get_or_create_user(telegram_id: int, username: str = None, first_name: str = None, last_name: str = None):
     """Получает или создает пользователя Telegram."""
-    logger.info(f"[get_or_create_user] Получение/создание пользователя: telegram_id={telegram_id}, username={username}")
-    
-    # Не сохраняем имя автоматически - пользователь должен ввести его сам
     user, created = TelegramUser.objects.get_or_create(
         telegram_id=telegram_id,
         defaults={
             'username': username,
-            # first_name и last_name не сохраняем автоматически
+            'first_name': first_name or '',
+            'user_type': 'santenik',
         }
     )
-    
-    logger.info(f"[get_or_create_user] Пользователь {'создан' if created else 'получен'}: id={user.id}, language={user.language}")
-    
-    # Обновляем username если он изменился
+    updates = {}
     if username and user.username != username:
-        user.username = username
-        user.save(update_fields=['username'])
-        logger.info(f"[get_or_create_user] Username обновлен на: {username}")
-    
+        updates['username'] = username
+    if first_name and not user.first_name:
+        updates['first_name'] = first_name
+    if not user.user_type:
+        updates['user_type'] = 'santenik'
+    if updates:
+        for k, v in updates.items():
+            setattr(user, k, v)
+        TelegramUser.objects.filter(id=user.id).update(**updates)
     return user, created
 
 
 async def is_registration_complete(user):
-    """Проверяет, завершена ли регистрация пользователя."""
-    base_checks = bool(
+    """Проверяет, завершена ли регистрация: язык + политика + телефон + регион."""
+    return bool(
         user.language and
-        user.first_name and
-        user.user_type and
         user.privacy_accepted and
         user.phone_number and
-        user.latitude is not None and
-        user.longitude is not None
+        user.region_id
     )
-    # JIP: sotuvchi uchun admin tasdiqlashi kerak
-    if user.user_type == 'sotuvchi':
-        result = base_checks and user.seller_approved
-    else:
-        result = base_checks
-
-    logger.info(
-        "[is_registration_complete] user_id=%s base=%s seller_approved=%s result=%s",
-        user.id, base_checks,
-        user.seller_approved if user.user_type == 'sotuvchi' else 'n/a',
-        result,
-    )
-    return result
 
 
 @dp.message(CommandStart())
@@ -316,71 +306,34 @@ async def cmd_start(message: Message, state: FSMContext):
         await state.clear()
         return
     
-    # Очищаем state для новой сессии регистрации
     await state.clear()
-    logger.info(f"[cmd_start] Начинаем процесс регистрации")
-    
-    # Начинаем процесс регистрации с первого шага
-    # Шаг 1: Выбор языка - всегда показываем приветствие если:
-    # - это новый пользователь (только что создан) - даже если у него есть default язык
-    # - или язык не выбран или пустой
-    # ВАЖНО: Новые пользователи всегда должны выбрать язык, даже если в модели есть default
+
+    # Шаг 1: Язык
     if is_new_user or not user.language:
-        logger.info(f"[cmd_start] Новый пользователь или язык не выбран (is_new_user={is_new_user}, user.language={user.language}), вызываем ask_language")
         await ask_language(message, user, state)
         return
-    else:
-        logger.info(f"[cmd_start] Язык уже выбран: {user.language}, пропускаем ask_language")
-    
-    # Шаг 2: Ввод имени - спрашиваем только после выбора языка
-    if not user.first_name:
-        logger.info(f"[cmd_start] Имя не указано, вызываем ask_name")
-        await ask_name(message, user, state)
-        return
-    else:
-        logger.info(f"[cmd_start] Имя указано: {user.first_name}, пропускаем ask_name")
-    
-    # Шаг 3: Выбор типа пользователя
-    if not user.user_type:
-        logger.info(f"[cmd_start] Тип пользователя не выбран, вызываем ask_user_type")
-        await ask_user_type(message, user, state)
-        return
-    else:
-        logger.info(f"[cmd_start] Тип пользователя выбран: {user.user_type}, пропускаем ask_user_type")
-    
-    # Шаг 3: Согласие на политику конфиденциальности
+
+    # Шаг 2: Политика конфиденциальности
     if not user.privacy_accepted:
-        logger.info(f"[cmd_start] Политика конфиденциальности не принята, вызываем ask_privacy_acceptance")
         await ask_privacy_acceptance(message, user, state)
         return
-    else:
-        logger.info(f"[cmd_start] Политика конфиденциальности принята, пропускаем ask_privacy_acceptance")
-    
-    # Шаг 4: Телефонный номер
+
+    # Шаг 3: Телефон
     if not user.phone_number:
-        logger.info(f"[cmd_start] Телефонный номер не указан, вызываем ask_phone")
         await ask_phone(message, user, state)
         return
-    else:
-        logger.info(f"[cmd_start] Телефонный номер указан, пропускаем ask_phone")
-    
-    # Шаг 5: Локация
+
+    # Шаг 4: Локация (GPS)
     if user.latitude is None or user.longitude is None:
-        logger.info(f"[cmd_start] Локация не указана, вызываем ask_location")
         await ask_location(message, user, state)
         return
-    else:
-        logger.info(f"[cmd_start] Локация указана, пропускаем ask_location")
 
-    # JIP Шаг 6: Sotuvchi — admin tasdiqlashini tekshir
-    if user.user_type == 'sotuvchi' and not user.seller_approved:
-        await try_attach_seller_to_store(message, user, state)
+    # Шаг 5: Регион
+    if not user.region_id:
+        await ask_region(message, user, state)
         return
 
-    # Шаг 7: Промокод (если еще не введен)
-    # Промокод не обязателен, поэтому просто завершаем регистрацию
-    logger.info(f"[cmd_start] Все шаги регистрации пройдены, показываем главное меню")
-    await state.clear()
+    # Всё готово
     await show_main_menu(message, user)
 
 
@@ -431,39 +384,53 @@ async def cmd_seller_panel(message: Message, state: FSMContext):
 
 @dp.message(RegistrationStates.waiting_for_phone)
 async def process_phone(message: Message, state: FSMContext):
-    """Обработчик получения номера телефона."""
-    # Игнорируем сообщения от ботов
+    """Обработчик номера телефона — принимает контакт или ввод +998XXXXXXXXX."""
     if message.from_user.is_bot:
         return
-
-    # Command (/start va h.k.) — state ni clear va cmd_start
     if message.text and message.text.startswith('/'):
         await state.clear()
         if message.text.lower().startswith('/start'):
             await cmd_start(message, state)
         return
 
+    @sync_to_async
+    def get_user():
+        return TelegramUser.objects.get(telegram_id=message.from_user.id)
+
+    phone = None
     if message.contact:
-        phone_number = message.contact.phone_number
-        
-        @sync_to_async
-        def update_phone():
-            user = TelegramUser.objects.get(telegram_id=message.from_user.id)
-            user.phone_number = phone_number
-            user.save(update_fields=['phone_number'])
-            return user
-        
-        user = await update_phone()
-        await message.answer(get_text(user, 'PHONE_SAVED'))
-        
-        # Переходим к следующему шагу - локация
-        await ask_location(message, user, state)
+        raw = message.contact.phone_number or ''
+        digits = re.sub(r'\D', '', raw)
+        if digits.startswith('998') and len(digits) == 12:
+            phone = '+' + digits
+        elif len(digits) == 9:
+            phone = '+998' + digits
+        else:
+            phone = raw if raw.startswith('+') else '+' + raw
+    elif message.text:
+        digits = re.sub(r'\D', '', message.text.strip())
+        if digits.startswith('998') and len(digits) == 12:
+            phone = '+' + digits
+        elif len(digits) == 9:
+            phone = '+998' + digits
+        else:
+            user = await get_user()
+            await message.answer(get_text(user, 'PHONE_FORMAT_ERROR'), parse_mode='HTML')
+            return
     else:
-        @sync_to_async
-        def get_user():
-            return TelegramUser.objects.get(telegram_id=message.from_user.id)
         user = await get_user()
         await message.answer(get_text(user, 'USE_BUTTON_PHONE'))
+        return
+
+    @sync_to_async
+    def save_phone(ph):
+        u = TelegramUser.objects.get(telegram_id=message.from_user.id)
+        u.phone_number = ph
+        u.save(update_fields=['phone_number'])
+        return u
+
+    user = await save_phone(phone)
+    await _send_verification_code(message, user, state)
 
 
 @dp.message(RegistrationStates.waiting_for_location)
@@ -495,23 +462,22 @@ async def process_location(message: Message, state: FSMContext):
             return user
 
         user = await save_location_and_resolve_osm()
-        
+
         # Убираем клавиатуру с кнопкой геолокации
         remove_keyboard = types.ReplyKeyboardRemove()
-        
-        # JIP: Sotuvchi bo'lsa — Store'ga biriktirish (SmartUP o'rniga)
+        await message.answer(get_text(user, 'LOCATION_SAVED'), reply_markup=remove_keyboard)
+
+        # JIP: Sotuvchi bo'lsa — Store'ga biriktirish
         if user.user_type == 'sotuvchi':
-            await message.answer(get_text(user, 'LOCATION_SAVED'), reply_markup=remove_keyboard)
             await try_attach_seller_to_store(message, user, state)
         else:
-            # Сообщение об успешной регистрации
-            await message.answer(get_text(user, 'REGISTRATION_COMPLETE'), reply_markup=remove_keyboard)
-            
-            # Очищаем состояние и показываем главное меню
-            await state.clear()
-            await show_main_menu(message, user)
-            # Затем обычным текстом просим ввести промокод (без установки состояния)
-            await message.answer(get_text(user, 'SEND_PROMO_CODE'))
+            # Santenik: next step is region selection
+            if not user.region_id:
+                await ask_region(message, user, state)
+            else:
+                await state.clear()
+                await show_main_menu(message, user)
+                await message.answer(get_text(user, 'SEND_PROMO_CODE'))
     else:
         @sync_to_async
         def get_user_for_location():
@@ -805,61 +771,181 @@ async def ask_privacy_acceptance(message: Message, user, state: FSMContext):
 
 
 async def ask_phone(message: Message, user, state: FSMContext):
-    """Спрашивает номер телефона."""
-    # ReplyKeyboard с кнопкой запроса контакта
-    reply_keyboard = types.ReplyKeyboardMarkup(
-        keyboard=[
-            [types.KeyboardButton(text=get_text(user, 'SEND_PHONE_BUTTON'), request_contact=True)]
-        ],
-        resize_keyboard=True
+    """Спрашивает номер телефона с шаблоном +998 XX XXX XX XX."""
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=[[types.KeyboardButton(
+            text=get_text(user, 'SEND_PHONE_BUTTON'),
+            request_contact=True,
+        )]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
     )
-    
-    # InlineKeyboard с подсказкой для пользователей TelegramPlus
-    inline_text = "👇 " + (get_text(user, 'HINT_USE_BUTTON_BELOW') if user.language == 'ru' 
-                          else "Quyidagi tugmani bosing")
-    inline_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=inline_text, callback_data='hint_phone')]
-    ])
-    
-    await message.answer(
-        get_text(user, 'SEND_PHONE'), 
-        reply_markup=reply_keyboard
-    )
-    # Отправляем дополнительное сообщение с InlineKeyboard-подсказкой
-    await message.answer(
-        "⬇️ " + (get_text(user, 'USE_BUTTON_PHONE') if hasattr(user, 'language') else "Используйте кнопку внизу"),
-        reply_markup=inline_keyboard
-    )
+    await message.answer(get_text(user, 'ASK_PHONE_TEMPLATE'), reply_markup=keyboard, parse_mode='HTML')
     await state.set_state(RegistrationStates.waiting_for_phone)
 
 
+async def _send_verification_code(message: Message, user, state: FSMContext, is_resend: bool = False):
+    """Генерирует и отправляет 4-значный код подтверждения."""
+    code = str(random.randint(1000, 9999))
+    await state.update_data(vcode=code, vcode_sent_at=time.time(), vcode_attempts=0)
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
+        types.InlineKeyboardButton(
+            text=get_text(user, 'VERIFY_CODE_RESEND_BTN'),
+            callback_data='resend_vcode',
+        )
+    ]])
+    prefix = "🔄 " if is_resend else ""
+    await message.answer(
+        prefix + get_text(user, 'VERIFY_CODE_SENT', code=code),
+        reply_markup=keyboard,
+        parse_mode='HTML',
+    )
+    await state.set_state(RegistrationStates.waiting_for_verification_code)
+
+
+@dp.message(RegistrationStates.waiting_for_verification_code)
+async def process_verification_code(message: Message, state: FSMContext):
+    """Обработчик кода подтверждения телефона."""
+    if message.from_user.is_bot:
+        return
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
+
+    @sync_to_async
+    def get_user():
+        return TelegramUser.objects.get(telegram_id=message.from_user.id)
+
+    user = await get_user()
+    data = await state.get_data()
+    stored = data.get('vcode', '')
+    entered = (message.text or '').strip()
+
+    if entered == stored:
+        await message.answer(get_text(user, 'VERIFY_CODE_CORRECT'), reply_markup=types.ReplyKeyboardRemove())
+        await ask_location(message, user, state)
+    else:
+        attempts = data.get('vcode_attempts', 0) + 1
+        await state.update_data(vcode_attempts=attempts)
+        await message.answer(get_text(user, 'VERIFY_CODE_WRONG'), parse_mode='HTML')
+
+
+@dp.callback_query(lambda c: c.data == 'resend_vcode')
+async def handle_resend_vcode(callback: CallbackQuery, state: FSMContext):
+    """Повторная отправка кода подтверждения (кулдаун 60 сек)."""
+    if callback.from_user.is_bot:
+        return
+
+    @sync_to_async
+    def get_user():
+        return TelegramUser.objects.filter(telegram_id=callback.from_user.id).first()
+
+    user = await get_user()
+    if not user:
+        await callback.answer()
+        return
+
+    data = await state.get_data()
+    sent_at = data.get('vcode_sent_at', 0)
+    elapsed = time.time() - sent_at
+
+    if elapsed < 60:
+        remaining = int(60 - elapsed)
+        await callback.answer(
+            get_text(user, 'VERIFY_CODE_COOLDOWN', seconds=remaining),
+            show_alert=True,
+        )
+        return
+
+    await callback.answer()
+    await _send_verification_code(callback.message, user, state, is_resend=True)
+
+
 async def ask_location(message: Message, user, state: FSMContext):
-    """Спрашивает локацию."""
-    # ReplyKeyboard с кнопкой запроса локации
-    reply_keyboard = types.ReplyKeyboardMarkup(
-        keyboard=[
-            [types.KeyboardButton(text="📍 " + get_text(user, 'SEND_LOCATION').replace('📍 ', ''), request_location=True)]
-        ],
-        resize_keyboard=True
+    """Спрашивает геолокацию через ReplyKeyboard-кнопку."""
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=[[types.KeyboardButton(
+            text="📍 " + get_text(user, 'SEND_LOCATION').replace('📍 ', ''),
+            request_location=True,
+        )]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
     )
-    
-    # InlineKeyboard с подсказкой для пользователей TelegramPlus
-    inline_text = "👇 " + (get_text(user, 'HINT_USE_BUTTON_BELOW') if user.language == 'ru' 
-                          else "Quyidagi tugmani bosing")
-    inline_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=inline_text, callback_data='hint_location')]
-    ])
-    
-    await message.answer(
-        get_text(user, 'SEND_LOCATION'), 
-        reply_markup=reply_keyboard
-    )
-    # Отправляем дополнительное сообщение с InlineKeyboard-подсказкой
-    await message.answer(
-        "⬇️ " + (get_text(user, 'USE_BUTTON_LOCATION') if hasattr(user, 'language') else "Используйте кнопку внизу"),
-        reply_markup=inline_keyboard
-    )
+    await message.answer(get_text(user, 'SEND_LOCATION'), reply_markup=keyboard)
     await state.set_state(RegistrationStates.waiting_for_location)
+
+
+CALLBACK_REG_REGION = 'reg_region:'
+
+
+def _build_reg_region_keyboard(language: str) -> types.InlineKeyboardMarkup:
+    rows, row = [], []
+    for code, info in UZBEKISTAN_REGIONS.items():
+        name = info.get('name_ru' if language == 'ru' else 'name_uz') or code
+        row.append(types.InlineKeyboardButton(
+            text=name,
+            callback_data=f'{CALLBACK_REG_REGION}{code}',
+        ))
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return types.InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def ask_region(message: Message, user, state: FSMContext):
+    """Просит выбрать вилоят (шаг 6 регистрации)."""
+    keyboard = _build_reg_region_keyboard(user.language or 'uz_latin')
+    await message.answer(get_text(user, 'CHOOSE_REGION'), reply_markup=keyboard, parse_mode='HTML')
+    await state.set_state(RegistrationStates.waiting_for_region)
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith(CALLBACK_REG_REGION))
+async def process_reg_region(callback: CallbackQuery, state: FSMContext):
+    """Пользователь выбрал вилоят при регистрации."""
+    if callback.from_user.is_bot:
+        return
+
+    region_code = callback.data[len(CALLBACK_REG_REGION):]
+
+    @sync_to_async
+    def save_region(code):
+        u = TelegramUser.objects.filter(telegram_id=callback.from_user.id).first()
+        if not u:
+            return None
+        region = UzRegion.objects.filter(code=code).first()
+        if region:
+            u.region = region
+            u.save(update_fields=['region'])
+        return u
+
+    user = await save_region(region_code)
+    if not user:
+        await callback.answer()
+        return
+
+    language = user.language or 'uz_latin'
+    region_info = UZBEKISTAN_REGIONS.get(region_code) or {}
+    region_name = region_info.get('name_ru' if language == 'ru' else 'name_uz') or region_code
+
+    try:
+        await callback.message.edit_text(
+            get_text(user, 'REGION_SAVED', region=region_name),
+            parse_mode='HTML',
+        )
+    except TelegramBadRequest:
+        await callback.message.answer(
+            get_text(user, 'REGION_SAVED', region=region_name),
+            parse_mode='HTML',
+        )
+    await callback.answer()
+
+    await state.clear()
+    await show_main_menu(callback.message, user)
+    await callback.message.answer(get_text(user, 'SEND_PROMO_CODE'))
 
 
 async def _get_admin_contact_str() -> str:
@@ -1233,37 +1319,17 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
                     reply_markup=inline_keyboard
                 )
         else:
-            # Регистрация не завершена - продолжаем регистрацию
-            logger.info(f"[process_language_selection] Регистрация не завершена, продолжаем процесс регистрации")
-            # Используем callback.message для отправки следующего вопроса
-            # message.answer() создает новое сообщение, даже если исходное было удалено
-            # Шаг 2: Ввод имени - спрашиваем только после выбора языка
-            if not user.first_name:
-                logger.info(f"[process_language_selection] Имя не указано, вызываем ask_name")
-                await ask_name(callback.message, user, state)
-            # Шаг 3: Выбор типа пользователя
-            elif not user.user_type:
-                logger.info(f"[process_language_selection] Тип пользователя не выбран, вызываем ask_user_type")
-                await ask_user_type(callback.message, user, state)
-            # Шаг 4: Согласие на политику конфиденциальности
-            elif not user.privacy_accepted:
-                logger.info(f"[process_language_selection] Политика конфиденциальности не принята, вызываем ask_privacy_acceptance")
+            # Регистрация не завершена — продолжаем по новому flow
+            logger.info(f"[process_language_selection] Регистрация не завершена, продолжаем регистрацию")
+            if not user.privacy_accepted:
                 await ask_privacy_acceptance(callback.message, user, state)
-            # Шаг 5: Телефонный номер
             elif not user.phone_number:
-                logger.info(f"[process_language_selection] Телефонный номер не указан, вызываем ask_phone")
                 await ask_phone(callback.message, user, state)
-            # Шаг 6: Локация
             elif user.latitude is None or user.longitude is None:
-                logger.info(f"[process_language_selection] Локация не указана, вызываем ask_location")
                 await ask_location(callback.message, user, state)
-            # JIP: Sotuvchi uchun admin tasdiqlovchi flow
-            elif user.user_type == 'sotuvchi' and not user.seller_approved:
-                logger.info("[process_language_selection] Sotuvchi tasdiqlanmagan, try_attach_seller_to_store")
-                await try_attach_seller_to_store(callback.message, user, state)
-            # Шаг 8: Промокод (не обязателен)
+            elif not user.region_id:
+                await ask_region(callback.message, user, state)
             else:
-                logger.info(f"[process_language_selection] Все шаги регистрации пройдены, показываем главное меню")
                 await state.clear()
                 await show_main_menu(callback.message, user)
     except TelegramBadRequest as e:
@@ -1684,7 +1750,9 @@ async def handle_message(message: Message, state: FSMContext = None):
         current_state = await state.get_state()
         if current_state in [
             RegistrationStates.waiting_for_phone,
+            RegistrationStates.waiting_for_verification_code,
             RegistrationStates.waiting_for_location,
+            RegistrationStates.waiting_for_region,
             RegistrationStates.waiting_for_user_type,
             RegistrationStates.waiting_for_seller_id,
             RegistrationStates.waiting_for_store_confirmation,
@@ -1720,7 +1788,7 @@ async def handle_message(message: Message, state: FSMContext = None):
             await ask_location(message, user, state)
             return
         if message.location and user.phone_number and (user.latitude is None or user.longitude is None):
-            # Пользователь отправил геолокацию
+            # Пользователь отправил геолокацию вне FSM
             lat, lon = message.location.latitude, message.location.longitude
             @sync_to_async
             def update_loc():
@@ -1733,18 +1801,18 @@ async def handle_message(message: Message, state: FSMContext = None):
 
             user = await update_loc()
             remove_kb = types.ReplyKeyboardRemove()
+            await message.answer(get_text(user, 'LOCATION_SAVED'), reply_markup=remove_kb)
             if user.user_type == 'sotuvchi':
-                await message.answer(get_text(user, 'LOCATION_SAVED'), reply_markup=remove_kb)
                 await try_attach_seller_to_store(message, user, state)
-                return
+            elif not user.region_id:
+                await ask_region(message, user, state)
             else:
-                await message.answer(get_text(user, 'REGISTRATION_COMPLETE'), reply_markup=remove_kb)
                 if state:
                     await state.clear()
                 await show_main_menu(message, user)
                 await message.answer(get_text(user, 'SEND_PROMO_CODE'))
             return
-        # Текст «продолжить регистрацию» / «получить данные» / кнопка телефона — показываем следующий шаг
+        # Текст «продолжить регистрацию» — показываем следующий шаг
         continue_reg_texts = [
             'получить регистрационные данные', 'получить данные', 'продолжить регистрацию',
             'continue registration', 'ro\'yxatdan o\'tishni davom ettirish', 'registratsiya',
@@ -1755,8 +1823,8 @@ async def handle_message(message: Message, state: FSMContext = None):
                 await ask_phone(message, user, state)
             elif user.latitude is None or user.longitude is None:
                 await ask_location(message, user, state)
-            elif user.user_type == 'sotuvchi' and not user.seller_approved:
-                await try_attach_seller_to_store(message, user, state)
+            elif not user.region_id:
+                await ask_region(message, user, state)
             else:
                 await message.answer(get_text(user, 'SEND_PROMO_CODE'))
                 if state:
