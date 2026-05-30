@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:900px;">
+  <h1 style="margin-bottom:6px;">{{ title }}</h1>
+  <p style="color:#888;margin-bottom:20px;">
+    Sotuvchi: <strong>{{ seller.name }}</strong> &nbsp;|&nbsp;
+    Partiya diapazoni: <strong>#{{ batch.promo_from }} – #{{ batch.promo_to }}</strong> &nbsp;|&nbsp;
+    Jami: <strong>{{ total }}</strong> &nbsp;|&nbsp;
+    Aktivlashtirilgan: <strong>{{ activated }}</strong> &nbsp;
+    (<strong>{{ activation_pct }}%</strong>)
+  </p>
+
+  <div style="margin-bottom:14px;">
+    <a href="{% url 'admin:core_seller_change' seller.pk %}"
+       style="background:#417690;color:#fff;padding:7px 16px;border-radius:4px;text-decoration:none;font-size:13px;">
+      ← Sotuvchiga qaytish
+    </a>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="background:#1e1e2e;color:#cdd6f4;">
+        <th style="padding:9px 12px;text-align:left;white-space:nowrap;">#</th>
+        <th style="padding:9px 12px;text-align:left;white-space:nowrap;">Tartib raqam</th>
+        <th style="padding:9px 12px;text-align:left;white-space:nowrap;">Serial №</th>
+        <th style="padding:9px 12px;text-align:left;white-space:nowrap;">Holat</th>
+        <th style="padding:9px 12px;text-align:left;white-space:nowrap;">Santexnik</th>
+        <th style="padding:9px 12px;text-align:left;white-space:nowrap;">Skanlanish vaqti</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="background:{% if forloop.counter|divisibleby:2 %}#f9fafb{% else %}#fff{% endif %};">
+        <td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;color:#9ca3af;">{{ forloop.counter }}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;">{{ row.seq }}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:12px;">{{ row.serial }}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">
+          {% if row.is_scanned %}
+            <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;">✅ Aktivlashtirilgan</span>
+          {% else %}
+            <span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;">⏳ Kutilmoqda</span>
+          {% endif %}
+        </td>
+        <td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">{{ row.scanned_by_html }}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;">{{ row.scanned_at }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" style="padding:20px;text-align:center;color:#9ca3af;">
+          Bu diapazonda promokodlar topilmadi. Avval QR kodlar yarating va sequence_number bering.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

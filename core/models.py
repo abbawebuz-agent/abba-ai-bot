@@ -766,6 +766,10 @@ class QRCode(models.Model):
     code = models.CharField(max_length=255, unique=True, db_index=True)
     hash_code = models.CharField(max_length=32, unique=True, db_index=True)
     serial_number = models.CharField(max_length=50, unique=True, db_index=True, verbose_name='Seriya raqami')
+    sequence_number = models.PositiveIntegerField(
+        unique=True, null=True, blank=True,
+        db_index=True, verbose_name='Tartib raqami (global)'
+    )
     image_path = models.CharField(max_length=500, null=True, blank=True)
     points = models.IntegerField(validators=[MinValueValidator(0)])
 
@@ -831,6 +835,12 @@ class QRCode(models.Model):
             masked_code = self.code
         store_name = self.store.name if self.store_id else 'NO-STORE'
         return f"{masked_code} → {store_name}"
+
+    @classmethod
+    def next_sequence_number(cls):
+        from django.db.models import Max
+        result = cls.objects.filter(sequence_number__isnull=False).aggregate(Max('sequence_number'))
+        return (result['sequence_number__max'] or 0) + 1
 
     @classmethod
     def generate_hash(cls, length=6):
@@ -1767,6 +1777,109 @@ class LiveStreamWinner(models.Model):
         if language == 'ru' and self.prize_text_ru:
             return self.prize_text_ru
         return self.prize_text_uz_latin or self.prize_text_ru or ''
+
+
+# ════════════════════════════════════════════════════════════════════
+# Seller + SellerBatch — sotuvchi va uning promokod partiyalari
+# ════════════════════════════════════════════════════════════════════
+class Seller(models.Model):
+    """Admin tomonidan qo'lda qo'shiladigan Sotuvchi."""
+    name = models.CharField(max_length=200, verbose_name="Ism / Do'kon nomi")
+    phone = models.CharField(max_length=20, verbose_name='Telefon raqami')
+    region = models.ForeignKey(
+        'UzRegion', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='sellers', verbose_name='Viloyat'
+    )
+    district = models.ForeignKey(
+        'UzDistrict', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='sellers', verbose_name='Tuman'
+    )
+    address_other = models.CharField(max_length=200, blank=True, verbose_name='Boshqa manzil (Boshqa)')
+    notes = models.TextField(blank=True, verbose_name='Izoh')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Qo'shilgan sana")
+
+    class Meta:
+        verbose_name = 'Sotuvchi'
+        verbose_name_plural = 'Sotuvchilar'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.phone})"
+
+    def get_batches_qs(self):
+        return self.seller_batches.all().order_by('-created_at')
+
+    def total_promos(self):
+        total = 0
+        for b in self.seller_batches.all():
+            total += max(0, b.promo_to - b.promo_from + 1)
+        return total
+
+    def total_points(self):
+        return self.total_promos() * 50
+
+    def activated_count(self):
+        total = 0
+        for b in self.seller_batches.all():
+            total += QRCode.objects.filter(
+                sequence_number__gte=b.promo_from,
+                sequence_number__lte=b.promo_to,
+                is_scanned=True,
+                is_deleted=False
+            ).count()
+        return total
+
+    def activation_percent(self):
+        total = self.total_promos()
+        if total == 0:
+            return 0
+        return round(self.activated_count() / total * 100, 1)
+
+
+class SellerBatch(models.Model):
+    """Sotuvchiga biriktirilgan promokodlar diapazoni."""
+    seller = models.ForeignKey(
+        Seller, on_delete=models.CASCADE,
+        related_name='seller_batches', verbose_name='Sotuvchi'
+    )
+    promo_from = models.PositiveIntegerField(verbose_name='Promokod dan (raqam)')
+    promo_to = models.PositiveIntegerField(verbose_name='Promokod gacha (raqam)')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')
+
+    class Meta:
+        verbose_name = 'Sotuvchi partiyasi'
+        verbose_name_plural = 'Sotuvchi partiyalari'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.seller.name} — #{self.promo_from}–#{self.promo_to}"
+
+    def total_count(self):
+        return max(0, self.promo_to - self.promo_from + 1)
+
+    def points(self):
+        return self.total_count() * 50
+
+    def get_qrcodes(self):
+        return QRCode.objects.filter(
+            sequence_number__gte=self.promo_from,
+            sequence_number__lte=self.promo_to,
+            is_deleted=False
+        ).select_related('scanned_by').order_by('sequence_number')
+
+    def activated_count(self):
+        return QRCode.objects.filter(
+            sequence_number__gte=self.promo_from,
+            sequence_number__lte=self.promo_to,
+            is_scanned=True,
+            is_deleted=False
+        ).count()
+
+    def activation_percent(self):
+        total = self.total_count()
+        if total == 0:
+            return 0
+        return round(self.activated_count() / total * 100, 1)
 
 
 # ════════════════════════════════════════════════════════════════════

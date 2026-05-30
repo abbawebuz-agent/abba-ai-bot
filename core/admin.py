@@ -39,6 +39,7 @@ from .models import (
     Store, QRCodeBatch, SellerPointsTransaction,
     PendingSellerRequest, SellerRegistrationCode,
     ActivityLog,
+    Seller, SellerBatch,
 )
 from .utils import generate_qr_code_image, generate_qr_codes_batch
 
@@ -130,12 +131,11 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     inlines = [ScannedQRCodeInline, PromoCodeAttemptInline]
     list_display = [
         'user_display', 'phone_number', 'region_display', 'district_display',
-        'user_type_badge', 'seller_approval_badge', 'points_display', 'language_badge',
+        'points_display', 'language_badge',
         'status_badge', 'created_at', 'send_message_button'
     ]
     list_filter = [
-        'user_type', 'is_active', 'seller_approved', 'language', 'region', 'district',
-        StoreAttachedFilter,
+        'is_active', 'language', 'region', 'district',
         ('created_at', DateTimeRangeFilterBuilder(title='Дата регистрации (диапазон)')),
     ]
     search_fields = ['telegram_id', 'username', 'first_name', 'phone_number']
@@ -144,16 +144,11 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         'last_message_sent_at', 'blocked_bot_at',
         'points_display', 'total_earned_points', 'open_in_yandex_maps',
         'scan_attempt_count', 'scan_attempt_success_count', 'scan_attempt_unsuccess_count',
-        'seller_approved_at',
-        'seller_code_display', 'store_id_display',
-        'batch_history_html', 'sotuvchi_stats_html',
     ]
     autocomplete_fields = ['region', 'district']
     ordering = ['region__code', 'district__code', '-created_at']
     actions = [
         'send_personal_message_action', 'update_locations_action',
-        'change_user_type_to_seller',
-        'approve_sellers_action', 'reject_sellers_action',
         'delete_users_action',
     ]
     list_per_page = 50
@@ -184,115 +179,6 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     user_display.short_description = 'Пользователь'
     user_display.admin_order_field = 'first_name'
-
-    def user_type_badge(self, obj):
-        """JIP: Foydalanuvchi turi badge (santenik / sotuvchi)."""
-        if obj.user_type == 'santenik':
-            return format_html(
-                '<span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; '
-                'font-size: 12px; font-weight: 600;">🔧 Santenik</span>'
-            )
-        elif obj.user_type == 'sotuvchi':
-            return format_html(
-                '<span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 12px; '
-                'font-size: 12px; font-weight: 600;">🏪 Sotuvchi</span>'
-            )
-        return '—'
-
-    user_type_badge.short_description = 'Тип'
-    user_type_badge.admin_order_field = 'user_type'
-
-    def seller_approval_badge(self, obj):
-        """Sotuvchi tasdiqlash holati."""
-        if obj.user_type != 'sotuvchi':
-            return '—'
-        if obj.seller_approved:
-            return format_html(
-                '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;'
-                'border-radius:12px;font-size:11px;font-weight:700;">✅ Tasdiqlangan</span>'
-            )
-        return format_html(
-            '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;'
-            'border-radius:12px;font-size:11px;font-weight:700;">⏳ Kutilmoqda</span>'
-        )
-    seller_approval_badge.short_description = 'Tasdiqlash'
-    seller_approval_badge.admin_order_field = 'seller_approved'
-
-    @admin.action(description='✅ Tanlangan sotuvchilarni TASDIQLASH (bot xabari yuboriladi)')
-    def approve_sellers_action(self, request, queryset):
-        sellers = queryset.filter(user_type='sotuvchi', seller_approved=False)
-        if not sellers.exists():
-            self.message_user(request, "Tasdiqlanmagan sotuvchi tanlanmagan.", level='warning')
-            return
-        from django.utils import timezone as tz
-        now = tz.now()
-        approved_ids = list(sellers.values_list('id', flat=True))
-        sellers.update(seller_approved=True, seller_approved_at=now)
-        # Bot orqali har bir sotuvchiga xabar yuborish
-        self._send_approval_notifications(approved_ids, approved=True, reason='')
-        self.message_user(request, f"{len(approved_ids)} sotuvchi tasdiqlandi va xabarlar yuborildi.")
-
-    @admin.action(description='❌ Tanlangan sotuvchilarni RAD ETISH (bot xabari yuboriladi)')
-    def reject_sellers_action(self, request, queryset):
-        sellers = queryset.filter(user_type='sotuvchi')
-        if not sellers.exists():
-            self.message_user(request, "Sotuvchi tanlanmagan.", level='warning')
-            return
-        rejected_ids = list(sellers.values_list('id', flat=True))
-        sellers.update(seller_approved=False, seller_approved_at=None)
-        self._send_approval_notifications(rejected_ids, approved=False, reason='Admin tomonidan rad etildi')
-        self.message_user(request, f"{len(rejected_ids)} sotuvchi rad etildi.")
-
-    def _send_approval_notifications(self, user_ids: list, approved: bool, reason: str):
-        """Sotuvchilarga tasdiqlash/rad etish xabarlarini yuboradi."""
-        import asyncio, threading
-        from django.conf import settings
-        from core.models import TelegramUser, AdminContactSettings
-
-        bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
-        if not bot_token:
-            return
-
-        users = TelegramUser.objects.filter(id__in=user_ids).values('telegram_id', 'language')
-        contact_obj = AdminContactSettings.objects.filter(is_active=True, contact_type='telegram').first()
-        admin_contact = ('@' + contact_obj.contact_value.lstrip('@')) if contact_obj else '@jip_admin'
-
-        from bot.translations import get_text, TRANSLATIONS
-
-        def _send():
-            import urllib.request, urllib.parse, json as _json, logging
-            _log = logging.getLogger(__name__)
-            for u in users:
-                lang = u['language'] or 'uz_latin'
-                if approved:
-                    text = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
-                        'SELLER_APPROVED',
-                        "✅ Arizangiz tasdiqlandi! Endi botdan foydalanishingiz mumkin."
-                    )
-                else:
-                    tmpl = TRANSLATIONS.get(lang, TRANSLATIONS['uz_latin']).get(
-                        'SELLER_REJECTED',
-                        "❌ Arizangiz rad etildi. Sabab: {reason}. Murojaat: {admin_contact}"
-                    )
-                    text = tmpl.format(reason=reason or '—', admin_contact=admin_contact)
-                try:
-                    data = _json.dumps({
-                        'chat_id': u['telegram_id'],
-                        'text': text,
-                        'parse_mode': 'HTML',
-                    }).encode('utf-8')
-                    req = urllib.request.Request(
-                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                        data=data,
-                        headers={'Content-Type': 'application/json'},
-                        method='POST',
-                    )
-                    with urllib.request.urlopen(req, timeout=5):
-                        pass
-                except Exception as exc:
-                    _log.warning("Telegram xabar yuborilmadi: %s", exc)
-
-        threading.Thread(target=_send, daemon=True).start()
 
     def points_display(self, obj):
         """Отображает баллы с цветом (вычисляются динамически: промокоды − активные заказы)."""
@@ -451,18 +337,6 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         }),
         ('Тип и баллы', {
             'fields': ('user_type', 'points_display', 'total_earned_points'),
-            'description': (
-                'Santenik: ballarni QR-skanlardan oladi, sovg\'a uchun ayirboshlaydi. '
-                'Sotuvchi: ballarni faqat admin qo\'lda qo\'shadi (SellerPointsTransaction).'
-            ),
-        }),
-        ('Sotuvchi tasdiqlash', {
-            'fields': ('seller_approved', 'seller_approved_at'),
-            'description': (
-                '⚠️ Faqat sotuvchilar uchun. Tasdiqlangach bot orqali sotuvchiga xabar yuboriladi. '
-                'Yoki ro\'yxatdan "✅ Tasdiqlash" action\'ini ishlating.'
-            ),
-            'classes': ('collapse',),
         }),
         ('Настройки', {
             'fields': ('language',)
@@ -483,20 +357,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     )
 
     def save_model(self, request, obj, form, change):
-        """seller_approved o'zgarganda bot xabari yuboradi."""
-        if change and 'seller_approved' in form.changed_data:
-            was_approved = obj.seller_approved
-            super().save_model(request, obj, form, change)
-            if was_approved:
-                from django.utils import timezone as tz
-                obj.seller_approved_at = tz.now()
-                obj.save(update_fields=['seller_approved_at'])
-            self._send_approval_notifications(
-                [obj.id], approved=was_approved,
-                reason='Admin tomonidan rad etildi' if not was_approved else ''
-            )
-        else:
-            super().save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)
 
     def get_readonly_fields(self, request, obj=None):
         """Управляет readonly полями в зависимости от роли пользователя."""
@@ -656,212 +517,6 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     delete_users_action.short_description = '🗑️ Tanlangan foydalanuvchilarni o\'chirish'
 
-    def change_user_type_to_seller(self, request, queryset):
-        """Массовое изменение типа пользователя на Продавец (Предприниматель)."""
-        updated = queryset.update(user_type='sotuvchi')
-        self.message_user(
-            request,
-            f'Тип пользователя изменен на "Продавец (Предприниматель)" для {updated} пользователей.',
-            messages.SUCCESS
-        )
-
-    change_user_type_to_seller.short_description = 'Изменить тип на: 🛒 Продавец (Предприниматель)'
-
-    # ── Sotuvchi profili: 4 blok ────────────────────────────────────────────
-
-    def get_fieldsets(self, request, obj=None):
-        if obj and obj.user_type == 'sotuvchi':
-            return [
-                ('📊 Blok 1 — Asosiy ma\'lumotlar', {
-                    'fields': (
-                        'first_name', 'last_name', 'username', 'telegram_id',
-                        'phone_number', 'user_type', 'language',
-                        'points_display', 'seller_code_display', 'store_id_display',
-                        'is_active', 'seller_approved', 'seller_approved_at',
-                    )
-                }),
-                ('📍 Blok 2 — Manzil va lokatsiya', {
-                    'fields': ('region', 'district', 'latitude', 'longitude', 'open_in_yandex_maps'),
-                }),
-                ('📦 Blok 3 — Partiya tarixi', {
-                    'fields': ('batch_history_html',),
-                }),
-                ('📈 Blok 4 — Statistika', {
-                    'fields': ('sotuvchi_stats_html',),
-                }),
-            ]
-        return super().get_fieldsets(request, obj)
-
-    def seller_code_display(self, obj):
-        if not obj or not obj.pk:
-            return '—'
-        code = obj.seller_codes.select_related().first()
-        if not code:
-            return format_html('<span style="color:#999;">Kod ishlatilmagan</span>')
-        return format_html(
-            '<code style="background:#1e1e2e;color:#a6e3a1;padding:3px 8px;border-radius:4px;font-size:13px;">{}</code>'
-            ' <span style="color:#888;font-size:12px;">{}</span>',
-            code.code, code.label or ''
-        )
-    seller_code_display.short_description = 'Sotuvchi ID (kodi)'
-
-    def store_id_display(self, obj):
-        if not obj or not obj.pk:
-            return '—'
-        store = obj.owned_stores.filter(is_active=True).first()
-        if not store:
-            return format_html('<span style="color:#999;">Do\'kon biriktirilmagan</span>')
-        url = reverse('admin:core_store_change', args=[store.pk])
-        return format_html(
-            '<strong>#{}</strong> — <a href="{}">{}</a>',
-            store.pk, url, store.name
-        )
-    store_id_display.short_description = "Do'kon ID"
-
-    def _all_seller_batches(self, obj):
-        """seller_batches (yangi FK) + store.owner batches (eski) — combined."""
-        return QRCodeBatch.objects.filter(
-            Q(seller=obj) | Q(store__owner=obj)
-        ).distinct().order_by('-created_at')
-
-    def batch_history_html(self, obj):
-        if not obj or not obj.pk:
-            return '—'
-
-        batches = self._all_seller_batches(obj)
-        if not batches.exists():
-            return format_html('<p style="color:#999;">Hali batch yaratilmagan</p>')
-
-        export_url = reverse('admin:core_telegramuser_seller_batches_xlsx', args=[obj.pk])
-        rows = ''
-        for b in batches:
-            scanned = b.qr_codes.filter(is_scanned=True).count()
-            total = b.quantity or 1
-            pct = round(scanned / total * 100)
-            color = '#16a34a' if pct >= 50 else ('#ca8a04' if pct >= 20 else '#dc2626')
-            zip_link = (
-                f'<a href="{b.zip_file.url}" target="_blank">⬇ ZIP</a>'
-                if b.zip_file else '—'
-            )
-            rows += (
-                f'<tr>'
-                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.name or f"Partiya #{b.pk}"}</td>'
-                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.quantity}</td>'
-                f'<td style="padding:6px 10px;border-bottom:1px solid #333;color:{color};font-weight:700;">'
-                f'{scanned} ({pct}%)</td>'
-                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{b.created_at.strftime("%d.%m.%Y")}</td>'
-                f'<td style="padding:6px 10px;border-bottom:1px solid #333;">{zip_link}</td>'
-                f'</tr>'
-            )
-
-        return format_html(
-            '<div style="margin-bottom:8px;">'
-            '<a href="{}" style="background:#1d4ed8;color:#fff;padding:6px 14px;border-radius:4px;'
-            'text-decoration:none;font-size:12px;">📥 Barcha promo Excel eksport</a>'
-            '</div>'
-            '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-            '<thead><tr style="background:#1e1e2e;color:#cdd6f4;">'
-            '<th style="padding:8px 10px;text-align:left;">Partiya nomi</th>'
-            '<th style="padding:8px 10px;text-align:left;">Jami</th>'
-            '<th style="padding:8px 10px;text-align:left;">Ishlatilgan</th>'
-            '<th style="padding:8px 10px;text-align:left;">Sana</th>'
-            '<th style="padding:8px 10px;text-align:left;">ZIP</th>'
-            '</tr></thead>'
-            '<tbody>{}</tbody>'
-            '</table>',
-            export_url, format_html(rows)
-        )
-    batch_history_html.short_description = "Partiya tarixi"
-
-    def sotuvchi_stats_html(self, obj):
-        if not obj or not obj.pk:
-            return '—'
-        store = obj.owned_stores.filter(is_active=True).first()
-        total_batches = self._all_seller_batches(obj).count()
-        total_qr = store.total_qr_codes() if store else 0
-        scanned_qr = store.scanned_qr_codes() if store else 0
-        activation_rate = store.activation_rate() if store else 0
-
-        from core.models import GiftRedemption
-        redemptions = GiftRedemption.objects.filter(user=obj).count()
-
-        reg_date = obj.created_at.strftime('%d.%m.%Y') if obj.created_at else '—'
-        approved_date = obj.seller_approved_at.strftime('%d.%m.%Y') if obj.seller_approved_at else '—'
-
-        def stat_row(label, value, color='#e2e8f0'):
-            return (
-                f'<tr><td style="padding:8px 12px;color:#888;width:220px;">{label}</td>'
-                f'<td style="padding:8px 12px;font-weight:700;color:{color};">{value}</td></tr>'
-            )
-
-        rows = (
-            stat_row('📅 Ro\'yxatdan o\'tgan', reg_date) +
-            stat_row('✅ Tasdiqlangan', approved_date, '#4ade80') +
-            stat_row('🏪 Partiya\'lar soni', total_batches) +
-            stat_row('🎴 Jami QR kodlar', f'{total_qr:,}') +
-            stat_row('✅ Skanlanganlar', f'{scanned_qr:,}', '#4ade80') +
-            stat_row('📊 Aktivatsiya darajasi', f'{activation_rate}%',
-                     '#4ade80' if activation_rate >= 50 else '#facc15' if activation_rate >= 20 else '#f87171') +
-            stat_row('💰 Joriy ballar', f'{obj.points:,}', '#818cf8') +
-            stat_row('🎁 Sovg\'a so\'rovlari', redemptions)
-        )
-        return format_html(
-            '<table style="border-collapse:collapse;font-size:13px;min-width:400px;">'
-            '<tbody>{}</tbody></table>',
-            format_html(rows)
-        )
-    sotuvchi_stats_html.short_description = 'Statistika'
-
-    def seller_batches_xlsx_view(self, request, user_id):
-        """Sotuvchining barcha batch promokodlari — Excel eksport."""
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-        from io import BytesIO
-
-        try:
-            user = TelegramUser.objects.get(pk=user_id)
-        except TelegramUser.DoesNotExist:
-            return HttpResponse('User topilmadi', status=404)
-
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = 'Promokodlar'
-
-        header_fill = PatternFill('solid', fgColor='1d4ed8')
-        header_font = Font(bold=True, color='FFFFFF')
-        headers = ['Partiya nomi', 'Promokod', 'Skanlanganmi', 'Skanlanish vaqti', 'Kim skanladi']
-        for col, h in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=h)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal='center')
-
-        row = 2
-        for batch in self._all_seller_batches(user):
-            for qr in batch.qr_codes.filter(is_deleted=False).order_by('serial_number'):
-                scanned_by = ''
-                if qr.scanned_by:
-                    scanned_by = qr.scanned_by.first_name or qr.scanned_by.username or str(qr.scanned_by.telegram_id)
-                ws.append([
-                    batch.name or f'Partiya #{batch.pk}',
-                    qr.code,
-                    'Ha' if qr.is_scanned else 'Yo\'q',
-                    qr.scanned_at.strftime('%d.%m.%Y %H:%M') if qr.scanned_at else '',
-                    scanned_by,
-                ])
-                row += 1
-
-        for col in ws.columns:
-            ws.column_dimensions[col[0].column_letter].width = 22
-
-        buf = BytesIO()
-        wb.save(buf)
-        buf.seek(0)
-        fname = f'sotuvchi_{user_id}_promokodlar.xlsx'
-        resp = HttpResponse(buf.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        resp['Content-Disposition'] = f'attachment; filename="{fname}"'
-        return resp
-
     def send_message_button(self, obj):
         """Кнопка отправки сообщения в списке."""
         from django.urls import reverse
@@ -879,7 +534,6 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('<int:user_id>/send_message/', self.admin_site.admin_view(self.send_single_message_view), name='core_telegramuser_send_single_message'),
-            path('<int:user_id>/seller-batches-xlsx/', self.admin_site.admin_view(self.seller_batches_xlsx_view), name='core_telegramuser_seller_batches_xlsx'),
             path('send_region_message/', self.admin_site.admin_view(self.send_region_message_view), name='core_telegramuser_send_region_message'),
             path(
                 'send_region_message/users_autocomplete/',
@@ -3069,7 +2723,11 @@ def _notify_seller_new_batch(seller_id: int, batch_name: str, qty: int, points: 
 
 @admin.register(QRCodeBatch)
 class QRCodeBatchAdmin(SimpleHistoryAdmin):
-    """JIP: Skretch-karta batch admin. Sotuvchini tanlang — store va ballar avtomatik."""
+    """JIP: Skretch-karta batch admin. Sidebar dan yashirilgan — yangi Seller tizimi ishlatiladi."""
+
+    def has_module_permission(self, request):
+        return False
+
     list_display = [
         'name', 'seller_link', 'quantity', 'points_per_code',
         'activation_display', 'scanned_count', 'status', 'delivery_status',
@@ -3269,7 +2927,11 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
 
 @admin.register(SellerPointsTransaction)
 class SellerPointsTransactionAdmin(SimpleHistoryAdmin):
-    """JIP: Sotuvchi ball tranzaksiyalari."""
+    """JIP: Eski tranzaksiya tizimi — sidebar dan yashirilgan."""
+
+    def has_module_permission(self, request):
+        return False
+
     list_display = ['created_at', 'seller', 'transaction_type', 'points', 'sales_amount_usd', 'created_by']
     list_filter = ['transaction_type', 'created_at']
     search_fields = ['seller__first_name', 'seller__phone_number', 'note']
@@ -3489,7 +3151,11 @@ class PendingSellerRequestAdmin(admin.ModelAdmin):
 
 @admin.register(SellerRegistrationCode)
 class SellerRegistrationCodeAdmin(admin.ModelAdmin):
-    """Sotuvchi IDlari — 8 raqamli auto-generated."""
+    """Eski sotuvchi IDlari — sidebar dan yashirilgan."""
+
+    def has_module_permission(self, request):
+        return False
+
     list_display = ['code_display', 'label', 'status_badge', 'used_by_display', 'used_at', 'created_at']
     list_filter = ['is_used']
     search_fields = ['code', 'label']
@@ -3675,4 +3341,159 @@ class ActivityLogAdmin(admin.ModelAdmin):
             'font-size:11px;max-width:700px;overflow:auto;">{}</pre>',
             txt,
         )
-    metadata_pretty.short_description = 'Qo‘shimcha (JSON)'
+    metadata_pretty.short_description = "Qo'shimcha (JSON)"
+
+
+# ════════════════════════════════════════════════════════════════════
+# Seller admin — Admin tomonidan qo'lda boshqariladigan Sotuvchilar
+# ════════════════════════════════════════════════════════════════════
+
+class SellerBatchInline(admin.TabularInline):
+    model = SellerBatch
+    extra = 1
+    can_delete = True
+    readonly_fields = ['total_count_col', 'points_col', 'activation_col', 'promos_btn', 'created_at']
+    fields = ['promo_from', 'promo_to', 'total_count_col', 'points_col', 'activation_col', 'promos_btn', 'created_at']
+    verbose_name = 'Partiya'
+    verbose_name_plural = 'Partiyalar'
+
+    def total_count_col(self, obj):
+        if not obj.pk:
+            return '—'
+        return obj.total_count()
+    total_count_col.short_description = 'Jami promo'
+
+    def points_col(self, obj):
+        if not obj.pk:
+            return '—'
+        return format_html('<strong style="color:#818cf8;">{:,}</strong>', obj.points())
+    points_col.short_description = 'Ballar'
+
+    def activation_col(self, obj):
+        if not obj.pk:
+            return '—'
+        pct = obj.activation_percent()
+        color = '#16a34a' if pct >= 50 else '#ca8a04' if pct >= 20 else '#dc2626'
+        return format_html(
+            '<span style="color:{};font-weight:700;">{} ({:.1f}%)</span>',
+            color, obj.activated_count(), pct
+        )
+    activation_col.short_description = 'Aktivatsiya'
+
+    def promos_btn(self, obj):
+        if not obj.pk or not obj.seller_id:
+            return '—'
+        url = reverse('admin:core_seller_batch_promos', args=[obj.seller_id, obj.pk])
+        return format_html(
+            '<a href="{}" target="_blank" style="background:#1d4ed8;color:#fff;padding:4px 10px;'
+            'border-radius:4px;font-size:11px;text-decoration:none;white-space:nowrap;">📋 Promolar</a>',
+            url
+        )
+    promos_btn.short_description = 'Promolar'
+
+
+@admin.register(Seller)
+class SellerAdmin(admin.ModelAdmin):
+    """Admin panel orqali qo'lda boshqariladigan Sotuvchilar."""
+    list_display = [
+        'name', 'phone', 'region', 'district',
+        'total_promos_col', 'total_points_col', 'activation_col', 'created_at',
+    ]
+    search_fields = ['name', 'phone']
+    list_filter = [
+        'region',
+        ('created_at', DateTimeRangeFilterBuilder(title="Qo'shilgan sana")),
+    ]
+    autocomplete_fields = ['region', 'district']
+    inlines = [SellerBatchInline]
+    readonly_fields = ['created_at', 'total_promos_col', 'total_points_col', 'activation_col']
+    list_per_page = 50
+
+    fieldsets = (
+        ("Asosiy ma'lumot", {
+            'fields': (
+                'name', 'phone',
+                'region', 'district', 'address_other',
+                'notes', 'created_at',
+                'total_promos_col', 'total_points_col', 'activation_col',
+            ),
+        }),
+        ('Partiyalar', {
+            'fields': (),
+        }),
+    )
+
+    def total_promos_col(self, obj):
+        if not obj.pk:
+            return '—'
+        return format_html('<strong>{}</strong>', obj.total_promos())
+    total_promos_col.short_description = 'Jami promokodlar'
+
+    def total_points_col(self, obj):
+        if not obj.pk:
+            return '—'
+        return format_html('<strong style="color:#818cf8;">{:,}</strong>', obj.total_points())
+    total_points_col.short_description = 'Jami ballar'
+
+    def activation_col(self, obj):
+        if not obj.pk:
+            return '—'
+        pct = obj.activation_percent()
+        color = '#16a34a' if pct >= 50 else '#ca8a04' if pct >= 20 else '#dc2626'
+        return format_html(
+            '<span style="color:{};font-weight:700;">{} ta ({:.1f}%)</span>',
+            color, obj.activated_count(), pct,
+        )
+    activation_col.short_description = 'Aktivatsiya'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        extra = [
+            path(
+                '<int:seller_id>/batch/<int:batch_id>/promos/',
+                self.admin_site.admin_view(self.batch_promos_view),
+                name='core_seller_batch_promos',
+            ),
+        ]
+        return extra + urls
+
+    def batch_promos_view(self, request, seller_id, batch_id):
+        try:
+            seller = Seller.objects.get(pk=seller_id)
+            batch = SellerBatch.objects.get(pk=batch_id, seller=seller)
+        except (Seller.DoesNotExist, SellerBatch.DoesNotExist):
+            return HttpResponse('Topilmadi', status=404)
+
+        qrcodes = batch.get_qrcodes()
+        rows = []
+        for qr in qrcodes:
+            if qr.is_scanned and qr.scanned_by:
+                sb = qr.scanned_by
+                sb_name = sb.first_name or sb.username or str(sb.telegram_id)
+                sb_url = reverse('admin:core_telegramuser_change', args=[sb.pk])
+                scanned_by_html = format_html('<a href="{}">{}</a>', sb_url, sb_name)
+            elif qr.is_scanned:
+                scanned_by_html = format_html('<span style="color:#16a34a;">✅ Ha</span>')
+            else:
+                scanned_by_html = format_html('<span style="color:#9ca3af;">—</span>')
+
+            rows.append({
+                'seq': qr.sequence_number,
+                'serial': qr.serial_number,
+                'is_scanned': qr.is_scanned,
+                'scanned_by_html': scanned_by_html,
+                'scanned_at': qr.scanned_at.strftime('%d.%m.%Y %H:%M') if qr.scanned_at else '—',
+            })
+
+        context = {
+            **self.admin_site.each_context(request),
+            'seller': seller,
+            'batch': batch,
+            'rows': rows,
+            'total': len(rows),
+            'activated': batch.activated_count(),
+            'activation_pct': batch.activation_percent(),
+            'title': f"{seller.name} — Partiya #{batch_id} promolari",
+            'opts': Seller._meta,
+        }
+        return TemplateResponse(request, 'admin/core/seller/batch_promos.html', context)
