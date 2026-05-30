@@ -2,6 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Deploy trigger: 2026-05-30 jazzmin-revert
 # Системные зависимости — минимальный набор для Railway
 # Playwright/Chrome paketlari olib tashlandi (browserlar o'rnatilmagan)
 RUN apt-get update && apt-get install -y --no-install-recommends \
