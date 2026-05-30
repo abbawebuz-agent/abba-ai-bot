@@ -97,22 +97,19 @@ def get_user_data(request):
     try:
         user = TelegramUser.objects.get(telegram_id=int(telegram_id))
 
-        base_registered = bool(
+        is_registered = bool(
             user.language and
-            user.first_name and
-            user.user_type and
             user.privacy_accepted and
             user.phone_number and
-            user.latitude is not None and
-            user.longitude is not None
+            user.region_id
         )
-        is_registered = base_registered
 
         serializer = {
             'id': user.id,
             'telegram_id': user.telegram_id,
             'first_name': user.first_name,
             'username': user.username,
+            'phone_number': user.phone_number,
             'points': user.calculate_points(),
             'user_type': user.user_type,
             'language': user.language,

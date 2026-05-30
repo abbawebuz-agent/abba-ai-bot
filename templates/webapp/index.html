@@ -1,42 +1,32 @@
 {% load static %}<!doctype html>
 <html lang="{{ user_language|default:'uz' }}">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<title>JIP Loyalty — Santexnik</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"/>
+<title>JIP — Santexnik</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; }
-  body {
-    font-family: 'Inter', -apple-system, system-ui, sans-serif;
-    background: #fafafa;
-    color: #0a0a0a;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  .jip-scroll::-webkit-scrollbar { width: 0; height: 0; }
-  .jip-scroll { scrollbar-width: none; }
-  @keyframes jip-fade-up { from { opacity:0; transform: translate3d(0,8px,0);} to { opacity:1; transform: translate3d(0,0,0);} }
-  @keyframes jip-fade-in { from { opacity:0;} to { opacity:1;} }
-  @keyframes jip-scale-in { from { opacity:0; transform: scale(0.96);} to { opacity:1; transform: scale(1);} }
-  @keyframes jip-pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(79,70,229,0.5);} 50% { box-shadow: 0 0 0 6px rgba(79,70,229,0);} }
-  @keyframes jip-pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5);} 50% { box-shadow: 0 0 0 5px rgba(16,185,129,0);} }
-  @keyframes jip-spin { to { transform: rotate(360deg);} }
-  @keyframes jip-bounce { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-6px);} }
-  @keyframes jip-confetti { 0% { transform: translateY(0) rotate(0); opacity: 1;} 100% { transform: translateY(120px) rotate(360deg); opacity: 0;} }
-  .jip-fade-up { animation: jip-fade-up 420ms cubic-bezier(.22,1,.36,1) both; }
-  .jip-fade-in { animation: jip-fade-in 280ms ease-out both; }
-  .jip-scale-in { animation: jip-scale-in 320ms cubic-bezier(.22,1,.36,1) both; }
-  .jip-pulse-dot { animation: jip-pulse-dot 1800ms ease-out infinite; }
-  .jip-pulse-green { animation: jip-pulse-green 2000ms ease-out infinite; }
-  .jip-bounce { animation: jip-bounce 1800ms ease-in-out infinite; }
-  .jip-press { transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease; }
-  .jip-press:active { transform: scale(0.975); }
-  button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f2f3f5;color:#111;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:0;height:0;}
+button,[role="button"]{-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;}
+input{font-family:inherit;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes slideIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+.anim-up{animation:fadeUp 380ms cubic-bezier(.22,1,.36,1) both}
+.press{transition:transform 120ms ease,opacity 120ms ease}
+.press:active{transform:scale(0.97);opacity:0.85}
+.scroll-x{overflow-x:auto;scrollbar-width:none}
+.scroll-y{overflow-y:auto;scrollbar-width:none}
 </style>
 </head>
 <body data-lang="{{ user_language|default:'uz_latin' }}">
@@ -48,1083 +38,1164 @@
 
 {% verbatim %}
 <script type="text/babel" data-presets="react">
-// ═══════════════════════════════════════════════════════════
-// JIP Loyalty Santexnik — Telegram Mini App
-// Linear-inspired violet/indigo design (same system as Sotuvchi)
-// ═══════════════════════════════════════════════════════════
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
+// ── Telegram ───────────────────────────────────────────────────
 const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
-
-const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || null;
-const TG_USER = tg?.initDataUnsafe?.user || {};
+if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation?.(); }
+const TG_ID = tg?.initDataUnsafe?.user?.id || null;
+const TG_USER_RAW = tg?.initDataUnsafe?.user || {};
 const LANG = document.body.dataset.lang || 'uz_latin';
 const IS_RU = LANG === 'ru';
 const haptic = (k='light') => tg?.HapticFeedback?.impactOccurred?.(k);
+const hapticSuccess = () => tg?.HapticFeedback?.notificationOccurred?.('success');
+const hapticError = () => tg?.HapticFeedback?.notificationOccurred?.('error');
 const hapticSelect = () => tg?.HapticFeedback?.selectionChanged?.();
-const hapticNotify = (k='success') => tg?.HapticFeedback?.notificationOccurred?.(k);
 
-// ─────────────────────────────────────────────────────────────
-// i18n micro
-// ─────────────────────────────────────────────────────────────
-const tr = (k) => {
-  const dict = {
-    home: IS_RU ? 'Главная' : 'Bosh sahifa',
-    gifts: IS_RU ? 'Подарки' : "Sovg'alar",
-    history: IS_RU ? 'История' : 'Tarix',
-    profile: IS_RU ? 'Профиль' : 'Profil',
-    balance: IS_RU ? 'Мой баланс' : 'Mening balansim',
-    points: IS_RU ? 'баллов' : 'ball',
-    scan_qr: IS_RU ? 'Сканировать QR' : 'QR skan qilish',
-    enter_promo: IS_RU ? 'Введите код' : 'Kodni kiriting',
-    activate: IS_RU ? 'Активировать' : 'Faollashtirish',
-    activate_btn: IS_RU ? 'Активировать промокод' : 'Promokodni faollashtirish',
-    next_gift: IS_RU ? 'Ближайший подарок' : 'Eng yaqin sovg\'a',
-    progress: IS_RU ? 'Прогресс' : 'Progres',
-    need_more: IS_RU ? 'осталось' : 'qoldi',
-    all_gifts: IS_RU ? 'Все' : 'Hammasi',
-    affordable: IS_RU ? 'Доступно' : 'Mavjud',
-    upcoming: IS_RU ? 'Скоро' : 'Tez orada',
-    scans: IS_RU ? 'Сканы' : 'Skanlar',
-    redemptions: IS_RU ? 'Заявки' : "So'rovlar",
-    empty_scans: IS_RU ? 'Пока нет сканов' : 'Hali skan yo\'q',
-    empty_scans_sub: IS_RU ? 'Отсканируйте QR код в магазине' : 'Do\'kondan QR skan qiling',
-    empty_gifts: IS_RU ? 'Подарков нет' : "Sovg'alar yo'q",
-    empty_redemptions: IS_RU ? 'Заявок ещё нет' : "Hali so'rov yo'q",
-    receive: IS_RU ? 'Получить' : 'Olish',
-    not_enough: IS_RU ? 'не хватает' : 'yetishmaydi',
-    order: IS_RU ? 'Заказать подарок' : "Sovg'ani buyurtma qilish",
-    your_balance: IS_RU ? 'Ваш баланс' : 'Sizning balansingiz',
-    after_order: IS_RU ? 'После заказа' : 'Buyurtmadan keyin',
-    confirm: IS_RU ? 'Подтвердить' : 'Tasdiqlash',
-    cancel: IS_RU ? 'Отмена' : 'Bekor qilish',
-    pending: IS_RU ? 'Ожидает' : 'Kutilmoqda',
-    approved: IS_RU ? 'Одобрено' : 'Tasdiqlangan',
-    sent: IS_RU ? 'Отправлено' : 'Yuborildi',
-    completed: IS_RU ? 'Получено' : 'Yetkazildi',
-    rejected: IS_RU ? 'Отклонено' : 'Rad etildi',
-    cancelled: IS_RU ? 'Отменено' : 'Bekor qilingan',
-    qr_success: IS_RU ? 'Промокод активирован!' : 'Promokod faollashdi!',
-    qr_already: IS_RU ? 'Уже активирован' : 'Allaqachon faollashgan',
-    qr_not_found: IS_RU ? 'Промокод не найден' : 'Promokod topilmadi',
-    qr_wrong_type: IS_RU ? 'Доступно только сантехникам' : 'Faqat santexnik uchun',
-    settings: IS_RU ? 'Настройки' : 'Sozlamalar',
-    language: IS_RU ? 'Язык' : 'Til',
-    logout: IS_RU ? 'Выйти' : 'Chiqish',
-    total_scanned: IS_RU ? 'Всего сканов' : 'Jami skan',
-    total_received: IS_RU ? 'Получено подарков' : 'Olingan sovg\'alar',
-    total_earned: IS_RU ? 'Всего баллов заработано' : 'Jami yig\'ilgan',
-    eyebrow_home: IS_RU ? 'Программа лояльности' : 'Sodiqlik dasturi',
-    eyebrow_gifts: IS_RU ? 'Каталог наград' : 'Mukofotlar katalogi',
-    eyebrow_history: IS_RU ? 'История активности' : 'Faollik tarixi',
-    eyebrow_profile: IS_RU ? 'Мой аккаунт' : 'Mening hisobim',
-    recent_scans: IS_RU ? 'Последние сканы' : 'So\'nggi skanlar',
-    view_all: IS_RU ? 'Все' : 'Hammasi',
-    member_since: IS_RU ? 'Участник с' : 'A\'zo',
-    name_eyebrow: IS_RU ? 'Имя' : 'Ism',
-  };
-  return dict[k] || k;
+// ── i18n ──────────────────────────────────────────────────────
+const i18n = {
+  home: IS_RU?'Главная':'Bosh sahifa',
+  gifts: IS_RU?'Подарки':"Sovg'alar",
+  history: IS_RU?'История':'Tarix',
+  orders: IS_RU?'Заявки':"So'rovlar",
+  profile: IS_RU?'Профиль':'Profil',
+  balance: IS_RU?'Баллы':'Balllar',
+  pts: IS_RU?'балл':'ball',
+  enter_promo: IS_RU?'Введите промокод':'Promokodni kiriting',
+  activate: IS_RU?'Активировать':'Faollashtirish',
+  all_gifts: IS_RU?'Смотреть все подарки':"Barcha sovg'alarni ko'rish",
+  top_title: IS_RU?'Топ сантехников':'Top santexniklar',
+  contact_admin: IS_RU?'Связаться с администратором':'Administrator bilan bog\'lanish',
+  order_gift: IS_RU?'Заказать подарок':"Sovg'ani buyurtma qilish",
+  exchange: IS_RU?'Обменять':'Almashtirish',
+  need_pts: IS_RU?'Нужно ещё':'Yana kerak',
+  your_balance: IS_RU?'Ваш баланс':'Sizning balansingiz',
+  after_order: IS_RU?'После заказа':'Buyurtmadan keyin',
+  confirm_order: IS_RU?'Подтвердить заказ':'Buyurtmani tasdiqlash',
+  cancel: IS_RU?'Отмена':'Bekor qilish',
+  close: IS_RU?'Закрыть':'Yopish',
+  status_pending: IS_RU?'Ожидает рассмотрения':'Ko\'rib chiqilmoqda',
+  status_approved: IS_RU?'Подтверждено, готовится':'Tasdiqlandi, tayyorlanmoqda',
+  status_sent: IS_RU?'Отправлено':'Yuborildi',
+  status_completed: IS_RU?'Получено':'Qabul qilindi',
+  status_rejected: IS_RU?'Отклонено':'Rad etildi',
+  status_cancelled: IS_RU?'Отменено':'Bekor qilingan',
+  status_not_received: IS_RU?'Не получено':'Qabul qilinmadi',
+  confirm_receipt: IS_RU?'Подтвердить получение':'Qabul qildim',
+  promo_empty: IS_RU?'История пуста':'Tarix bo\'sh',
+  promo_empty_sub: IS_RU?'Введите первый промокод':'Birinchi promokodingizni kiriting',
+  orders_empty: IS_RU?'Заявок пока нет':'Hali so\'rovlar yo\'q',
+  orders_empty_sub: IS_RU?'Обменяйте баллы на подарок':"Ballarni sovg'aga almashtiring",
+  gifts_empty: IS_RU?'Подарков пока нет':"Hali sovg'alar yo\'q",
+  cancel_order: IS_RU?'Отменить заявку':'Arizani bekor qilish',
+  phone: IS_RU?'Телефон':'Telefon',
+  region: IS_RU?'Регион':'Viloyat',
+  username: IS_RU?'Username':'Username',
+  member_since: IS_RU?'Участник с':'A\'zo bo\'lgan',
+  total_scans: IS_RU?'Всего сканов':'Jami skan',
+  total_pts: IS_RU?'Всего баллов заработано':'Jami yig\'ilgan ball',
+  loading: IS_RU?'Загрузка...':'Yuklanmoqda...',
+  error_load: IS_RU?'Ошибка загрузки':'Yuklashda xato',
+  retry: IS_RU?'Повторить':'Qaytadan',
+  loyalty: IS_RU?'Программа лояльности':'Sodiqlik dasturi',
+  promo_activated: IS_RU?'Промокод активирован!':'Promokod faollashdi!',
+  rank: IS_RU?'Место':'O\'rin',
+  scans: IS_RU?'Сканов':'Skan',
+  my_place: IS_RU?'Моё место':'Mening o\'rnim',
+  not_in_top: IS_RU?'Пока нет в топе':'Hali topda yo\'q',
+  tg_id: IS_RU?'Telegram ID':'Telegram ID',
+};
+const t = k => i18n[k] || k;
+
+// ── Design tokens ─────────────────────────────────────────────
+const C = {
+  bg: '#f2f3f5',
+  card: '#ffffff',
+  border: '#e8e8ec',
+  text: '#111111',
+  sub: '#6b6b7a',
+  faint: '#c8c8d0',
+  brand: '#4f46e5',
+  brandDeep: '#3730a3',
+  brandSoft: '#eef2ff',
+  brandTint: '#f5f3ff',
+  brandLite: '#818cf8',
+  good: '#10b981',
+  goodSoft: '#d1fae5',
+  warn: '#f59e0b',
+  warnSoft: '#fef3c7',
+  bad: '#ef4444',
+  badSoft: '#fee2e2',
+  tabH: 64,
+  navH: 56,
 };
 
-// ─────────────────────────────────────────────────────────────
-// Design tokens (same as seller)
-// ─────────────────────────────────────────────────────────────
-const T = {
-  page:'#fafafa', card:'#ffffff', surface:'#f4f4f6',
-  border:'#e7e7eb', borderSoft:'#f1f1f4', divider:'#ececef',
-  ink:'#0a0a0a', text:'#18181b', mute:'#71717a', light:'#a1a1aa', faint:'#d4d4d8',
-  primary:'#4f46e5', primaryDeep:'#3730a3', primaryDark:'#312e81', primaryLite:'#818cf8',
-  primarySoft:'#eef2ff', primaryTint:'#f5f3ff', accent:'#a855f7',
-  good:'#10b981', goodSoft:'#d1fae5', warn:'#f59e0b', warnSoft:'#fef3c7',
-  bad:'#ef4444', badSoft:'#fee2e2',
-  font:"'Inter', -apple-system, system-ui, sans-serif",
-  mono:"'JetBrains Mono', ui-monospace, monospace",
-};
-
-// ─────────────────────────────────────────────────────────────
-// API helper
-// ─────────────────────────────────────────────────────────────
-const api = (path, opts={}) => {
-  const sep = path.includes('?') ? '&' : '?';
-  const url = TELEGRAM_ID && !opts.skipTgId ? `${path}${sep}telegram_id=${TELEGRAM_ID}` : path;
-  return fetch(url, {
-    method: opts.method || 'GET',
-    headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) },
+// ── API ───────────────────────────────────────────────────────
+const BASE = '/api';
+const api = async (path, opts={}) => {
+  const sep = path.includes('?')?'&':'?';
+  const url = TG_ID && !opts.noId ? `${BASE}${path}${sep}telegram_id=${TG_ID}` : `${BASE}${path}`;
+  const r = await fetch(url, {
+    method: opts.method||'GET',
+    headers: {'Content-Type':'application/json',...(opts.headers||{})},
     cache: 'no-store',
     body: opts.body ? JSON.stringify(opts.body) : undefined,
-  }).then(r => r.json().catch(() => ({})));
+  });
+  const data = await r.json().catch(()=>({}));
+  if (!r.ok) throw data;
+  return data;
 };
 
-// ─────────────────────────────────────────────────────────────
-// Icons
-// ─────────────────────────────────────────────────────────────
-function Icon({ name, size = 20, color = 'currentColor', strokeWidth = 2, style }) {
-  const p = { fill:'none', stroke:color, strokeWidth, strokeLinecap:'round', strokeLinejoin:'round' };
-  const paths = {
-    home: <><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></>,
-    gift: <><path d="M3 9h18v4H3z"/><path d="M5 13v8h14v-8"/><path d="M12 9v12"/><path d="M12 9c-3-1-5-2-5-4a2 2 0 0 1 5-1 2 2 0 0 1 5 1c0 2-2 3-5 4"/></>,
-    history: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
-    user: <><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></>,
-    coin: <><circle cx="12" cy="12" r="9"/><path d="M9 8h4.5a2.5 2.5 0 0 1 0 5H9"/><path d="M9 13h5a2.5 2.5 0 0 1 0 5H9"/><path d="M9 5v14"/></>,
-    qr: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></>,
-    refresh: <><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></>,
-    chevR: <path d="m9 6 6 6-6 6"/>,
-    chevL: <path d="m15 6-6 6 6 6"/>,
-    plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
-    minus: <path d="M5 12h14"/>,
-    up: <><path d="M7 17 17 7"/><path d="M8 7h9v9"/></>,
-    down: <><path d="M7 7l10 10"/><path d="M17 8v9H8"/></>,
-    check: <path d="M5 12l5 5L20 7"/>,
-    x: <><path d="M6 6l12 12"/><path d="M18 6L6 18"/></>,
-    store: <><path d="M3 9 4.5 4h15L21 9"/><path d="M4 9v10h16V9"/><path d="M9 19v-5h6v5"/></>,
-    sparkles: <><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M6 6l-2-2M20 20l-2-2M6 18l-2 2M20 4l-2 2"/><circle cx="12" cy="12" r="3"/></>,
-    info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="8" r="0.5" fill={color}/></>,
-    bell: <><path d="M6 8a6 6 0 0 1 12 0v5l2 3H4l2-3Z"/><path d="M10 19a2 2 0 0 0 4 0"/></>,
-    phone: <path d="M5 4h3l2 5-2 1a11 11 0 0 0 6 6l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>,
-    globe: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></>,
-    arrowR: <path d="M5 12h14M13 5l7 7-7 7"/>,
-    trophy: <><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h2.5a1.5 1.5 0 0 1 0 5h-2"/><path d="M7 5H4.5a1.5 1.5 0 0 0 0 5h2"/></>,
+// ── Helpers ───────────────────────────────────────────────────
+const fmtPts = n => (n||0).toLocaleString('ru-RU');
+const fmtDate = s => s ? new Date(s).toLocaleDateString(IS_RU?'ru-RU':'uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+const statusInfo = s => {
+  const map = {
+    pending:  {label:t('status_pending'),  color:C.warn,   bg:C.warnSoft,  step:0},
+    approved: {label:t('status_approved'), color:C.brand,  bg:C.brandSoft, step:1},
+    sent:     {label:t('status_sent'),     color:'#0ea5e9',bg:'#e0f2fe',   step:2},
+    completed:{label:t('status_completed'),color:C.good,   bg:C.goodSoft,  step:3},
+    rejected: {label:t('status_rejected'), color:C.bad,    bg:C.badSoft,   step:-1},
+    cancelled_by_user:{label:t('status_cancelled'),color:C.sub,bg:'#f4f4f6',step:-1},
+    not_received:{label:t('status_not_received'),color:C.bad,bg:C.badSoft,step:-1},
   };
-  return (<svg width={size} height={size} viewBox="0 0 24 24" style={style}><g {...p}>{paths[name] || null}</g></svg>);
-}
+  return map[s] || {label:s,color:C.sub,bg:'#f4f4f6',step:0};
+};
 
-// ─────────────────────────────────────────────────────────────
-// Primitives (Pill, Card, SectionTitle, PageHeader, Avatar, etc.)
-// ─────────────────────────────────────────────────────────────
-function Pill({ children, tone='neutral', solid=false, size='sm', style }) {
-  const tones = {
-    neutral:{bg:'#f4f4f6',fg:'#52525b',bd:'#e7e7eb'},
-    brand:{bg:T.primarySoft,fg:T.primaryDeep,bd:'#dcd9ff'},
-    good:{bg:T.goodSoft,fg:'#047857',bd:'#a7f3d0'},
-    warn:{bg:T.warnSoft,fg:'#92400e',bd:'#fde68a'},
-    bad:{bg:T.badSoft,fg:'#b91c1c',bd:'#fecaca'},
-    glass:{bg:'rgba(255,255,255,0.18)',fg:'#fff',bd:'rgba(255,255,255,0.25)'},
-    dark:{bg:'#0a0a0a',fg:'#fff',bd:'#0a0a0a'},
+// ── Icons ─────────────────────────────────────────────────────
+const Icon = ({n,size=20,color='currentColor',sw=1.8,style:st}) => {
+  const s = {fill:'none',stroke:color,strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round'};
+  const shapes = {
+    home:   <><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-5h4v5h5V9.5"/></>,
+    gift:   <><path d="M3 9h18v4H3z"/><path d="M5 13v8h14v-8"/><path d="M12 9v12"/><path d="M12 9c-2.7-.9-4.5-2-4.5-3.5A2.5 2.5 0 0 1 12 3a2.5 2.5 0 0 1 4.5 2.5C16.5 7 14.7 8 12 9"/></>,
+    clock:  <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></>,
+    list:   <><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill={color} stroke="none"/><circle cx="4" cy="12" r="1.2" fill={color} stroke="none"/><circle cx="4" cy="18" r="1.2" fill={color} stroke="none"/></>,
+    user:   <><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></>,
+    coin:   <><circle cx="12" cy="12" r="9"/><path d="M9 8h4.5a2.5 2.5 0 0 1 0 5H9m0 0h5a2.5 2.5 0 0 1 0 5H9V5v14"/></>,
+    qr:     <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM18 14h3M14 18v3"/></>,
+    chevR:  <path d="m9 6 6 6-6 6"/>,
+    chevL:  <path d="m15 6-6 6 6 6"/>,
+    check:  <path d="m5 12 5 5L20 7"/>,
+    x:      <><path d="M6 6l12 12"/><path d="M18 6 6 18"/></>,
+    phone:  <path d="M5 4h3l2 5-2 1.5a11 11 0 0 0 5.5 5.5L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>,
+    send:   <><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></>,
+    trophy: <><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h2.5a1.5 1.5 0 0 1 0 5h-2"/><path d="M7 5H4.5a1.5 1.5 0 0 0 0 5h2"/></>,
+    star:   <path d="m12 2 3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/>,
+    info:   <><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="8" r=".5" fill={color} sw={0}/></>,
+    img:    <><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></>,
+    tg:     <><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></>,
+    globe:  <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></>,
+    spin:   <path d="M21 12a9 9 0 1 1-3-6.7"/>,
+    bag:    <><path d="M6 2 3 6v14h18V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></>,
   };
-  const t = tones[tone];
-  const padY = size==='lg'?6:size==='md'?4:3;
-  const padX = size==='lg'?12:size==='md'?10:8;
-  const fs = size==='lg'?12:11;
-  return (<span style={{display:'inline-flex',alignItems:'center',gap:4,padding:`${padY}px ${padX}px`,borderRadius:999,
-    background:solid?t.fg:t.bg,color:solid?'#fff':t.fg,border:`1px solid ${solid?t.fg:t.bd}`,
-    fontSize:fs,fontWeight:600,letterSpacing:0.1,lineHeight:1,whiteSpace:'nowrap',...style}}>{children}</span>);
-}
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={st}>
+      <g {...s}>{shapes[n]||null}</g>
+    </svg>
+  );
+};
 
-function Card({ children, style, padding=16, onClick, className='' }) {
-  return (<div onClick={onClick} className={`${onClick?'jip-press':''} ${className}`}
-    style={{background:'#fff',border:`1px solid ${T.border}`,borderRadius:16,padding,cursor:onClick?'pointer':'default',...style}}>{children}</div>);
-}
+// ── Spinner ───────────────────────────────────────────────────
+const Spin = ({size=20,color=C.brand}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{animation:'spin 0.8s linear infinite',flexShrink:0}}>
+    <circle cx="12" cy="12" r="9" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="48" strokeDashoffset="16"/>
+  </svg>
+);
 
-function SectionTitle({ children, action, style }) {
-  return (<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'0 0 10px 4px',...style}}>
-    <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mute}}>{children}</div>
-    {action}
-  </div>);
-}
+// ── Pill badge ────────────────────────────────────────────────
+const Badge = ({label,color,bg,style:st}) => (
+  <span style={{display:'inline-flex',alignItems:'center',padding:'3px 10px',borderRadius:999,
+    fontSize:11,fontWeight:700,color,background:bg,letterSpacing:0.1,...st}}>{label}</span>
+);
 
-function PageHeader({ eyebrow, title, subtitle, right }) {
-  return (<div style={{padding:'8px 20px 18px',display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:12}}>
-    <div style={{minWidth:0}}>
-      {eyebrow && <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:T.mute,marginBottom:4}}>{eyebrow}</div>}
-      <div style={{fontSize:26,fontWeight:700,letterSpacing:'-0.025em',color:T.ink,lineHeight:1.1}}>{title}</div>
-      {subtitle && <div style={{fontSize:13,color:T.mute,marginTop:4,fontWeight:500}}>{subtitle}</div>}
+// ── Avatar ────────────────────────────────────────────────────
+const Avatar = ({name,size=40}) => {
+  const letter = (name||'?').trim()[0].toUpperCase();
+  let h=0; for(const c of name||'') h=(h*31+c.charCodeAt(0))%1000;
+  const colors=['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6'];
+  const bg = colors[h%colors.length];
+  return (
+    <div style={{width:size,height:size,borderRadius:999,background:bg,
+      display:'flex',alignItems:'center',justifyContent:'center',
+      color:'#fff',fontWeight:700,fontSize:size*0.42,flexShrink:0}}>
+      {letter}
     </div>
-    {right}
-  </div>);
-}
+  );
+};
 
-function Avatar({ name, size=36, color }) {
-  const letter = (name || '?').trim().charAt(0).toUpperCase();
-  const palette = ['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#84cc16'];
-  let hash = 0; for (const c of (name||'')) hash = (hash*31 + c.charCodeAt(0)) % 1000;
-  const bg = color || palette[hash % palette.length];
-  return (<div style={{width:size,height:size,borderRadius:999,background:bg,color:'#fff',
-    display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:size*0.42,letterSpacing:'-0.02em',flexShrink:0}}>{letter}</div>);
-}
+// ── Toast ─────────────────────────────────────────────────────
+let _toastTimer;
+const Toast = ({msg,type='success',onHide}) => {
+  useEffect(()=>{
+    _toastTimer = setTimeout(onHide,2800);
+    return ()=>clearTimeout(_toastTimer);
+  },[]);
+  const bg = type==='success'?C.good : type==='error'?C.bad : C.warn;
+  return (
+    <div style={{position:'fixed',top:16,left:'50%',transform:'translateX(-50%)',
+      zIndex:200,background:bg,color:'#fff',
+      borderRadius:12,padding:'10px 18px',fontSize:14,fontWeight:600,
+      boxShadow:'0 6px 24px rgba(0,0,0,0.18)',
+      display:'flex',alignItems:'center',gap:8,maxWidth:'calc(100vw - 32px)',
+      animation:'fadeUp 260ms cubic-bezier(.22,1,.36,1) both',whiteSpace:'pre-wrap'}}>
+      <Icon n={type==='success'?'check':'info'} size={16} color="#fff"/>
+      {msg}
+    </div>
+  );
+};
 
-function Progress({ value, max=100, height=6, color, gradient=true }) {
-  const pct = Math.max(0, Math.min(1, max ? value / max : 0));
-  const [w, setW] = React.useState(0);
-  React.useEffect(() => { const id = setTimeout(() => setW(pct), 60); return () => clearTimeout(id); }, [pct]);
-  return (<div style={{width:'100%',height,borderRadius:999,background:T.borderSoft,overflow:'hidden'}}>
-    <div style={{width:`${w*100}%`,height:'100%',
-      background:gradient?`linear-gradient(90deg, ${T.primary}, ${T.primaryLite})`:(color||T.primary),
-      borderRadius:999,transition:'width 900ms cubic-bezier(.22,1,.36,1)'}}/>
-  </div>);
-}
-
-function BottomSheet({ open, onClose, title, children, maxHeight='84%' }) {
-  return (<div style={{position:'fixed',inset:0,zIndex:90,
-    pointerEvents:open?'auto':'none',
-    visibility:open?'visible':'hidden',
-    transition: open ? 'visibility 0s' : 'visibility 0s 300ms'}}>
-    <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(15,16,30,0.45)',
+// ── Bottom Sheet ──────────────────────────────────────────────
+const Sheet = ({open,onClose,title,children,maxH='88vh'}) => (
+  <div style={{position:'fixed',inset:0,zIndex:100,
+    pointerEvents:open?'auto':'none',display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
+    <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)',
       opacity:open?1:0,transition:'opacity 220ms ease'}}/>
-    <div className="jip-scroll" style={{position:'absolute',left:0,right:0,bottom:0,background:'#fff',borderRadius:'24px 24px 0 0',
-      maxHeight,overflow:'auto',transform:open?'translateY(0)':'translateY(100%)',
-      transition:'transform 280ms cubic-bezier(.22,1,.36,1)',boxShadow:'0 -10px 40px rgba(15,16,30,0.18)',paddingBottom:40}}>
-      <div style={{display:'flex',justifyContent:'center',padding:'10px 0 4px'}}>
-        <div style={{width:36,height:4,borderRadius:4,background:T.faint}}/>
+    <div className="scroll-y" style={{position:'relative',background:'#fff',borderRadius:'20px 20px 0 0',
+      maxHeight:maxH,overflow:'auto',
+      transform:open?'translateY(0)':'translateY(110%)',
+      transition:'transform 300ms cubic-bezier(.22,1,.36,1)',
+      boxShadow:'0 -8px 32px rgba(0,0,0,0.15)',paddingBottom:32}}>
+      <div style={{display:'flex',justifyContent:'center',padding:'10px 0 2px',flexShrink:0}}>
+        <div style={{width:36,height:4,borderRadius:4,background:C.faint}}/>
       </div>
-      {title && <div style={{padding:'6px 20px 14px',fontSize:18,fontWeight:700,letterSpacing:'-0.02em',color:T.ink}}>{title}</div>}
+      {title && (
+        <div style={{padding:'8px 20px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:18,fontWeight:700,color:C.text}}>{title}</div>
+          <button className="press" onClick={onClose} style={{padding:6,borderRadius:8,background:C.bg}}>
+            <Icon n="x" size={18} color={C.sub}/>
+          </button>
+        </div>
+      )}
       <div style={{padding:'0 20px'}}>{children}</div>
     </div>
-  </div>);
-}
+  </div>
+);
 
-function Chips({ items, value, onChange, style }) {
-  return (<div className="jip-scroll" style={{display:'flex',gap:6,overflowX:'auto',padding:'2px 20px',...style}}>
-    {items.map(it => {
-      const active = it.id === value;
-      return (<button key={it.id} onClick={() => onChange(it.id)} className="jip-press" style={{
-        border:'none',cursor:'pointer',padding:'8px 14px',borderRadius:999,
-        background:active?T.ink:'#fff',color:active?'#fff':T.text,
-        boxShadow:active?'0 6px 14px -6px rgba(10,10,10,0.4)':`inset 0 0 0 1px ${T.border}`,
-        fontSize:13,fontWeight:600,whiteSpace:'nowrap',fontFamily:T.font,letterSpacing:'-0.01em',
-        display:'flex',alignItems:'center',gap:6,
-        transition:'background 220ms ease, color 220ms ease, box-shadow 220ms ease, transform 140ms ease',
-      }}>
-        {it.icon && <Icon name={it.icon} size={14}/>}
-        {it.label}
-        {it.count != null && <span style={{fontSize:11,fontWeight:700,
-          background:active?'rgba(255,255,255,0.18)':T.borderSoft,color:active?'#fff':T.mute,
-          padding:'1px 7px',borderRadius:999,marginLeft:2,transition:'background 220ms ease, color 220ms ease',
-        }}>{it.count}</span>}
-      </button>);
-    })}
-  </div>);
-}
-
-function AnimatedNumber({ value, duration=700, format=v => Math.round(v).toLocaleString('ru-RU') }) {
-  const [v, setV] = React.useState(value);
-  const start = React.useRef({from: value, to: value, t0: 0});
-  React.useEffect(() => {
-    start.current = {from: v, to: value, t0: performance.now()};
-    let raf;
-    const tick = (now) => {
-      const p = Math.min(1, (now - start.current.t0) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setV(start.current.from + (start.current.to - start.current.from) * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-  return <>{format(v)}</>;
-}
-
-function LoadingSpinner() {
-  return (<div style={{display:'flex',justifyContent:'center',padding:'40px 0'}}>
-    <div style={{width:28,height:28,border:`3px solid ${T.border}`,borderTopColor:T.primary,
-      borderRadius:'50%',animation:'jip-spin 800ms linear infinite'}}/>
-  </div>);
-}
-
-function ErrorState({ message, onRetry }) {
-  return (<div style={{padding:'40px 24px',textAlign:'center'}}>
-    <div style={{fontSize:48,marginBottom:8,opacity:0.5}}>⚠️</div>
-    <div style={{fontSize:14,color:T.mute,fontWeight:500,marginBottom:16}}>{message || 'Error'}</div>
-    {onRetry && <button onClick={onRetry} className="jip-press" style={{
-      padding:'10px 20px',borderRadius:10,background:T.ink,color:'#fff',border:'none',cursor:'pointer',
-      fontFamily:T.font,fontSize:13,fontWeight:600,
-    }}>{IS_RU ? 'Попробовать снова' : "Qayta urinib ko'rish"}</button>}
-  </div>);
-}
-
-function EmptyState({ icon='📭', title, subtitle }) {
-  return (<div style={{padding:'48px 24px',textAlign:'center'}}>
-    <div style={{fontSize:48,marginBottom:12,opacity:0.5}}>{icon}</div>
-    <div style={{fontSize:14,color:T.text,fontWeight:600,marginBottom:4}}>{title}</div>
-    {subtitle && <div style={{fontSize:12,color:T.mute,fontWeight:500}}>{subtitle}</div>}
-  </div>);
-}
-
-// ═══════════════════════════════════════════════════════════
-// HOME TAB
-// ═══════════════════════════════════════════════════════════
-function HeroBalance({ balance, name }) {
-  return (<div style={{position:'relative',borderRadius:22,padding:'20px 22px 22px',color:'#fff',overflow:'hidden',
-    background:`radial-gradient(120% 100% at 100% 0%, #6366f1 0%, transparent 55%),
-      radial-gradient(100% 100% at 0% 100%, #a855f7 0%, transparent 60%),
-      linear-gradient(135deg, #3730a3 0%, #4338ca 55%, #4f46e5 100%)`,
-    boxShadow:'0 18px 40px -12px rgba(79, 70, 229, 0.45)'}}>
-    <svg style={{position:'absolute',right:-40,top:-40,opacity:0.18}} width="220" height="220" viewBox="0 0 220 220">
-      <defs><radialGradient id="hb-blob" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="#fff" stopOpacity="0.6"/>
-        <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
-      </radialGradient></defs>
-      <circle cx="110" cy="110" r="110" fill="url(#hb-blob)"/>
-    </svg>
-    <svg style={{position:'absolute',inset:0,opacity:0.08}} width="100%" height="100%">
-      <defs><pattern id="hb-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#fff" strokeWidth="1"/>
-      </pattern></defs>
-      <rect width="100%" height="100%" fill="url(#hb-grid)"/>
-    </svg>
-    <div style={{position:'relative',zIndex:1}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',
-        fontSize:11,fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',opacity:0.85}}>
-        <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
-          <Icon name="coin" size={14}/>{tr('balance')}
-        </span>
-        {name && <Pill tone="glass" size="sm">
-          <Avatar name={name} size={14} color="rgba(255,255,255,0.3)"/>
-          {name.split(' ')[0]}
-        </Pill>}
-      </div>
-      <div style={{fontSize:44,fontWeight:800,letterSpacing:'-0.04em',lineHeight:1,marginTop:14,
-        display:'flex',alignItems:'baseline',gap:8}}>
-        <AnimatedNumber value={balance}/>
-        <span style={{fontSize:16,fontWeight:600,opacity:0.75,letterSpacing:'-0.02em'}}>{tr('points')}</span>
-      </div>
-    </div>
-  </div>);
-}
-
-function ScanQRCard({ onScan }) {
-  const [code, setCode] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
-  const [msg, setMsg] = React.useState(null);
+// ── Promo input ───────────────────────────────────────────────
+const PromoInput = ({onSuccess}) => {
+  const [val,setVal] = useState('');
+  const [loading,setLoading] = useState(false);
+  const [err,setErr] = useState('');
 
   const submit = async () => {
-    if (!code.trim() || busy) return;
-    setBusy(true);
-    setMsg(null);
-    haptic('medium');
+    const code = val.trim().toUpperCase();
+    if (!code) return;
+    haptic();
+    setLoading(true); setErr('');
     try {
-      const res = await api('/api/webapp/register-qr/', {
-        method: 'POST',
-        body: { telegram_id: TELEGRAM_ID, code: code.trim().toUpperCase() },
-      });
-      if (res.success || res.points) {
-        setMsg({ kind: 'good', text: tr('qr_success'), points: res.points });
-        setCode('');
-        hapticNotify('success');
-        if (onScan) setTimeout(onScan, 800);
-      } else if (res.error_code === 'already_scanned') {
-        setMsg({ kind: 'warn', text: tr('qr_already') });
-        hapticNotify('warning');
-      } else if (res.error_code === 'not_found' || res.error?.includes('not found') || res.error?.includes('topilmadi')) {
-        setMsg({ kind: 'bad', text: tr('qr_not_found') });
-        hapticNotify('error');
-      } else if (res.error_code === 'wrong_type') {
-        setMsg({ kind: 'bad', text: tr('qr_wrong_type') });
-        hapticNotify('error');
-      } else {
-        setMsg({ kind: 'bad', text: res.error || 'Error' });
-        hapticNotify('error');
-      }
-    } catch (e) {
-      setMsg({ kind: 'bad', text: e.message });
-      hapticNotify('error');
-    }
-    setBusy(false);
+      const res = await api('/webapp/register-qr/',{method:'POST',body:{telegram_id:TG_ID,qr_code:code}});
+      hapticSuccess();
+      setVal('');
+      onSuccess && onSuccess(res);
+    } catch(e) {
+      hapticError();
+      setErr(e.error || t('error_load'));
+    } finally { setLoading(false); }
   };
 
-  return (<Card padding={16} style={{borderColor: T.primarySoft, background: '#fff', position:'relative', overflow:'hidden'}}>
-    <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-      <div style={{width:42,height:42,borderRadius:12,
-        background:`linear-gradient(135deg, ${T.primary}, ${T.primaryDeep})`,color:'#fff',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        boxShadow:'0 6px 14px -6px rgba(79,70,229,0.5)'}}>
-        <Icon name="qr" size={22}/>
+  return (
+    <div style={{marginBottom:4}}>
+      <div style={{display:'flex',gap:8}}>
+        <input
+          value={val}
+          onChange={e=>{setVal(e.target.value);setErr('');}}
+          onKeyDown={e=>e.key==='Enter'&&submit()}
+          placeholder={t('enter_promo')}
+          style={{flex:1,height:48,borderRadius:12,border:`1.5px solid ${err?C.bad:C.border}`,
+            background:C.card,padding:'0 14px',fontSize:15,color:C.text,outline:'none',
+            transition:'border-color 180ms'}}
+        />
+        <button
+          onClick={submit}
+          disabled={loading||!val.trim()}
+          className="press"
+          style={{height:48,minWidth:48,borderRadius:12,background:val.trim()?C.brand:'#e8e8ec',
+            color:val.trim()?'#fff':C.faint,display:'flex',alignItems:'center',justifyContent:'center',
+            padding:'0 16px',gap:6,fontSize:14,fontWeight:600,transition:'background 180ms'}}>
+          {loading ? <Spin size={18} color="#fff"/> : <><Icon n="send" size={16} color={val.trim()?'#fff':C.faint}/> {t('activate')}</>}
+        </button>
       </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:11,fontWeight:700,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>{tr('scan_qr')}</div>
-        <div style={{fontSize:14,fontWeight:600,color:T.ink,marginTop:2,letterSpacing:'-0.01em'}}>{tr('activate_btn')}</div>
-      </div>
+      {err && <div style={{marginTop:6,fontSize:12,color:C.bad,fontWeight:500}}>{err}</div>}
     </div>
-    <div style={{display:'flex',gap:8}}>
-      <input
-        type="text"
-        value={code}
-        onChange={e => setCode(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && submit()}
-        placeholder={tr('enter_promo')}
-        style={{flex:1,border:`2px solid ${T.border}`,borderRadius:12,padding:'12px 14px',
-          fontSize:15,fontWeight:600,color:T.ink,fontFamily:T.mono,letterSpacing:'0.05em',
-          outline:'none',transition:'border-color 200ms ease', textTransform:'uppercase',
-          background: T.surface}}
-        onFocus={e => e.target.style.borderColor = T.primary}
-        onBlur={e => e.target.style.borderColor = T.border}
-        disabled={busy}
-      />
-      <button onClick={submit} disabled={busy || !code.trim()} className="jip-press" style={{
-        border:'none',cursor: busy||!code.trim()?'not-allowed':'pointer',
-        padding:'0 18px',borderRadius:12,
-        background: busy||!code.trim() ? T.borderSoft : `linear-gradient(135deg, ${T.primary}, ${T.primaryDeep})`,
-        color: busy||!code.trim() ? T.mute : '#fff',
-        fontWeight:700,fontSize:14,fontFamily:T.font,letterSpacing:'-0.01em',
-        boxShadow: busy||!code.trim() ? 'none' : '0 6px 14px -4px rgba(79,70,229,0.4)',
-        display:'flex',alignItems:'center',justifyContent:'center',
-      }}>
-        {busy ? <div style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'#fff',borderRadius:'50%',animation:'jip-spin 700ms linear infinite'}}/>
-              : <Icon name="check" size={18}/>}
+  );
+};
+
+// ── Banner slider ─────────────────────────────────────────────
+const Banner = () => {
+  const [items,setItems] = useState([]);
+  const [idx,setIdx] = useState(0);
+  const ref = useRef();
+
+  useEffect(()=>{
+    api('/webapp/promotions/',{noId:true}).then(d=>setItems(Array.isArray(d)?d:[])).catch(()=>{});
+  },[]);
+
+  useEffect(()=>{
+    if(items.length<=1) return;
+    const id = setInterval(()=>setIdx(i=>(i+1)%items.length),3500);
+    return ()=>clearInterval(id);
+  },[items.length]);
+
+  if(!items.length) return null;
+
+  return (
+    <div style={{borderRadius:16,overflow:'hidden',position:'relative',aspectRatio:'2.4/1',background:C.brandTint}}>
+      {items.map((it,i)=>(
+        <div key={it.id} style={{position:'absolute',inset:0,opacity:i===idx?1:0,
+          transition:'opacity 500ms ease',pointerEvents:i===idx?'auto':'none'}}>
+          {it.image
+            ? <img src={it.image} alt={it.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+            : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',
+                background:`linear-gradient(135deg,${C.brand},${C.brandLite})`,color:'#fff',fontSize:15,fontWeight:600,padding:20,textAlign:'center'}}>{it.title}</div>
+          }
+        </div>
+      ))}
+      {items.length>1 && (
+        <div style={{position:'absolute',bottom:8,left:'50%',transform:'translateX(-50%)',
+          display:'flex',gap:4,pointerEvents:'none'}}>
+          {items.map((_,i)=>(
+            <div key={i} style={{width:i===idx?16:5,height:5,borderRadius:999,
+              background:i===idx?'#fff':'rgba(255,255,255,0.5)',transition:'width 300ms ease'}}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════
+// PAGE: HOME
+// ══════════════════════════════════════════════════════════════
+const PageHome = ({user,onRefreshUser,onTab,showToast}) => {
+  const [redemptions,setRedemptions] = useState([]);
+  const [topUsers,setTopUsers] = useState([]);
+  const [contact,setContact] = useState(null);
+  const [promoResult,setPromoResult] = useState(null);
+
+  useEffect(()=>{
+    if(!TG_ID) return;
+    api('/webapp/redemptions/').then(d=>setRedemptions(Array.isArray(d)?d:[])).catch(()=>{});
+    api('/webapp/top-users/?period=all&limit=5').then(d=>setTopUsers(d.items||[])).catch(()=>{});
+    api('/webapp/admin-contact/',{noId:true}).then(setContact).catch(()=>{});
+  },[]);
+
+  const activeOrder = useMemo(()=>
+    redemptions.find(r=>!['completed','rejected','cancelled_by_user','not_received'].includes(r.status))
+  ,[redemptions]);
+
+  const handlePromoSuccess = (res) => {
+    showToast(res.message || t('promo_activated'),'success');
+    onRefreshUser();
+  };
+
+  const si = activeOrder ? statusInfo(activeOrder.status) : null;
+
+  return (
+    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:16}}>
+
+      {/* Hero card */}
+      <div className="anim-up" style={{background:`linear-gradient(135deg, ${C.brandDeep} 0%, ${C.brand} 60%, ${C.brandLite} 100%)`,
+        borderRadius:20,padding:'20px 20px 18px',color:'#fff',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-20,right:-20,width:100,height:100,borderRadius:999,
+          background:'rgba(255,255,255,0.06)'}}/>
+        <div style={{position:'absolute',bottom:-30,right:20,width:80,height:80,borderRadius:999,
+          background:'rgba(255,255,255,0.05)'}}/>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16,position:'relative'}}>
+          <Avatar name={user.first_name||'U'} size={44}/>
+          <div>
+            <div style={{fontSize:11,fontWeight:600,opacity:0.7,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:2}}>{t('loyalty')}</div>
+            <div style={{fontSize:16,fontWeight:700}}>{user.first_name||'—'}</div>
+          </div>
+          <div style={{marginLeft:'auto',background:'rgba(255,255,255,0.12)',borderRadius:10,padding:'4px 10px',
+            fontSize:11,color:'rgba(255,255,255,0.8)',fontWeight:600}}>
+            ID {user.telegram_id}
+          </div>
+        </div>
+        <div style={{position:'relative'}}>
+          <div style={{fontSize:11,fontWeight:600,opacity:0.65,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:4}}>{t('balance')}</div>
+          <div style={{fontSize:42,fontWeight:800,letterSpacing:'-0.03em',lineHeight:1}}>
+            {fmtPts(user.points)}
+            <span style={{fontSize:16,fontWeight:600,marginLeft:6,opacity:0.75}}>{t('pts')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Banner */}
+      <div className="anim-up" style={{animationDelay:'40ms'}}><Banner/></div>
+
+      {/* Promo input */}
+      <div className="anim-up" style={{animationDelay:'80ms',background:C.card,borderRadius:16,padding:'16px 16px 14px',
+        border:`1px solid ${C.border}`}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>
+          <Icon n="qr" size={15} color={C.brand} style={{verticalAlign:'middle',marginRight:6}}/>
+          {IS_RU?'Активировать промокод':'Promokod faollashtirish'}
+        </div>
+        <PromoInput onSuccess={handlePromoSuccess}/>
+      </div>
+
+      {/* All gifts button */}
+      <button className="press anim-up" onClick={()=>{hapticSelect();onTab('gifts');}}
+        style={{animationDelay:'100ms',width:'100%',height:48,borderRadius:14,
+          background:C.brandSoft,border:`1.5px solid ${C.brand}33`,
+          color:C.brand,fontSize:14,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+        <Icon n="gift" size={18} color={C.brand}/>
+        {t('all_gifts')}
       </button>
-    </div>
-    {msg && (<div style={{marginTop:12,padding:'10px 12px',borderRadius:10,
-      background: msg.kind==='good'?T.goodSoft : msg.kind==='warn'?T.warnSoft : T.badSoft,
-      color: msg.kind==='good'?'#047857' : msg.kind==='warn'?'#92400e' : '#b91c1c',
-      fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:8}} className="jip-fade-up">
-      <Icon name={msg.kind==='good'?'check':msg.kind==='warn'?'info':'x'} size={16}/>
-      <span style={{flex:1}}>{msg.text}{msg.points ? ` +${msg.points} ${tr('points')}` : ''}</span>
-    </div>)}
-  </Card>);
-}
 
-function NextGiftCard({ gifts, balance, onClick }) {
-  if (!gifts || gifts.length === 0) return null;
-  // Find the closest gift user can NOT yet afford (but progress > 0)
-  const upcoming = gifts.filter(g => g.points_cost > balance).sort((a,b) => a.points_cost - b.points_cost)[0];
-  if (!upcoming) {
-    // Find an affordable suggestion
-    const affordable = gifts.filter(g => g.points_cost <= balance).sort((a,b) => b.points_cost - a.points_cost)[0];
-    if (!affordable) return null;
-    return (<Card padding={0} onClick={() => onClick(affordable)} style={{overflow:'hidden'}}>
-      <div style={{display:'flex',gap:14,padding:14,alignItems:'center'}}>
-        <div style={{width:64,height:64,borderRadius:12,background:T.borderSoft,overflow:'hidden',
-          display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          {affordable.image ? <img src={affordable.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : '🎁'}
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>
-            ✓ {tr('affordable')}
+      {/* Active order card */}
+      {activeOrder && (
+        <div className="anim-up" style={{animationDelay:'120ms',background:C.card,borderRadius:16,
+          border:`1.5px solid ${si.color}44`,padding:'14px 16px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+            <div style={{width:8,height:8,borderRadius:999,background:si.color,
+              boxShadow:`0 0 0 3px ${si.bg}`}}/>
+            <div style={{fontSize:12,fontWeight:700,color:si.color,letterSpacing:'0.05em',textTransform:'uppercase'}}>
+              {IS_RU?'Активная заявка':'Faol ariza'}
+            </div>
           </div>
-          <div style={{fontSize:14,fontWeight:700,color:T.ink,marginTop:2,letterSpacing:'-0.01em',
-            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{affordable.name}</div>
-          <div style={{fontSize:13,fontWeight:600,color:T.primary,marginTop:4}}>{affordable.points_cost} {tr('points')}</div>
-        </div>
-        <Icon name="chevR" size={20} color={T.mute}/>
-      </div>
-    </Card>);
-  }
-  const need = upcoming.points_cost - balance;
-  const pct = Math.round(balance / upcoming.points_cost * 100);
-  return (<Card padding={14} onClick={() => onClick(upcoming)}>
-    <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:12}}>
-      <div style={{width:56,height:56,borderRadius:12,background:T.borderSoft,overflow:'hidden',
-        display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:28}}>
-        {upcoming.image ? <img src={upcoming.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : '🎁'}
-      </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:11,fontWeight:700,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>{tr('next_gift')}</div>
-        <div style={{fontSize:14,fontWeight:700,color:T.ink,marginTop:2,letterSpacing:'-0.01em',
-          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{upcoming.name}</div>
-        <div style={{fontSize:12,fontWeight:600,color:T.mute,marginTop:2}}>
-          <span style={{color:T.primary}}>{balance.toLocaleString('ru-RU')}</span> / {upcoming.points_cost.toLocaleString('ru-RU')} {tr('points')}
-        </div>
-      </div>
-    </div>
-    <Progress value={balance} max={upcoming.points_cost}/>
-    <div style={{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:12,fontWeight:600}}>
-      <span style={{color:T.primary}}>{pct}%</span>
-      <span style={{color:T.mute}}>+{need.toLocaleString('ru-RU')} {tr('need_more')}</span>
-    </div>
-  </Card>);
-}
-
-function RecentScans({ items, onAll }) {
-  if (!items || items.length === 0) return null;
-  const shown = items.slice(0, 3);
-  return (<div>
-    <SectionTitle action={<button onClick={onAll} className="jip-press" style={{
-      background:'none',border:'none',cursor:'pointer',
-      fontSize:11,fontWeight:700,color:T.primary,letterSpacing:'-0.01em',padding:'2px 6px',
-    }}>{tr('view_all')} →</button>}>{tr('recent_scans')}</SectionTitle>
-    <Card padding={0} style={{overflow:'hidden'}}>
-      {shown.map((s, i) => (<div key={s.id} className="jip-fade-up" style={{animationDelay:`${i*60}ms`,
-        display:'flex',alignItems:'center',gap:12,padding:'12px 14px',
-        borderBottom:i===shown.length-1?'none':`1px solid ${T.divider}`}}>
-        <div style={{width:34,height:34,borderRadius:10,background:T.goodSoft,color:'#047857',
-          display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <Icon name="qr" size={16}/>
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:T.mono,letterSpacing:'-0.01em',
-            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.code}</div>
-          <div style={{fontSize:11,color:T.mute,marginTop:2,fontWeight:500}}>
-            {s.store_name || '—'} · {s.scanned_at}
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            {activeOrder.gift?.image
+              ? <img src={activeOrder.gift.image} alt="" style={{width:52,height:52,borderRadius:10,objectFit:'cover'}}/>
+              : <div style={{width:52,height:52,borderRadius:10,background:C.brandTint,display:'flex',
+                  alignItems:'center',justifyContent:'center'}}><Icon n="gift" size={22} color={C.brand}/></div>
+            }
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:2,
+                overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {activeOrder.gift?.name}
+              </div>
+              <Badge label={si.label} color={si.color} bg={si.bg}/>
+            </div>
+            <button className="press" onClick={()=>{haptic();onTab('orders');}}
+              style={{padding:'6px 12px',borderRadius:10,background:C.bg,fontSize:12,fontWeight:600,color:C.sub}}>
+              {IS_RU?'Детали':'Batafsil'}
+            </button>
           </div>
         </div>
-        <div style={{fontSize:14,fontWeight:700,color:'#047857',fontVariantNumeric:'tabular-nums'}}>+{s.points}</div>
-      </div>))}
-    </Card>
-  </div>);
-}
+      )}
 
-function HomeTab({ user, gifts, qrHistory, onOpenGift, onTabChange }) {
-  return (<div style={{padding:'0 16px 16px',display:'grid',gap:14}}>
-    <HeroBalance balance={user.points || 0} name={user.first_name}/>
-    <ScanQRCard onScan={() => window.location.reload()}/>
-    <NextGiftCard gifts={gifts} balance={user.points || 0} onClick={onOpenGift}/>
-    <RecentScans items={qrHistory} onAll={() => onTabChange('history')}/>
-  </div>);
-}
-
-// ═══════════════════════════════════════════════════════════
-// GIFTS TAB
-// ═══════════════════════════════════════════════════════════
-function GiftCard({ gift, balance, onClick }) {
-  const cost = gift.points_cost || 0;
-  const affordable = balance >= cost;
-  const pct = cost > 0 ? Math.min(100, Math.floor(balance / cost * 100)) : 100;
-  return (<button onClick={() => onClick(gift)} className="jip-press" style={{
-    width:'100%',background:'#fff',border:`1px solid ${affordable ? '#dcd9ff' : T.border}`,
-    borderRadius:18,padding:0,cursor:'pointer',fontFamily:T.font,overflow:'hidden',textAlign:'left',
-    position:'relative',
-  }}>
-    {affordable && <div style={{position:'absolute',top:8,right:8,zIndex:1}}>
-      <Pill tone="brand" size="sm" solid>
-        <Icon name="check" size={10}/>{tr('affordable')}
-      </Pill>
-    </div>}
-    <div style={{aspectRatio:'1/1',background:T.borderSoft,overflow:'hidden',
-      backgroundImage:'repeating-linear-gradient(135deg, rgba(128,130,133,0.06) 0, rgba(128,130,133,0.06) 1px, transparent 1px, transparent 8px)',
-      display:'flex',alignItems:'center',justifyContent:'center',position:'relative',
-      filter: affordable ? 'none' : 'grayscale(0.3)'}}>
-      {gift.image ? <img src={gift.image} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-        : <span style={{fontSize:56}}>🎁</span>}
-      {!affordable && <div style={{position:'absolute',inset:0,background:'rgba(255,255,255,0.55)'}}/>}
-    </div>
-    <div style={{padding:12,display:'flex',flexDirection:'column',gap:8}}>
-      <div style={{fontSize:13,fontWeight:700,color:T.ink,letterSpacing:'-0.01em',lineHeight:1.25,
-        minHeight:32,display:'-webkit-box',WebkitBoxOrient:'vertical',WebkitLineClamp:2,overflow:'hidden'}}>
-        {gift.name || 'Sovg\'a'}
-      </div>
-      {!affordable && <div>
-        <Progress value={balance} max={cost} height={4}/>
-        <div style={{fontSize:10,color:T.mute,fontWeight:600,marginTop:4,letterSpacing:'0.04em'}}>
-          +{(cost - balance).toLocaleString('ru-RU')} {tr('need_more')}
+      {/* Top santexniks */}
+      {topUsers.length>0 && (
+        <div className="anim-up" style={{animationDelay:'140ms'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,display:'flex',alignItems:'center',gap:6}}>
+              <Icon n="trophy" size={15} color="#f59e0b"/>
+              {t('top_title')}
+            </div>
+          </div>
+          <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+            {topUsers.map((u,i)=>(
+              <div key={u.telegram_id} style={{display:'flex',alignItems:'center',gap:12,
+                padding:'11px 16px',borderBottom:i<topUsers.length-1?`1px solid ${C.border}`:'none',
+                background:u.is_me?C.brandTint:'transparent'}}>
+                <div style={{width:26,height:26,borderRadius:8,
+                  background:i===0?'#fef3c7':i===1?'#f4f4f6':i===2?'#fef3c7':'#f4f4f6',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontSize:13,fontWeight:800,color:i===0?'#d97706':i===1?'#71717a':i===2?'#b45309':C.sub,flexShrink:0}}>
+                  {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
+                </div>
+                <Avatar name={u.name} size={30}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:C.text,
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    {u.name}{u.is_me&&<span style={{color:C.brand,marginLeft:4,fontSize:11}}> ({IS_RU?'Вы':'Siz'})</span>}
+                  </div>
+                </div>
+                <div style={{fontSize:13,fontWeight:700,color:C.brand,whiteSpace:'nowrap'}}>
+                  {fmtPts(u.points)} {t('pts')}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>}
-      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
-        <div style={{fontSize:16,fontWeight:800,color:affordable?T.primary:T.mute,
-          letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>
-          {cost.toLocaleString('ru-RU')} <span style={{fontSize:10,fontWeight:600,color:T.mute}}>{tr('points')}</span>
+      )}
+
+      {/* Admin contact */}
+      {contact?.contacts?.length>0 && (
+        <div className="anim-up" style={{animationDelay:'160ms',background:C.card,borderRadius:16,
+          border:`1px solid ${C.border}`,padding:'14px 16px'}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12,display:'flex',alignItems:'center',gap:6}}>
+            <Icon n="phone" size={15} color={C.brand}/>
+            {t('contact_admin')}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {contact.contacts.map((c,i)=>(
+              <a key={i} href={c.contact_url||'#'} target="_blank" rel="noreferrer"
+                className="press"
+                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
+                  borderRadius:12,background:C.bg,textDecoration:'none',
+                  border:`1px solid ${C.border}`}}>
+                <div style={{width:36,height:36,borderRadius:10,
+                  background:c.contact_type==='telegram'?C.brandSoft:'#f0fdf4',
+                  display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <Icon n={c.contact_type==='telegram'?'send':'phone'} size={16}
+                    color={c.contact_type==='telegram'?C.brand:C.good}/>
+                </div>
+                <div>
+                  <div style={{fontSize:11,color:C.sub,fontWeight:500,marginBottom:1}}>
+                    {c.contact_type==='telegram'?'Telegram':'Telefon'}
+                  </div>
+                  <div style={{fontSize:14,fontWeight:600,color:C.text}}>{c.contact_value}</div>
+                </div>
+                <Icon n="chevR" size={16} color={C.faint} style={{marginLeft:'auto'}}/>
+              </a>
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
-  </button>);
-}
+      )}
 
-function GiftDetail({ gift, balance, onClose, onConfirm, requesting }) {
-  if (!gift) return null;
-  const cost = gift.points_cost || 0;
-  const affordable = balance >= cost;
-  const remaining = balance - cost;
-  return (<div>
-    <div style={{width:'100%',aspectRatio:'1.4/1',background:T.borderSoft,borderRadius:14,overflow:'hidden',
-      backgroundImage:'repeating-linear-gradient(135deg, rgba(128,130,133,0.06) 0, rgba(128,130,133,0.06) 1px, transparent 1px, transparent 8px)',
-      display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
-      {gift.image ? <img src={gift.image} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-        : <span style={{fontSize:72}}>🎁</span>}
+      <div style={{height:8}}/>
     </div>
-    <div style={{fontSize:20,fontWeight:700,color:T.ink,letterSpacing:'-0.02em',marginBottom:6}}>{gift.name}</div>
-    <div style={{fontSize:22,fontWeight:800,color:T.primary,letterSpacing:'-0.02em',marginBottom:14,fontVariantNumeric:'tabular-nums'}}>
-      {cost.toLocaleString('ru-RU')} <span style={{fontSize:13,fontWeight:600,color:T.mute}}>{tr('points')}</span>
-    </div>
-    {gift.description && <div style={{fontSize:13,color:T.text,lineHeight:1.5,fontWeight:500,marginBottom:16}}>
-      {gift.description}
-    </div>}
-    <div style={{background: affordable ? T.primarySoft : T.warnSoft,
-      border:`1px solid ${affordable ? '#dcd9ff' : '#fde68a'}`,
-      borderRadius:14,padding:14,marginBottom:16}}>
-      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:600,
-        color: affordable ? T.primaryDeep : '#92400e',marginBottom:6}}>
-        <span>{tr('your_balance')}</span>
-        <span style={{fontVariantNumeric:'tabular-nums'}}>{balance.toLocaleString('ru-RU')}</span>
-      </div>
-      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:600,
-        color: affordable ? T.primaryDeep : '#92400e',marginBottom:6}}>
-        <span>{tr('order')}</span>
-        <span style={{fontVariantNumeric:'tabular-nums'}}>−{cost.toLocaleString('ru-RU')}</span>
-      </div>
-      <div style={{borderTop:`1px dashed ${affordable ? '#dcd9ff' : '#fde68a'}`,paddingTop:6,
-        display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:800,
-        color: affordable ? T.primaryDeep : '#b91c1c'}}>
-        <span>{tr('after_order')}</span>
-        <span style={{fontVariantNumeric:'tabular-nums'}}>
-          {affordable ? '+' : ''}{remaining.toLocaleString('ru-RU')}
-        </span>
-      </div>
-    </div>
-    <button onClick={() => affordable && onConfirm(gift)} disabled={!affordable || requesting} className="jip-press" style={{
-      width:'100%',padding:'14px 20px',borderRadius:14,border:'none',
-      background: affordable ? `linear-gradient(135deg, ${T.primary}, ${T.primaryDeep})` : T.borderSoft,
-      color: affordable ? '#fff' : T.mute,
-      fontWeight:700,fontSize:15,fontFamily:T.font,cursor:affordable&&!requesting?'pointer':'not-allowed',
-      boxShadow: affordable ? '0 8px 18px -4px rgba(79,70,229,0.4)' : 'none',
-      letterSpacing:'-0.01em',display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-    }}>
-      {requesting ? <div style={{width:18,height:18,border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'#fff',borderRadius:'50%',animation:'jip-spin 700ms linear infinite'}}/>
-        : <><Icon name="gift" size={18}/>{affordable ? tr('order') : `+${(cost-balance).toLocaleString('ru-RU')} ${tr('not_enough')}`}</>}
-    </button>
-  </div>);
-}
+  );
+};
 
-function GiftsTab({ user, gifts, onOrder }) {
-  const [filter, setFilter] = React.useState('all');
-  const [selected, setSelected] = React.useState(null);
-  const [requesting, setRequesting] = React.useState(false);
-  const balance = user.points || 0;
+// ══════════════════════════════════════════════════════════════
+// PAGE: GIFTS
+// ══════════════════════════════════════════════════════════════
+const PageGifts = ({user,onRefreshUser,showToast}) => {
+  const [gifts,setGifts] = useState([]);
+  const [loading,setLoading] = useState(true);
+  const [selected,setSelected] = useState(null);
+  const [ordering,setOrdering] = useState(false);
 
-  if (!gifts) return <LoadingSpinner/>;
-  if (gifts.length === 0) return <EmptyState icon="🎁" title={tr('empty_gifts')}/>;
+  useEffect(()=>{
+    setLoading(true);
+    api('/webapp/gifts/').then(d=>{setGifts(Array.isArray(d)?d:[]);setLoading(false);})
+      .catch(()=>setLoading(false));
+  },[]);
 
-  const filtered = gifts.filter(g => {
-    if (filter === 'affordable') return balance >= g.points_cost;
-    if (filter === 'upcoming') return balance < g.points_cost;
-    return true;
-  });
-  const counts = {
-    all: gifts.length,
-    affordable: gifts.filter(g => balance >= g.points_cost).length,
-    upcoming: gifts.filter(g => balance < g.points_cost).length,
+  const orderGift = async (gift) => {
+    if(user.points < gift.points_cost) return;
+    haptic();
+    setOrdering(true);
+    try {
+      await api('/webapp/request-gift/',{method:'POST',body:{telegram_id:TG_ID,gift_id:gift.id}});
+      hapticSuccess();
+      showToast(IS_RU?`Заявка на «${gift.name}» отправлена!`:`«${gift.name}» uchun ariza yuborildi!`,'success');
+      setSelected(null);
+      onRefreshUser();
+    } catch(e) {
+      hapticError();
+      showToast(e.error||t('error_load'),'error');
+    } finally { setOrdering(false); }
   };
 
-  const handleConfirm = async (gift) => {
-    setRequesting(true);
+  const canAfford = g => user.points >= g.points_cost;
+  const affordable = gifts.filter(canAfford).sort((a,b)=>a.points_cost-b.points_cost);
+  const upcoming = gifts.filter(g=>!canAfford(g)).sort((a,b)=>a.points_cost-b.points_cost);
+  const all = [...affordable,...upcoming];
+
+  return (
+    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0 8px'}}>
+        <div style={{fontSize:22,fontWeight:800,letterSpacing:'-0.02em',color:C.text}}>{t('gifts')}</div>
+        {user.points>0 && (
+          <div style={{fontSize:13,fontWeight:600,color:C.brand,background:C.brandSoft,
+            padding:'5px 12px',borderRadius:999}}>
+            {fmtPts(user.points)} {t('pts')}
+          </div>
+        )}
+      </div>
+
+      {loading && (
+        <div style={{display:'flex',justifyContent:'center',padding:40}}><Spin/></div>
+      )}
+
+      {!loading && all.length===0 && (
+        <div style={{textAlign:'center',padding:'60px 20px'}}>
+          <Icon n="gift" size={48} color={C.faint}/>
+          <div style={{fontSize:15,fontWeight:600,color:C.sub,marginTop:12}}>{t('gifts_empty')}</div>
+        </div>
+      )}
+
+      {!loading && all.length>0 && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          {all.map(g=>{
+            const ok = canAfford(g);
+            return (
+              <div key={g.id} className="press anim-up"
+                onClick={()=>{hapticSelect();setSelected(g);}}
+                style={{background:C.card,borderRadius:16,overflow:'hidden',cursor:'pointer',
+                  border:`1.5px solid ${ok?C.brand+'33':C.border}`,
+                  boxShadow:ok?`0 2px 12px ${C.brand}18`:'none'}}>
+                <div style={{height:120,background:C.brandTint,position:'relative',overflow:'hidden'}}>
+                  {g.image
+                    ? <img src={g.image} alt={g.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        <Icon n="gift" size={36} color={C.brandLite}/>
+                      </div>
+                  }
+                  {ok && (
+                    <div style={{position:'absolute',top:8,right:8,
+                      background:C.good,borderRadius:999,width:20,height:20,
+                      display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      <Icon n="check" size={12} color="#fff" sw={2.5}/>
+                    </div>
+                  )}
+                </div>
+                <div style={{padding:'10px 10px 12px'}}>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6,
+                    overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>
+                    {g.name}
+                  </div>
+                  <div style={{fontSize:13,fontWeight:800,color:ok?C.brand:C.sub}}>
+                    {fmtPts(g.points_cost)} {t('pts')}
+                  </div>
+                  {!ok && (
+                    <div style={{fontSize:11,color:C.bad,marginTop:2,fontWeight:500}}>
+                      +{fmtPts(g.points_cost-user.points)} {t('need_pts')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{height:8}}/>
+
+      {/* Gift detail sheet */}
+      <Sheet open={!!selected} onClose={()=>setSelected(null)} title={selected?.name}>
+        {selected && (
+          <div>
+            {selected.image && (
+              <img src={selected.image} alt={selected.name}
+                style={{width:'100%',height:200,objectFit:'cover',borderRadius:14,marginBottom:16}}/>
+            )}
+            {selected.description && (
+              <p style={{fontSize:14,color:C.sub,lineHeight:1.6,marginBottom:16}}>{selected.description}</p>
+            )}
+            <div style={{background:C.bg,borderRadius:14,padding:'14px 16px',marginBottom:16}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                <span style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('your_balance')}</span>
+                <span style={{fontSize:14,fontWeight:700,color:C.text}}>{fmtPts(user.points)} {t('pts')}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                <span style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('order_gift')}</span>
+                <span style={{fontSize:14,fontWeight:700,color:C.brand}}>−{fmtPts(selected.points_cost)} {t('pts')}</span>
+              </div>
+              <div style={{height:1,background:C.border,margin:'8px 0'}}/>
+              <div style={{display:'flex',justifyContent:'space-between'}}>
+                <span style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('after_order')}</span>
+                <span style={{fontSize:15,fontWeight:800,
+                  color:canAfford(selected)?C.good:C.bad}}>
+                  {fmtPts(user.points - selected.points_cost)} {t('pts')}
+                </span>
+              </div>
+            </div>
+
+            {canAfford(selected) ? (
+              <button className="press" onClick={()=>orderGift(selected)} disabled={ordering}
+                style={{width:'100%',height:52,borderRadius:14,background:C.brand,
+                  color:'#fff',fontSize:16,fontWeight:700,display:'flex',alignItems:'center',
+                  justifyContent:'center',gap:8}}>
+                {ordering ? <Spin size={20} color="#fff"/> : <><Icon n="check" size={18} color="#fff"/>{t('exchange')}</>}
+              </button>
+            ) : (
+              <div style={{textAlign:'center',padding:'14px 0 4px',fontSize:14,
+                color:C.bad,fontWeight:600}}>
+                {IS_RU
+                  ?`Не хватает ${fmtPts(selected.points_cost-user.points)} баллов`
+                  :`${fmtPts(selected.points_cost-user.points)} ball yetmaydi`}
+              </div>
+            )}
+          </div>
+        )}
+      </Sheet>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════
+// PAGE: PROMO HISTORY
+// ══════════════════════════════════════════════════════════════
+const PageHistory = () => {
+  const [items,setItems] = useState([]);
+  const [loading,setLoading] = useState(true);
+
+  useEffect(()=>{
+    setLoading(true);
+    api('/webapp/qr-history/').then(d=>{setItems(Array.isArray(d)?d:[]);setLoading(false);})
+      .catch(()=>setLoading(false));
+  },[]);
+
+  return (
+    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{fontSize:22,fontWeight:800,letterSpacing:'-0.02em',color:C.text,padding:'4px 0 8px'}}>
+        {t('history')}
+      </div>
+
+      {loading && <div style={{display:'flex',justifyContent:'center',padding:40}}><Spin/></div>}
+
+      {!loading && items.length===0 && (
+        <div style={{textAlign:'center',padding:'60px 20px'}}>
+          <Icon n="qr" size={48} color={C.faint}/>
+          <div style={{fontSize:15,fontWeight:600,color:C.sub,marginTop:12}}>{t('promo_empty')}</div>
+          <div style={{fontSize:13,color:C.faint,marginTop:4}}>{t('promo_empty_sub')}</div>
+        </div>
+      )}
+
+      {!loading && items.length>0 && (
+        <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+          {items.map((item,i)=>(
+            <div key={item.id} style={{display:'flex',alignItems:'center',gap:12,padding:'13px 16px',
+              borderBottom:i<items.length-1?`1px solid ${C.border}`:'none'}}>
+              <div style={{width:40,height:40,borderRadius:12,background:C.goodSoft,
+                display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <Icon n="qr" size={20} color={C.good}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:600,color:C.text,
+                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                  {item.code}
+                </div>
+                <div style={{fontSize:12,color:C.sub,marginTop:1}}>
+                  {item.scanned_at}
+                  {item.store_name && <span style={{marginLeft:6,color:C.faint}}>· {item.store_name}</span>}
+                </div>
+              </div>
+              <div style={{fontSize:15,fontWeight:800,color:C.good,flexShrink:0}}>
+                +{fmtPts(item.points)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{height:8}}/>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════
+// PAGE: ORDERS (gift redemptions)
+// ══════════════════════════════════════════════════════════════
+const STEPS = ['pending','approved','sent','completed'];
+
+const OrderCard = ({order,onConfirm,onCancel}) => {
+  const si = statusInfo(order.status);
+  const step = si.step;
+  const isFinal = ['completed','rejected','cancelled_by_user','not_received'].includes(order.status);
+  const isFailed = ['rejected','cancelled_by_user','not_received'].includes(order.status);
+  const canConfirm = order.status==='sent';
+  const canCancel = order.status==='pending';
+
+  return (
+    <div style={{background:C.card,borderRadius:16,border:`1.5px solid ${isFailed?C.bad+'33':si.color+'33'}`,
+      overflow:'hidden',marginBottom:12}}>
+      {/* Header */}
+      <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12}}>
+        {order.gift?.image
+          ? <img src={order.gift.image} alt="" style={{width:52,height:52,borderRadius:10,objectFit:'cover'}}/>
+          : <div style={{width:52,height:52,borderRadius:10,background:C.brandTint,
+              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon n="gift" size={22} color={C.brand}/>
+            </div>
+        }
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text,overflow:'hidden',
+            textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:3}}>
+            {order.gift?.name}
+          </div>
+          <Badge label={si.label} color={si.color} bg={si.bg}/>
+        </div>
+      </div>
+
+      {/* Progress steps — only for active orders */}
+      {!isFailed && (
+        <div style={{padding:'0 16px 12px',display:'flex',alignItems:'center',gap:0}}>
+          {STEPS.map((s,i)=>{
+            const done = step>i;
+            const active = step===i;
+            const labels = IS_RU
+              ?['Принято','Готовится','Отправлено','Получено']
+              :['Qabul','Tayyorlanmoqda','Yuborildi','Qabul qilindi'];
+            return (
+              <React.Fragment key={s}>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',flex:'none',width:56}}>
+                  <div style={{width:24,height:24,borderRadius:999,
+                    background:done||active?C.brand:C.border,
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    transition:'background 300ms'}}>
+                    {done
+                      ? <Icon n="check" size={12} color="#fff" sw={2.5}/>
+                      : <div style={{width:8,height:8,borderRadius:999,
+                          background:active?'#fff':C.faint}}/>
+                    }
+                  </div>
+                  <div style={{fontSize:9,fontWeight:600,marginTop:3,textAlign:'center',
+                    color:done||active?C.brand:C.faint,lineHeight:1.2}}>{labels[i]}</div>
+                </div>
+                {i<STEPS.length-1 && (
+                  <div style={{flex:1,height:2,background:done?C.brand:C.border,
+                    marginBottom:14,transition:'background 300ms'}}/>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Date */}
+      <div style={{padding:'0 16px 12px',fontSize:12,color:C.sub}}>
+        {IS_RU?'Заявка от ':'Ariza: '}{fmtDate(order.requested_at)}
+      </div>
+
+      {/* Admin notes */}
+      {order.admin_notes && (
+        <div style={{margin:'0 16px 12px',background:'#f8f8fa',borderRadius:10,
+          padding:'10px 12px',fontSize:13,color:C.sub}}>
+          <span style={{fontWeight:600,color:C.text}}>{IS_RU?'Примечание: ':'Izoh: '}</span>
+          {order.admin_notes}
+        </div>
+      )}
+
+      {/* Actions */}
+      {(canConfirm || canCancel) && (
+        <div style={{padding:'0 16px 14px',display:'flex',gap:8}}>
+          {canConfirm && (
+            <button className="press" onClick={()=>onConfirm(order)}
+              style={{flex:1,height:44,borderRadius:12,background:C.good,
+                color:'#fff',fontSize:14,fontWeight:700,display:'flex',
+                alignItems:'center',justifyContent:'center',gap:6}}>
+              <Icon n="check" size={16} color="#fff"/>
+              {t('confirm_receipt')}
+            </button>
+          )}
+          {canCancel && (
+            <button className="press" onClick={()=>onCancel(order)}
+              style={{flex:canConfirm?0:1,height:44,borderRadius:12,
+                background:C.badSoft,border:`1px solid ${C.bad}33`,
+                color:C.bad,fontSize:14,fontWeight:700,padding:'0 16px',
+                display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+              <Icon n="x" size={14} color={C.bad}/>
+              {t('cancel_order')}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PageOrders = ({showToast,onRefreshUser}) => {
+  const [orders,setOrders] = useState([]);
+  const [loading,setLoading] = useState(true);
+  const [filter,setFilter] = useState('active');
+
+  const load = useCallback(()=>{
+    setLoading(true);
+    api('/webapp/redemptions/').then(d=>{setOrders(Array.isArray(d)?d:[]);setLoading(false);})
+      .catch(()=>setLoading(false));
+  },[]);
+
+  useEffect(()=>{ load(); },[]);
+
+  const confirm = async (order) => {
     haptic('medium');
     try {
-      const res = await api('/api/webapp/request-gift/', {
-        method: 'POST',
-        body: { telegram_id: TELEGRAM_ID, gift_id: gift.id },
-      });
-      if (res.error) {
-        hapticNotify('error');
-        alert(res.error);
-      } else {
-        hapticNotify('success');
-        setSelected(null);
-        if (onOrder) onOrder();
-      }
-    } catch (e) {
-      hapticNotify('error');
-      alert(e.message);
+      await api('/webapp/confirm-delivery/',{method:'POST',body:{redemption_id:order.id,confirmed:true}});
+      hapticSuccess();
+      showToast(IS_RU?'Получение подтверждено!':'Qabul tasdiqlandi!','success');
+      load(); onRefreshUser();
+    } catch(e) {
+      hapticError();
+      showToast(e.error||t('error_load'),'error');
     }
-    setRequesting(false);
   };
 
-  return (<>
-    <div style={{padding:'0 16px 12px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-      <div style={{fontSize:11,fontWeight:700,color:T.mute,letterSpacing:'0.08em',textTransform:'uppercase'}}>
-        {gifts.length} {IS_RU ? 'наград' : 'mukofot'}
+  const cancel = async (order) => {
+    haptic();
+    try {
+      await api('/webapp/cancel-order/',{method:'POST',body:{redemption_id:order.id,telegram_id:TG_ID}});
+      hapticSuccess();
+      showToast(IS_RU?'Заявка отменена':'Ariza bekor qilindi','success');
+      load(); onRefreshUser();
+    } catch(e) {
+      hapticError();
+      showToast(e.error||t('error_load'),'error');
+    }
+  };
+
+  const active = orders.filter(o=>!['completed','rejected','cancelled_by_user','not_received'].includes(o.status));
+  const done = orders.filter(o=>['completed','rejected','cancelled_by_user','not_received'].includes(o.status));
+  const shown = filter==='active' ? active : done;
+
+  return (
+    <div className="scroll-y" style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
+      <div style={{padding:'12px 16px 8px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{fontSize:22,fontWeight:800,letterSpacing:'-0.02em',color:C.text,padding:'4px 0'}}>{t('orders')}</div>
+        {orders.length>0 && (
+          <div style={{display:'flex',gap:4}}>
+            {['active','done'].map(f=>(
+              <button key={f} className="press" onClick={()=>{hapticSelect();setFilter(f);}}
+                style={{padding:'6px 12px',borderRadius:10,fontSize:12,fontWeight:700,
+                  background:filter===f?C.brand:C.bg,color:filter===f?'#fff':C.sub,
+                  border:filter===f?'none':`1px solid ${C.border}`}}>
+                {f==='active'?(IS_RU?'Активные':'Faol'):(IS_RU?'История':'Tarix')}
+                {f==='active'&&active.length>0&&(
+                  <span style={{marginLeft:4,background:filter==='active'?'rgba(255,255,255,0.2)':'#e8e8ec',
+                    color:filter==='active'?'#fff':C.sub,borderRadius:999,padding:'0 5px',fontSize:11}}>
+                    {active.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      <Pill tone="brand" size="md">
-        <Icon name="coin" size={12}/>
-        <span style={{fontVariantNumeric:'tabular-nums'}}>{balance.toLocaleString('ru-RU')}</span>
-      </Pill>
+
+      <div style={{flex:1,padding:'4px 16px 12px'}}>
+        {loading && <div style={{display:'flex',justifyContent:'center',padding:40}}><Spin/></div>}
+
+        {!loading && shown.length===0 && (
+          <div style={{textAlign:'center',padding:'60px 20px'}}>
+            <Icon n="list" size={48} color={C.faint}/>
+            <div style={{fontSize:15,fontWeight:600,color:C.sub,marginTop:12}}>{t('orders_empty')}</div>
+            <div style={{fontSize:13,color:C.faint,marginTop:4}}>{t('orders_empty_sub')}</div>
+          </div>
+        )}
+
+        {!loading && shown.map(o=>(
+          <OrderCard key={o.id} order={o} onConfirm={confirm} onCancel={cancel}/>
+        ))}
+      </div>
     </div>
-    <Chips items={[
-      {id:'all', label:tr('all_gifts'), count:counts.all},
-      {id:'affordable', label:`✓ ${tr('affordable')}`, count:counts.affordable},
-      {id:'upcoming', label:`⏳ ${tr('upcoming')}`, count:counts.upcoming},
-    ]} value={filter} onChange={(id)=>{setFilter(id); hapticSelect();}} style={{marginBottom:14}}/>
-    <div style={{padding:'0 16px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-      {filtered.map((g, i) => (<div key={g.id} className="jip-fade-up" style={{animationDelay:`${i*50}ms`}}>
-        <GiftCard gift={g} balance={balance} onClick={(x)=>{setSelected(x); haptic();}}/>
-      </div>))}
-    </div>
-    {filtered.length === 0 && <EmptyState icon="🔍" title={IS_RU ? 'Ничего не найдено' : 'Hech narsa topilmadi'}/>}
-    <BottomSheet open={!!selected} onClose={()=>setSelected(null)}>
-      <GiftDetail gift={selected} balance={balance} onClose={()=>setSelected(null)} onConfirm={handleConfirm} requesting={requesting}/>
-    </BottomSheet>
-  </>);
-}
+  );
+};
 
-// ═══════════════════════════════════════════════════════════
-// HISTORY TAB
-// ═══════════════════════════════════════════════════════════
-function ScansList({ items }) {
-  if (!items || items.length === 0) return <EmptyState icon="📭" title={tr('empty_scans')} subtitle={tr('empty_scans_sub')}/>;
-  return (<div style={{padding:'0 16px'}}>
-    <Card padding={0} style={{overflow:'hidden'}}>
-      {items.map((s, i) => (<div key={s.id} className="jip-fade-up" style={{animationDelay:`${i*40}ms`,
-        display:'flex',alignItems:'center',gap:12,padding:'14px 16px',
-        borderBottom:i===items.length-1?'none':`1px solid ${T.divider}`}}>
-        <div style={{width:36,height:36,borderRadius:10,background:T.goodSoft,color:'#047857',
-          display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <Icon name="qr" size={16}/>
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.ink,fontFamily:T.mono,letterSpacing:'-0.01em',
-            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.code}</div>
-          <div style={{fontSize:11,color:T.mute,marginTop:2,fontWeight:500}}>
-            {s.store_name || '—'} · {s.scanned_at}
-          </div>
-        </div>
-        <div style={{fontSize:16,fontWeight:800,color:'#047857',fontVariantNumeric:'tabular-nums'}}>+{s.points}</div>
-      </div>))}
-    </Card>
-  </div>);
-}
+// ══════════════════════════════════════════════════════════════
+// PAGE: PROFILE
+// ══════════════════════════════════════════════════════════════
+const PageProfile = ({user,onLangChange}) => {
+  const [history,setHistory] = useState([]);
+  const [redemptions,setRedemptions] = useState([]);
 
-function RedemptionStatus({ status }) {
-  const map = {
-    pending:   { tone:'warn',    label:tr('pending') },
-    approved:  { tone:'brand',   label:tr('approved') },
-    sent:      { tone:'brand',   label:tr('sent') },
-    completed: { tone:'good',    label:tr('completed') },
-    rejected:  { tone:'bad',     label:tr('rejected') },
-    cancelled_by_user: { tone:'neutral', label:tr('cancelled') },
-    not_received: { tone:'bad',  label:tr('rejected') },
-  };
-  const m = map[status] || {tone:'neutral', label:status};
-  return <Pill tone={m.tone} size="sm">{m.label}</Pill>;
-}
+  useEffect(()=>{
+    api('/webapp/qr-history/').then(d=>setHistory(Array.isArray(d)?d:[])).catch(()=>{});
+    api('/webapp/redemptions/').then(d=>setRedemptions(Array.isArray(d)?d:[])).catch(()=>{});
+  },[]);
 
-function RedemptionsList({ items }) {
-  if (!items || items.length === 0) return <EmptyState icon="🎁" title={tr('empty_redemptions')}/>;
-  return (<div style={{padding:'0 16px',display:'grid',gap:10}}>
-    {items.map((r, i) => {
-      const gName = r.gift?.name || r.gift_name || 'Sovg\'a';
-      const gImg = r.gift?.image;
-      const cost = r.gift?.points_cost || r.points_cost || 0;
-      return (<Card key={r.id} padding={0} style={{overflow:'hidden'}} className="jip-fade-up"
-        style={{animationDelay:`${i*40}ms`,overflow:'hidden',padding:0,
-          background:'#fff',border:`1px solid ${T.border}`,borderRadius:16}}>
-        <div style={{display:'flex',gap:12,padding:14}}>
-          <div style={{width:54,height:54,borderRadius:12,background:T.borderSoft,overflow:'hidden',
-            display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:24}}>
-            {gImg ? <img src={gImg} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : '🎁'}
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{display:'flex',justifyContent:'space-between',gap:8,marginBottom:6}}>
-              <div style={{fontSize:13,fontWeight:700,color:T.ink,letterSpacing:'-0.01em',
-                overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{gName}</div>
-              <RedemptionStatus status={r.status}/>
-            </div>
-            <div style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:T.mute,fontWeight:500}}>
-              <span>{r.requested_at_formatted || r.requested_at || '—'}</span>
-              <span>·</span>
-              <span style={{color:T.primary,fontWeight:700,fontVariantNumeric:'tabular-nums'}}>−{cost.toLocaleString('ru-RU')} {tr('points')}</span>
-            </div>
-          </div>
-        </div>
-      </Card>);
-    })}
-  </div>);
-}
+  const totalEarned = history.reduce((s,h)=>s+(h.points||0),0);
+  const completedOrders = redemptions.filter(r=>r.status==='completed').length;
 
-function HistoryTab({ qrHistory, redemptions }) {
-  const [sub, setSub] = React.useState('scans');
-  return (<>
-    <Chips items={[
-      {id:'scans', label:tr('scans'), icon:'qr', count: qrHistory?.length || 0},
-      {id:'gifts', label:tr('redemptions'), icon:'gift', count: redemptions?.length || 0},
-    ]} value={sub} onChange={(id)=>{setSub(id); hapticSelect();}} style={{marginBottom:14}}/>
-    {sub === 'scans' ? <ScansList items={qrHistory}/> : <RedemptionsList items={redemptions}/>}
-  </>);
-}
-
-// ═══════════════════════════════════════════════════════════
-// PROFILE TAB
-// ═══════════════════════════════════════════════════════════
-function ProfileTab({ user, qrHistory, redemptions, onLangChange }) {
-  const totalEarned = (qrHistory || []).reduce((a, s) => a + (s.points || 0), 0);
-  const totalGifts = (redemptions || []).filter(r => ['completed','sent','approved'].includes(r.status)).length;
-  const totalScans = (qrHistory || []).length;
-  return (<div style={{padding:'0 16px 16px',display:'grid',gap:14}}>
-    <Card padding={20} style={{display:'flex',alignItems:'center',gap:14,
-      background:`linear-gradient(135deg, ${T.primaryTint}, #fff 60%)`}}>
-      <Avatar name={user.first_name || TG_USER.first_name} size={64}/>
+  const Row = ({label,value,icon,href}) => (
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'13px 16px',
+      borderBottom:`1px solid ${C.border}`}}>
+      <div style={{width:36,height:36,borderRadius:10,background:C.brandSoft,
+        display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+        <Icon n={icon} size={16} color={C.brand}/>
+      </div>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:11,fontWeight:700,color:T.mute,textTransform:'uppercase',letterSpacing:'0.06em'}}>
-          {tr('name_eyebrow')}
-        </div>
-        <div style={{fontSize:18,fontWeight:700,color:T.ink,letterSpacing:'-0.02em',marginTop:2,
-          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-          {user.first_name || TG_USER.first_name || 'User'}
-          {TG_USER.last_name ? ` ${TG_USER.last_name}` : ''}
-        </div>
-        {TG_USER.username && <div style={{fontSize:12,color:T.mute,fontWeight:500,marginTop:2}}>@{TG_USER.username}</div>}
+        <div style={{fontSize:11,color:C.sub,fontWeight:500,marginBottom:1}}>{label}</div>
+        {href
+          ? <a href={href} target="_blank" rel="noreferrer"
+              style={{fontSize:14,fontWeight:600,color:C.brand,textDecoration:'none'}}>
+              {value||'—'}
+            </a>
+          : <div style={{fontSize:14,fontWeight:600,color:C.text,overflow:'hidden',
+              textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{value||'—'}</div>
+        }
       </div>
-    </Card>
-
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-      <Card padding={12} style={{textAlign:'center'}}>
-        <div style={{fontSize:22,fontWeight:800,color:T.primaryDeep,letterSpacing:'-0.03em',fontVariantNumeric:'tabular-nums'}}>
-          <AnimatedNumber value={user.points || 0}/>
-        </div>
-        <div style={{fontSize:10,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.04em',marginTop:4}}>
-          {tr('balance')}
-        </div>
-      </Card>
-      <Card padding={12} style={{textAlign:'center'}}>
-        <div style={{fontSize:22,fontWeight:800,color:T.ink,letterSpacing:'-0.03em',fontVariantNumeric:'tabular-nums'}}>
-          <AnimatedNumber value={totalScans}/>
-        </div>
-        <div style={{fontSize:10,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.04em',marginTop:4}}>
-          {tr('total_scanned')}
-        </div>
-      </Card>
-      <Card padding={12} style={{textAlign:'center'}}>
-        <div style={{fontSize:22,fontWeight:800,color:'#047857',letterSpacing:'-0.03em',fontVariantNumeric:'tabular-nums'}}>
-          <AnimatedNumber value={totalGifts}/>
-        </div>
-        <div style={{fontSize:10,fontWeight:600,color:T.mute,textTransform:'uppercase',letterSpacing:'0.04em',marginTop:4}}>
-          {tr('total_received')}
-        </div>
-      </Card>
     </div>
+  );
 
-    <Card padding={14}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:T.mute,textTransform:'uppercase',letterSpacing:'0.08em'}}>
-          {tr('total_earned')}
-        </div>
-        <div style={{fontSize:18,fontWeight:800,color:T.primary,fontVariantNumeric:'tabular-nums',letterSpacing:'-0.02em'}}>
-          +<AnimatedNumber value={totalEarned}/> {tr('points')}
+  return (
+    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:16}}>
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',gap:14,padding:'4px 0 4px'}}>
+        <Avatar name={user.first_name||'U'} size={56}/>
+        <div>
+          <div style={{fontSize:20,fontWeight:800,color:C.text,letterSpacing:'-0.02em'}}>
+            {user.first_name||'—'}
+          </div>
+          {user.username && (
+            <div style={{fontSize:13,color:C.sub,marginTop:2}}>@{user.username}</div>
+          )}
         </div>
       </div>
-      <Progress value={user.points || 0} max={Math.max(user.points || 0, totalEarned, 1)}/>
-    </Card>
 
-    <SectionTitle>{tr('settings')}</SectionTitle>
-    <Card padding={0}>
-      <div style={{padding:'14px 16px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${T.divider}`}}>
-        <div style={{width:32,height:32,borderRadius:9,background:T.primarySoft,color:T.primaryDeep,
-          display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Icon name="globe" size={16}/>
+      {/* Stats */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+        {[
+          {label:IS_RU?'Баллов':'Balllar', value:fmtPts(user.points), color:C.brand},
+          {label:IS_RU?'Сканов':'Skanlar', value:history.length, color:C.good},
+          {label:IS_RU?'Подарков':'Sovg\'alar', value:completedOrders, color:'#f59e0b'},
+        ].map(s=>(
+          <div key={s.label} style={{background:C.card,borderRadius:14,padding:'14px 10px',
+            border:`1px solid ${C.border}`,textAlign:'center'}}>
+            <div style={{fontSize:22,fontWeight:800,color:s.color,letterSpacing:'-0.02em'}}>{s.value}</div>
+            <div style={{fontSize:11,color:C.sub,fontWeight:600,marginTop:3}}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Info */}
+      <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+        <Row label={t('tg_id')} value={`#${user.telegram_id}`} icon="user"/>
+        {user.phone_number && <Row label={t('phone')} value={user.phone_number} icon="phone"/>}
+        {user.username && <Row label="Telegram" value={`@${user.username}`} icon="send"
+          href={`https://t.me/${user.username}`}/>}
+      </div>
+
+      {/* Language */}
+      <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,padding:'14px 16px'}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
+          <Icon n="globe" size={15} color={C.brand}/>
+          {IS_RU?'Язык интерфейса':'Interfeys tili'}
         </div>
-        <div style={{flex:1,minWidth:0,fontSize:14,fontWeight:600,color:T.ink}}>{tr('language')}</div>
-        <div style={{display:'flex',gap:4,background:T.borderSoft,borderRadius:8,padding:2}}>
-          {['uz_latin','ru'].map(lng => (<button key={lng} onClick={()=>onLangChange(lng)} className="jip-press" style={{
-            border:'none',cursor:'pointer',padding:'5px 12px',borderRadius:6,
-            background: user.language === lng ? '#fff' : 'transparent',
-            color: user.language === lng ? T.ink : T.mute,
-            fontWeight: user.language === lng ? 700 : 600,fontSize:11,fontFamily:T.font,
-            boxShadow: user.language === lng ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            transition:'background 200ms ease, color 200ms ease',
-          }}>{lng === 'ru' ? 'RU' : 'UZ'}</button>))}
+        <div style={{display:'flex',gap:8}}>
+          {[['uz_latin',"🇺🇿 O'zbek"],['ru','🇷🇺 Русский']].map(([code,label])=>(
+            <button key={code} className="press" onClick={()=>onLangChange(code)}
+              style={{flex:1,height:44,borderRadius:12,fontSize:14,fontWeight:700,
+                background:LANG===code?C.brand:C.bg,
+                color:LANG===code?'#fff':C.sub,
+                border:LANG===code?'none':`1px solid ${C.border}`}}>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
-    </Card>
 
-    <div style={{textAlign:'center',padding:'20px 0 8px',fontSize:11,color:T.light,fontWeight:500}}>
-      JIP Loyalty · {new Date().getFullYear()}
+      <div style={{height:8}}/>
     </div>
-  </div>);
-}
+  );
+};
 
-// ═══════════════════════════════════════════════════════════
-// APP SHELL
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// TAB BAR
+// ══════════════════════════════════════════════════════════════
 const TABS = [
-  { id:'home',    label:tr('home'),    icon:'home',    title:'JIP Loyalty',  eyebrow:tr('eyebrow_home') },
-  { id:'gifts',   label:tr('gifts'),   icon:'gift',    title:tr('gifts'),    eyebrow:tr('eyebrow_gifts') },
-  { id:'history', label:tr('history'), icon:'history', title:tr('history'),  eyebrow:tr('eyebrow_history') },
-  { id:'profile', label:tr('profile'), icon:'user',    title:tr('profile'),  eyebrow:tr('eyebrow_profile') },
+  {id:'home',  icon:'home',  label:()=>t('home')},
+  {id:'gifts', icon:'gift',  label:()=>t('gifts')},
+  {id:'history',icon:'clock',label:()=>t('history')},
+  {id:'orders',icon:'list',  label:()=>t('orders')},
+  {id:'profile',icon:'user', label:()=>t('profile')},
 ];
 
-function JIPLogo() {
-  return (<div style={{display:'flex',alignItems:'center',gap:10}}>
-    <div style={{width:38,height:38,borderRadius:9,background:'#fff',
-      border:`1px solid ${T.border}`,padding:3,
-      display:'flex',alignItems:'center',justifyContent:'center',
-      boxShadow:'0 2px 6px -2px rgba(15,23,42,0.12)'}}>
-      <img src="/static/webapp/img/jip_group.jpg" alt="JIP Group"
-        style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-    </div>
-    <div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
-      <span style={{fontSize:14,fontWeight:800,color:T.ink,letterSpacing:'-0.02em'}}>JIP GROUP</span>
-      <span style={{fontSize:10,fontWeight:600,color:T.mute,letterSpacing:'0.04em',textTransform:'uppercase'}}>
-        {IS_RU ? 'Сантехник' : 'Santexnik'}
-      </span>
-    </div>
-  </div>);
-}
-
-function openBotChat() {
-  haptic('light');
-  if (tg && typeof tg.close === 'function') tg.close();
-  else window.location.href = 'https://t.me/santexnik_JIP_bot';
-}
-
-function TopBar({ onRefresh, refreshing }) {
-  return (<div style={{padding:'14px 16px 8px',background:'rgba(250,250,251,0.92)',
-    backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',
-    borderBottom:`1px solid ${T.divider}`,position:'sticky',top:0,zIndex:30}}>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,height:36}}>
-      <JIPLogo/>
-      <div style={{display:'flex',gap:8}}>
-        <button onClick={onRefresh} className="jip-press" style={{width:34,height:34,borderRadius:999,
-          background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
-          justifyContent:'center',cursor:'pointer',color:T.text,
-          transition:'transform 700ms cubic-bezier(.22,1,.36,1)',transform:refreshing?'rotate(360deg)':'rotate(0deg)'}}>
-          <Icon name="refresh" size={16}/>
-        </button>
-        <button onClick={openBotChat} className="jip-press" style={{width:34,height:34,borderRadius:999,
-          background:'#fff',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',
-          justifyContent:'center',cursor:'pointer',color:T.text,position:'relative'}}
-          title="Открыть чат бота">
-          <Icon name="bell" size={16}/>
-          <span className="jip-pulse-dot" style={{position:'absolute',top:7,right:8,
-            width:7,height:7,borderRadius:999,background:T.primary,border:'2px solid #fff'}}/>
-        </button>
-      </div>
-    </div>
-  </div>);
-}
-
-function BottomTabBar({ active, onChange }) {
-  const activeIdx = TABS.findIndex(t => t.id === active);
-  return (<div style={{position:'sticky',bottom:0,background:'rgba(255,255,255,0.96)',
-    backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-    borderTop:`1px solid ${T.divider}`,paddingBottom:'calc(12px + env(safe-area-inset-bottom, 0px))',
-    paddingTop:10,zIndex:40,boxShadow:'0 -6px 24px rgba(15, 16, 30, 0.05)'}}>
-    <div style={{position:'relative',display:'grid',gridTemplateColumns:`repeat(${TABS.length}, 1fr)`,padding:'0 8px'}}>
-      <div style={{position:'absolute',top:6,left:8,
-        width:`calc((100% - 16px) / ${TABS.length})`,height:28,pointerEvents:'none',
-        transition:'transform 420ms cubic-bezier(.5, 1.5, .4, 1)',
-        transform:`translateX(${activeIdx * 100}%)`,display:'flex',justifyContent:'center'}}>
-        <div style={{width:44,height:28,borderRadius:999,background:T.primarySoft}}/>
-      </div>
-      {TABS.map(t => {
-        const isActive = t.id === active;
-        return (<button key={t.id} onClick={() => onChange(t.id)} className="jip-press" style={{
-          display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:'6px 4px',
-          background:'transparent',border:'none',cursor:'pointer',fontFamily:T.font,position:'relative',zIndex:1,
-        }}>
-          <div style={{width:44,height:28,borderRadius:999,display:'flex',alignItems:'center',justifyContent:'center',
-            color:isActive?T.primaryDeep:T.mute,
-            transition:'color 240ms ease, transform 240ms cubic-bezier(.5,1.6,.4,1)',
-            transform:isActive?'scale(1.05)':'scale(1)'}}>
-            <Icon name={t.icon} size={18} strokeWidth={isActive?2.4:2}/>
+const TabBar = ({active,onChange,badge}) => (
+  <div style={{height:C.tabH,background:C.card,borderTop:`1px solid ${C.border}`,
+    display:'flex',alignItems:'center',flexShrink:0,
+    paddingBottom:'env(safe-area-inset-bottom,0)'}}>
+    {TABS.map(tab=>{
+      const on = active===tab.id;
+      return (
+        <button key={tab.id} className="press"
+          onClick={()=>{if(!on){hapticSelect();onChange(tab.id);}}}
+          style={{flex:1,height:'100%',display:'flex',flexDirection:'column',
+            alignItems:'center',justifyContent:'center',gap:3,
+            color:on?C.brand:C.sub,position:'relative'}}>
+          <div style={{position:'relative'}}>
+            <Icon n={tab.icon} size={22} color={on?C.brand:C.sub}
+              sw={on?2.2:1.8}/>
+            {badge[tab.id]>0 && (
+              <div style={{position:'absolute',top:-2,right:-4,
+                minWidth:14,height:14,borderRadius:999,
+                background:C.bad,color:'#fff',fontSize:9,fontWeight:800,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                padding:'0 3px'}}>
+                {badge[tab.id]>9?'9+':badge[tab.id]}
+              </div>
+            )}
           </div>
-          <span style={{fontSize:10,fontWeight:isActive?700:500,color:isActive?T.primaryDeep:T.mute,
-            letterSpacing:'-0.01em',transition:'color 240ms ease'}}>{t.label}</span>
-        </button>);
-      })}
-    </div>
-  </div>);
-}
+          <div style={{fontSize:10,fontWeight:on?700:500,letterSpacing:'-0.01em',
+            transition:'color 180ms',lineHeight:1}}>
+            {tab.label()}
+          </div>
+        </button>
+      );
+    })}
+  </div>
+);
 
-function NotRegistered({ user, error }) {
-  return (<div style={{padding:'48px 24px',textAlign:'center'}}>
-    <div style={{width:80,height:80,margin:'0 auto 16px',borderRadius:20,
-      background:`linear-gradient(135deg, ${T.primary}, ${T.primaryDeep})`,color:'#fff',
-      display:'flex',alignItems:'center',justifyContent:'center',
-      boxShadow:'0 12px 24px -8px rgba(79,70,229,0.5)'}}>
-      <Icon name="user" size={36}/>
-    </div>
-    <div style={{fontSize:20,fontWeight:700,color:T.ink,letterSpacing:'-0.02em',marginBottom:8}}>
-      {IS_RU ? 'Завершите регистрацию' : "Ro'yxatdan o'ting"}
-    </div>
-    <div style={{fontSize:13,color:T.mute,fontWeight:500,lineHeight:1.5,marginBottom:20}}>
-      {IS_RU ? 'Откройте бота @santexnik_JIP_bot и завершите регистрацию командой /start'
-            : "Botni oching @santexnik_JIP_bot va /start buyrug'i bilan ro'yxatdan o'ting"}
-    </div>
-    {error && <div style={{fontSize:11,color:T.bad,fontWeight:500}}>{error}</div>}
-  </div>);
-}
+// ══════════════════════════════════════════════════════════════
+// APP ROOT
+// ══════════════════════════════════════════════════════════════
+const App = () => {
+  const [tab,setTab] = useState('home');
+  const [user,setUser] = useState(null);
+  const [userLoading,setUserLoading] = useState(true);
+  const [userError,setUserError] = useState(false);
+  const [toast,setToast] = useState(null);
+  const [ordersBadge,setOrdersBadge] = useState(0);
 
-function App() {
-  const [tab, setTab] = React.useState('home');
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [user, setUser] = React.useState(null);
-  const [gifts, setGifts] = React.useState(null);
-  const [qrHistory, setQrHistory] = React.useState(null);
-  const [redemptions, setRedemptions] = React.useState(null);
-  const [err, setErr] = React.useState(null);
-  const scrollerRef = React.useRef(null);
+  const loadUser = useCallback(()=>{
+    if(!TG_ID){ setUserLoading(false); setUserError(true); return; }
+    api('/webapp/user/').then(d=>{setUser(d);setUserError(false);setUserLoading(false);})
+      .catch(()=>{setUserError(true);setUserLoading(false);});
+  },[]);
 
-  const loadAll = React.useCallback(() => {
-    if (!TELEGRAM_ID) {
-      setErr(IS_RU ? 'Не удалось определить пользователя' : 'Foydalanuvchi aniqlanmadi');
-      return;
-    }
-    setErr(null);
-    Promise.all([
-      api('/api/webapp/user/'),
-      api('/api/webapp/gifts/'),
-      api('/api/webapp/qr-history/'),
-      api('/api/webapp/redemptions/'),
-    ]).then(([u, g, h, r]) => {
-      if (u.error) { setErr(u.error); setUser({}); return; }
-      setUser(u);
-      setGifts(Array.isArray(g) ? g : []);
-      setQrHistory(Array.isArray(h) ? h : []);
-      setRedemptions(Array.isArray(r) ? r : []);
-    }).catch(e => setErr(e.message));
-  }, []);
+  const loadBadge = useCallback(()=>{
+    if(!TG_ID) return;
+    api('/webapp/redemptions/').then(d=>{
+      const arr = Array.isArray(d)?d:[];
+      const n = arr.filter(o=>o.status==='sent').length;
+      setOrdersBadge(n);
+    }).catch(()=>{});
+  },[]);
 
-  React.useEffect(loadAll, [loadAll]);
-  React.useEffect(() => { if (scrollerRef.current) scrollerRef.current.scrollTop = 0; }, [tab]);
+  useEffect(()=>{ loadUser(); loadBadge(); },[]);
+  useEffect(()=>{ if(tab==='orders') loadBadge(); },[tab]);
 
-  const doRefresh = () => {
-    setRefreshing(true);
-    loadAll();
+  const showToast = useCallback((msg,type='success')=>{
+    setToast({msg,type,key:Date.now()});
+  },[]);
+
+  const handleLangChange = async (lang) => {
+    if(lang===LANG) return;
     haptic();
-    setTimeout(() => setRefreshing(false), 700);
+    try {
+      await api('/webapp/update-language/',{method:'POST',body:{telegram_id:TG_ID,language:lang}});
+      showToast(IS_RU?'Язык изменён, перезагрузите страницу':'Til o\'zgartirildi, sahifani yangilang','success');
+    } catch(e) {}
   };
 
-  const handleTab = (id) => { setTab(id); hapticSelect(); };
-
-  const handleOpenGift = (g) => {
-    setTab('gifts');
-    // Let the gifts tab handle showing the detail. For simplicity, just switch tab.
-  };
-
-  const handleOrder = () => {
-    loadAll();
-  };
-
-  const changeLang = (lng) => {
-    api('/api/webapp/update-language/', {
-      method: 'POST',
-      body: { telegram_id: TELEGRAM_ID, language: lng },
-    }).then(() => {
-      setUser(u => ({...u, language: lng}));
-      hapticNotify('success');
-      setTimeout(() => window.location.reload(), 300);
-    });
-  };
-
-  if (err && !user) {
-    return (<div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'#fafafa',fontFamily:T.font}}>
-      <TopBar onRefresh={doRefresh} refreshing={refreshing}/>
-      <NotRegistered error={err}/>
-    </div>);
-  }
-
-  if (!user) {
-    return (<div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'#fafafa',fontFamily:T.font}}>
-      <TopBar onRefresh={doRefresh} refreshing={refreshing}/>
-      <LoadingSpinner/>
-    </div>);
-  }
-
-  if (!user.is_registered) {
-    return (<div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'#fafafa',fontFamily:T.font}}>
-      <TopBar onRefresh={doRefresh} refreshing={refreshing}/>
-      <NotRegistered user={user}/>
-    </div>);
-  }
-
-  const currentTab = TABS.find(t => t.id === tab);
-  let body;
-  if (tab === 'home')        body = <HomeTab user={user} gifts={gifts} qrHistory={qrHistory} onOpenGift={handleOpenGift} onTabChange={handleTab}/>;
-  else if (tab === 'gifts')  body = <GiftsTab user={user} gifts={gifts} onOrder={handleOrder}/>;
-  else if (tab === 'history') body = <HistoryTab qrHistory={qrHistory} redemptions={redemptions}/>;
-  else if (tab === 'profile') body = <ProfileTab user={user} qrHistory={qrHistory} redemptions={redemptions} onLangChange={changeLang}/>;
-
-  return (<div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#fafafa',
-    fontFamily:T.font,color:T.ink,position:'relative'}}>
-    <TopBar onRefresh={doRefresh} refreshing={refreshing}/>
-    <div ref={scrollerRef} className="jip-scroll" style={{flex:1,overflow:'auto',scrollBehavior:'smooth'}}>
-      <div key={tab} className="jip-fade-up">
-        <PageHeader eyebrow={currentTab.eyebrow} title={currentTab.title}/>
-        {body}
-        <div style={{height:24}}/>
-      </div>
+  if(userLoading) return (
+    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',
+      alignItems:'center',justifyContent:'center',gap:12,background:C.bg}}>
+      <Spin size={32}/>
+      <div style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('loading')}</div>
     </div>
-    <BottomTabBar active={tab} onChange={handleTab}/>
-  </div>);
-}
+  );
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
+  if(userError||!user) return (
+    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',
+      alignItems:'center',justifyContent:'center',gap:12,background:C.bg,padding:24}}>
+      <Icon n="info" size={48} color={C.faint}/>
+      <div style={{fontSize:15,fontWeight:600,color:C.sub,textAlign:'center'}}>{t('error_load')}</div>
+      <button className="press" onClick={loadUser}
+        style={{padding:'12px 28px',borderRadius:12,background:C.brand,
+          color:'#fff',fontSize:14,fontWeight:700}}>
+        {t('retry')}
+      </button>
+    </div>
+  );
+
+  const badge = {orders:ordersBadge};
+  TABS.forEach(tb=>{ if(!badge[tb.id]) badge[tb.id]=0; });
+
+  return (
+    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',
+      paddingTop:'env(safe-area-inset-top,0)',background:C.bg}}>
+      {/* Content */}
+      <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column',position:'relative'}}>
+        {tab==='home'    && <PageHome    user={user} onRefreshUser={loadUser} onTab={setTab} showToast={showToast}/>}
+        {tab==='gifts'   && <PageGifts   user={user} onRefreshUser={loadUser} showToast={showToast}/>}
+        {tab==='history' && <PageHistory/>}
+        {tab==='orders'  && <PageOrders  showToast={showToast} onRefreshUser={loadUser}/>}
+        {tab==='profile' && <PageProfile user={user} onLangChange={handleLangChange}/>}
+      </div>
+
+      {/* Tab bar */}
+      <TabBar active={tab} onChange={setTab} badge={badge}/>
+
+      {/* Toast */}
+      {toast && <Toast key={toast.key} msg={toast.msg} type={toast.type} onHide={()=>setToast(null)}/>}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 {% endverbatim %}
 </body>
