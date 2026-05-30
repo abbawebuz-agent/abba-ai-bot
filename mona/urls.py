@@ -826,6 +826,8 @@ def jip_admin_spa_view(request, **kwargs):
     """JIP Admin SPA — serves the React admin panel with real DB stats injected."""
     if not request.user.is_authenticated or not request.user.is_staff:
         return redirect('/admin/login/?next=/jip-admin/')
+    import logging, traceback as _tb
+    _log = logging.getLogger(__name__)
     try:
         from core.models import QRCodeBatch, SellerPointsTransaction, ActivityLog
         stats = {
@@ -840,8 +842,9 @@ def jip_admin_spa_view(request, **kwargs):
             'txns_total':     SellerPointsTransaction.objects.count(),
             'audit_total':    ActivityLog.objects.count(),
         }
-    except Exception:
-        stats = {}
+    except Exception as _e:
+        _log.error('jip_admin stats error: %s\n%s', _e, _tb.format_exc())
+        stats = {'_error': str(_e)}
     return TemplateResponse(request, 'jip_admin/index.html', {'stats': stats})
 
 
