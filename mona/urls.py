@@ -822,6 +822,26 @@ def admin_backup_now_view(request):
     return redirect('admin:index')
 
 
+def jip_admin_spa_view(request):
+    """JIP Admin SPA — serves the React admin panel with real DB stats injected."""
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return redirect(f'/admin/login/?next=/jip-admin/')
+    from core.models import QRCodeBatch, SellerPointsTransaction, ActivityLog
+    stats = {
+        'users_total':    TelegramUser.objects.count(),
+        'users_santenik': TelegramUser.objects.filter(user_type='santenik').count(),
+        'users_sotuvchi': TelegramUser.objects.filter(user_type='sotuvchi').count(),
+        'batches_total':  QRCodeBatch.objects.count(),
+        'batches_active': QRCodeBatch.objects.filter(status='active').count(),
+        'qr_total':       QRCode.objects.count(),
+        'qr_scanned':     QRCode.objects.filter(is_used=True).count(),
+        'gifts_pending':  GiftRedemption.objects.filter(status='pending').count(),
+        'txns_total':     SellerPointsTransaction.objects.count(),
+        'audit_total':    ActivityLog.objects.count(),
+    }
+    return TemplateResponse(request, 'jip_admin/index.html', {'stats': stats})
+
+
 urlpatterns = [
     path('', root_redirect, name='root'),
     path('health/', health_check, name='health_check'),
@@ -835,6 +855,8 @@ urlpatterns = [
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
+    path('jip-admin/', jip_admin_spa_view, name='jip_admin_spa'),
+    path('jip-admin/<path:subpath>', jip_admin_spa_view, name='jip_admin_spa_sub'),
 ]
 
 # WhiteNoise обрабатывает статические файлы автоматически через middleware
