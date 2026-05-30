@@ -1,1203 +1,466 @@
 {% load static %}<!doctype html>
-<html lang="{{ user_language|default:'uz' }}">
+<html lang="uz">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"/>
-<title>JIP — Santexnik</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate,max-age=0,private"/>
+<title>JIP — Sodiqlik dasturi</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
-body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f2f3f5;color:#111;-webkit-font-smoothing:antialiased;}
-::-webkit-scrollbar{width:0;height:0;}
-button,[role="button"]{-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;}
-input{font-family:inherit;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+:root{--primary:#2563eb;--primary-d:#1d4ed8;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--bg:#f4f5f8;--card:#fff;--text:#0e0e12;--sub:#6b7280;--border:#ececf1;--r:18px;--xs:0 1px 2px rgba(16,18,32,.05);--sm:0 2px 8px rgba(16,18,32,.06);--md:0 10px 30px -12px rgba(16,18,32,.18);--grad:0 16px 36px -14px rgba(37,99,235,.55);}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;font-family:'Inter',ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+.content{position:fixed;inset:0 0 82px 0;overflow-y:auto;overflow-x:hidden;padding:8px 16px 24px;scrollbar-width:none;}
+.content::-webkit-scrollbar{display:none;}
+.fade-in{animation:fade .32s cubic-bezier(.32,.72,0,1);}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);z-index:100;}
+.spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes slideIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes scaleIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
-.anim-up{animation:fadeUp 380ms cubic-bezier(.22,1,.36,1) both}
-.press{transition:transform 120ms ease,opacity 120ms ease}
-.press:active{transform:scale(0.97);opacity:0.85}
-.scroll-x{overflow-x:auto;scrollbar-width:none}
-.scroll-y{overflow-y:auto;scrollbar-width:none}
+.splash-txt{font-size:14px;color:var(--sub);font-weight:500;}
+.err-ico{width:64px;height:64px;border-radius:20px;background:#fff;border:1px solid var(--border);display:grid;place-items:center;box-shadow:var(--sm);}
+.err-ico svg{width:32px;height:32px;color:#cccfd8;}
+.btn-retry{margin-top:4px;height:44px;padding:0 24px;border-radius:14px;background:var(--primary);color:#fff;font-family:inherit;font-size:14px;font-weight:700;border:none;cursor:pointer;}
+/* tabbar */
+.tabbar{position:fixed;left:12px;right:12px;bottom:8px;height:68px;background:rgba(255,255,255,.88);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.6);border-radius:26px;box-shadow:0 12px 30px -10px rgba(16,18,32,.22);display:flex;padding:8px;z-index:20;}
+.tab{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--sub);cursor:pointer;position:relative;border-radius:18px;transition:color .2s,background .2s;}
+.tab svg{width:23px;height:23px;transition:transform .2s;}
+.tab span{font-size:9.5px;font-weight:600;letter-spacing:-.01em;}
+.tab.active{color:var(--primary);background:rgba(37,99,235,.1);}
+.tab.active svg{transform:translateY(-1px);}
+.tab .badge{position:absolute;top:5px;right:calc(50% - 20px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;border:2px solid #fff;}
+/* hero */
+.hero{border-radius:26px;padding:20px;color:#fff;position:relative;overflow:hidden;margin-top:6px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 52%,#1d4ed8 100%);box-shadow:var(--grad);}
+.hero .b1{position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.55),transparent 70%);top:-90px;right:-60px;pointer-events:none;}
+.hero .b2{position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);bottom:-80px;left:-40px;pointer-events:none;}
+.hero-row1{display:flex;align-items:flex-start;justify-content:space-between;position:relative;z-index:2;}
+.hero-logo{height:28px;width:auto;display:block;filter:brightness(0) invert(1);}
+.hero-user{display:flex;align-items:center;gap:12px;margin-top:18px;position:relative;z-index:2;}
+.avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,#fdba74,#f97316);display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;flex-shrink:0;box-shadow:0 4px 12px rgba(249,115,22,.4);}
+.hero-name{font-size:18px;font-weight:700;line-height:1.05;}
+.hero-prog{font-size:9.5px;font-weight:700;letter-spacing:.12em;opacity:.8;margin-top:3px;}
+.hero-id{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);padding:6px 12px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;backdrop-filter:blur(4px);}
+.hero-bal{position:relative;z-index:2;margin-top:22px;}
+.hero-bal .row{display:flex;align-items:baseline;gap:9px;}
+.hero-bal .num{font-size:52px;font-weight:900;letter-spacing:-.04em;line-height:.9;}
+.hero-bal .lbl{font-size:16px;font-weight:600;opacity:.85;}
+.hero-bal .cap{font-size:11px;font-weight:600;letter-spacing:.04em;opacity:.7;margin-top:8px;display:flex;align-items:center;gap:6px;}
+/* banner */
+.banner{position:relative;border-radius:22px;overflow:hidden;height:112px;margin-top:14px;box-shadow:var(--sm);}
+.banner-track{display:flex;height:100%;transition:transform .55s cubic-bezier(.32,.72,0,1);}
+.slide{flex:0 0 100%;height:100%;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;color:#fff;position:relative;overflow:hidden;}
+.slide .glow{position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.16);top:-50px;right:-40px;}
+.slide .s-emoji{font-size:23px;}
+.slide .s-title{font-size:18.5px;font-weight:800;letter-spacing:-.02em;margin-top:5px;position:relative;z-index:2;}
+.slide .s-sub{font-size:12.5px;opacity:.92;margin-top:3px;position:relative;z-index:2;}
+.sl-1{background:linear-gradient(120deg,#7c3aed,#3b82f6);}
+.sl-2{background:linear-gradient(120deg,#ea580c,#fb923c);}
+.sl-3{background:linear-gradient(120deg,#059669,#34d399);}
+.dots{position:absolute;bottom:11px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:3;}
+.dots i{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.5);transition:all .3s;display:block;}
+.dots i.on{width:20px;background:#fff;}
+/* promo */
+.pk-head{display:flex;align-items:center;gap:12px;padding:18px 16px 14px;}
+.pk-ico{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(59,130,246,.14));color:var(--primary);display:grid;place-items:center;flex-shrink:0;}
+.pk-ico svg{width:22px;height:22px;}
+.pk-head h3{margin:0;font-size:15px;font-weight:700;}
+.pk-head p{margin:2px 0 0;font-size:11.5px;color:var(--sub);}
+.pk-body{padding:0 16px 16px;display:flex;gap:9px;}
+.pk-input{flex:1;min-width:0;height:48px;border:1.5px solid var(--border);border-radius:14px;background:#f7f7fa;padding:0 15px;font-size:14px;font-family:inherit;font-weight:500;color:var(--text);transition:.18s;}
+.pk-input::placeholder{color:#a2a6b0;font-weight:400;}
+.pk-input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.12);}
+.btn{height:48px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:.18s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary{background:var(--primary);color:#fff;padding:0 18px;box-shadow:0 8px 18px -8px rgba(37,99,235,.7);}
+.btn-primary:active{transform:scale(.97);}
+.btn:disabled{background:#eceef2;color:#a2a6b0;cursor:not-allowed;box-shadow:none;}
+.btn-outline{width:100%;border:1.5px solid var(--primary);color:var(--primary);background:rgba(37,99,235,.04);height:54px;border-radius:16px;font-size:15px;margin-top:14px;}
+.btn-outline:active{transform:scale(.99);}
+.pk-go{width:48px;flex:0 0 48px;padding:0;}
+.pk-go svg{width:22px;height:22px;}
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--xs);}
+/* leaderboard */
+.lb-head{display:flex;align-items:center;gap:12px;padding:16px 16px 8px;}
+.lb-ico{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,rgba(245,158,11,.16),rgba(249,115,22,.16));color:#f59e0b;display:grid;place-items:center;flex-shrink:0;}
+.lb-ico svg{width:22px;height:22px;}
+.lb-head h3{margin:0;font-size:15px;font-weight:700;}
+.lb-head p{margin:2px 0 0;font-size:11.5px;color:var(--sub);}
+.lb-all{margin-left:auto;background:none;border:none;color:var(--primary);font-weight:700;font-size:12.5px;cursor:pointer;flex-shrink:0;padding:6px 4px;}
+.lb-rows{padding:2px 8px 6px;display:flex;flex-direction:column;}
+.lb-row{display:flex;align-items:center;gap:11px;padding:9px 8px;border-radius:13px;}
+.lb-rank{width:26px;text-align:center;font-weight:800;font-size:13.5px;color:#9aa0ab;flex-shrink:0;}
+.lb-rank.medal{font-size:17px;}
+.lb-av{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12.5px;flex-shrink:0;}
+.lb-name{flex:1;font-size:13.5px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-pts{font-size:14px;font-weight:800;color:var(--primary);flex-shrink:0;white-space:nowrap;}
+.lb-pts span{font-size:11px;color:var(--sub);font-weight:600;margin-left:3px;}
+.lb-you{display:flex;align-items:center;gap:11px;padding:11px 12px;margin:2px 10px 12px;border-radius:14px;background:rgba(37,99,235,.06);border:1px dashed rgba(37,99,235,.32);}
+/* contact */
+.contact-head{display:flex;align-items:center;gap:12px;padding:18px 16px 10px;}
+.contact-row{display:flex;align-items:center;gap:12px;padding:14px;margin:0 10px 10px;border-radius:16px;background:#f7f7fa;cursor:pointer;transition:.15s;}
+.contact-row:active{transform:scale(.99);}
+.tg-ico{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#2aabee,#229ed9);display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 10px rgba(34,158,217,.35);}
+.tg-ico svg{width:21px;height:21px;color:#fff;}
+.c-main{flex:1;}
+.c-name{font-size:14px;font-weight:700;}
+.c-sub{font-size:11.5px;color:var(--sub);margin-top:1px;}
+.chev{color:#c8cad2;flex-shrink:0;}
+/* gifts */
+.page-title{font-size:25px;font-weight:800;letter-spacing:-.03em;margin:14px 2px 4px;}
+.section-sub{font-size:13px;color:var(--sub);font-weight:500;margin:0 2px 16px;}
+.gift-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.gift-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--xs);cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;}
+.gift-card:active{transform:scale(.97);}
+.gift-img{height:112px;display:grid;place-items:center;position:relative;overflow:hidden;}
+.gift-img::after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.16);top:-30px;right:-26px;}
+.gift-img svg{width:46px;height:46px;color:rgba(255,255,255,.95);position:relative;z-index:2;}
+.gi-1{background:linear-gradient(135deg,#60a5fa,#2563eb);}
+.gi-2{background:linear-gradient(135deg,#f472b6,#ec4899);}
+.gi-3{background:linear-gradient(135deg,#38bdf8,#0ea5e9);}
+.gi-4{background:linear-gradient(135deg,#fbbf24,#f59e0b);}
+.gi-5{background:linear-gradient(135deg,#34d399,#10b981);}
+.gift-info{padding:12px 13px 14px;display:flex;flex-direction:column;gap:9px;flex:1;}
+.gift-name{font-size:13.5px;font-weight:700;line-height:1.25;}
+.gift-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:auto;}
+.pts-badge{background:rgba(37,99,235,.1);color:var(--primary);font-size:12px;font-weight:800;padding:4px 10px;border-radius:9px;}
+.need-badge{color:var(--danger);font-size:11px;font-weight:700;}
+/* sheet */
+.overlay{position:fixed;inset:0;background:rgba(11,11,18,.5);backdrop-filter:blur(2px);z-index:30;opacity:0;pointer-events:none;transition:opacity .32s;}
+.overlay.show{opacity:1;pointer-events:auto;}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:30px 30px 0 0;z-index:31;transform:translateY(100%);transition:transform .4s cubic-bezier(.32,.72,0,1);padding:12px 22px 36px;max-height:90vh;overflow-y:auto;scrollbar-width:none;box-shadow:0 -20px 50px -20px rgba(16,18,32,.3);}
+.sheet::-webkit-scrollbar{display:none;}
+.sheet.show{transform:translateY(0);}
+.handle{width:42px;height:5px;border-radius:999px;background:#dadce3;margin:4px auto 18px;}
+.sheet-img{width:130px;height:130px;border-radius:26px;margin:0 auto 16px;display:grid;place-items:center;position:relative;overflow:hidden;box-shadow:var(--md);}
+.sheet-img::after{content:"";position:absolute;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.18);top:-30px;right:-30px;}
+.sheet-img svg{width:56px;height:56px;color:#fff;position:relative;z-index:2;}
+.sheet-name{font-size:21px;font-weight:800;text-align:center;letter-spacing:-.02em;}
+.sheet-desc{font-size:13.5px;color:var(--sub);text-align:center;margin:7px 4px 20px;line-height:1.5;}
+.info-rows{display:flex;flex-direction:column;gap:1px;background:var(--border);border-radius:18px;overflow:hidden;}
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;background:#fafafc;font-size:14px;}
+.info-row .ir-lbl{color:var(--sub);font-weight:500;}
+.info-row .ir-val{font-weight:800;}
+.info-row .ir-val.red{color:var(--danger);}
+.warn-text{color:var(--danger);font-size:13.5px;font-weight:700;text-align:center;margin:18px 0;display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-block{width:100%;height:54px;border-radius:16px;font-size:15.5px;}
+/* history */
+.hist-item{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-ico{width:44px;height:44px;border-radius:14px;background:rgba(37,99,235,.1);color:var(--primary);display:grid;place-items:center;flex-shrink:0;}
+.hist-ico svg{width:22px;height:22px;}
+.hist-code{font-size:14px;font-weight:700;}
+.hist-date{font-size:11.5px;color:var(--sub);margin-top:2px;}
+.hist-pts{font-size:15px;font-weight:800;color:var(--success);white-space:nowrap;}
+/* orders */
+.order-card{padding:18px 16px;margin-bottom:12px;}
+.order-row{display:flex;align-items:center;gap:13px;}
+.order-img{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;flex-shrink:0;box-shadow:var(--sm);}
+.order-img svg{width:26px;height:26px;color:#fff;}
+.order-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.order-top h3{margin:0;font-size:15px;font-weight:700;}
+.sp{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;white-space:nowrap;}
+.sp-blue{background:rgba(59,130,246,.13);color:#2563eb;}
+.sp-green{background:rgba(16,185,129,.13);color:#10b981;}
+.sp-red{background:rgba(239,68,68,.13);color:#ef4444;}
+.sp-gray{background:rgba(107,114,128,.13);color:#6b7280;}
+.order-date{font-size:12px;color:var(--sub);margin-top:4px;font-weight:500;}
+.steps{display:flex;margin-top:26px;}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;}
+.step-line{position:absolute;top:14px;left:-50%;width:100%;height:3px;background:#e7e8ee;z-index:0;border-radius:2px;}
+.step-line.done{background:var(--primary);}
+.step.first .step-line{display:none;}
+.step-dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;position:relative;z-index:2;background:#e7e8ee;color:#fff;flex-shrink:0;}
+.step-dot svg{width:16px;height:16px;}
+.step-dot.done{background:var(--primary);box-shadow:0 4px 10px -3px rgba(37,99,235,.6);}
+.step-dot.active{background:var(--primary);animation:pulse 1.6s infinite;}
+.step-dot.active i{width:10px;height:10px;border-radius:50%;background:#fff;display:block;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,.5)}70%{box-shadow:0 0 0 10px rgba(37,99,235,0)}100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}}
+.step-lbl{font-size:10px;font-weight:600;margin-top:9px;text-align:center;color:var(--sub);line-height:1.2;max-width:64px;}
+.step-lbl.done{color:var(--text);}
+.step-lbl.active{color:var(--primary);font-weight:700;}
+/* empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 24px;}
+.empty-ico{width:96px;height:96px;border-radius:28px;background:#fff;border:1px solid var(--border);display:grid;place-items:center;margin-bottom:22px;box-shadow:var(--sm);}
+.empty-ico svg{width:48px;height:48px;color:#cccfd8;}
+.empty h4{margin:0 0 7px;font-size:17px;font-weight:700;color:#3f434c;}
+.empty p{margin:0;font-size:13.5px;color:var(--sub);}
+/* profile */
+.prof-top{display:flex;align-items:center;gap:15px;padding:16px 4px 20px;}
+.prof-top .avatar{width:70px;height:70px;border-radius:24px;font-size:25px;}
+.prof-name{font-size:22px;font-weight:800;letter-spacing:-.02em;}
+.prof-handle{font-size:13.5px;color:var(--sub);margin-top:2px;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:16px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px 8px;text-align:center;box-shadow:var(--xs);}
+.stat .s-num{font-size:26px;font-weight:900;letter-spacing:-.03em;line-height:1;}
+.stat .s-lbl{font-size:11px;color:var(--sub);font-weight:600;margin-top:6px;}
+.s-indigo .s-num{color:var(--primary);}
+.s-green .s-num{color:var(--success);}
+.s-amber .s-num{color:var(--warning);}
+.inforow{display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border);}
+.inforow:last-child{border-bottom:none;}
+.ir-ico{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;flex-shrink:0;}
+.ir-ico svg{width:19px;height:19px;}
+.iri-1{background:rgba(37,99,235,.1);color:var(--primary);}
+.iri-2{background:rgba(16,185,129,.11);color:var(--success);}
+.iri-3{background:rgba(42,171,238,.13);color:#229ed9;}
+.iflex{flex:1;}
+.if-lbl{font-size:11.5px;color:var(--sub);font-weight:500;}
+.if-val{font-size:14.5px;font-weight:700;margin-top:1px;}
+.if-val.link{color:var(--primary);}
+.lang-head{display:flex;align-items:center;gap:12px;padding:16px 16px 12px;}
+.lang-head h3{margin:0;font-size:15px;font-weight:700;}
+.lang-btns{display:flex;gap:11px;padding:0 16px 16px;}
+.lang-btn{flex:1;height:50px;border-radius:15px;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.18s;}
+.lang-btn.on{background:var(--primary);color:#fff;border:1.5px solid var(--primary);box-shadow:0 8px 18px -8px rgba(37,99,235,.7);}
+.lang-btn.off{background:#fff;color:var(--sub);border:1.5px solid var(--border);}
+.brand-foot{text-align:center;padding:28px 0 10px;}
+.brand-foot img{height:30px;width:auto;opacity:.85;}
+.bf-txt{font-size:12px;font-weight:700;color:var(--sub);margin-top:9px;letter-spacing:.02em;}
+.bf-sub{font-size:11px;color:#9aa0ab;margin-top:3px;}
+/* toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1a1a2e;color:#fff;font-size:13.5px;font-weight:600;padding:12px 20px;border-radius:14px;z-index:50;transition:transform .35s cubic-bezier(.32,.72,0,1);white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.ok{background:#065f46;}
+.toast.err{background:#7f1d1d;}
 </style>
 </head>
 <body data-lang="{{ user_language|default:'uz_latin' }}">
-<div id="root"></div>
-
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
-
-{% verbatim %}
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useCallback, useMemo } = React;
-
-// ── Telegram ───────────────────────────────────────────────────
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation?.(); }
-const _urlTgId = new URLSearchParams(location.search).get('tg_id');
-const TG_ID = tg?.initDataUnsafe?.user?.id || (_urlTgId ? parseInt(_urlTgId) : null);
-const TG_USER_RAW = tg?.initDataUnsafe?.user || {};
-const LANG = document.body.dataset.lang || 'uz_latin';
-const IS_RU = LANG === 'ru';
-const haptic = (k='light') => tg?.HapticFeedback?.impactOccurred?.(k);
-const hapticSuccess = () => tg?.HapticFeedback?.notificationOccurred?.('success');
-const hapticError = () => tg?.HapticFeedback?.notificationOccurred?.('error');
-const hapticSelect = () => tg?.HapticFeedback?.selectionChanged?.();
-
-// ── i18n ──────────────────────────────────────────────────────
-const i18n = {
-  home: IS_RU?'Главная':'Bosh sahifa',
-  gifts: IS_RU?'Подарки':"Sovg'alar",
-  history: IS_RU?'История':'Tarix',
-  orders: IS_RU?'Заявки':"So'rovlar",
-  profile: IS_RU?'Профиль':'Profil',
-  balance: IS_RU?'Баллы':'Balllar',
-  pts: IS_RU?'балл':'ball',
-  enter_promo: IS_RU?'Введите промокод':'Promokodni kiriting',
-  activate: IS_RU?'Активировать':'Faollashtirish',
-  all_gifts: IS_RU?'Смотреть все подарки':"Barcha sovg'alarni ko'rish",
-  top_title: IS_RU?'Топ сантехников':'Top santexniklar',
-  contact_admin: IS_RU?'Связаться с администратором':'Administrator bilan bog\'lanish',
-  order_gift: IS_RU?'Заказать подарок':"Sovg'ani buyurtma qilish",
-  exchange: IS_RU?'Обменять':'Almashtirish',
-  need_pts: IS_RU?'Нужно ещё':'Yana kerak',
-  your_balance: IS_RU?'Ваш баланс':'Sizning balansingiz',
-  after_order: IS_RU?'После заказа':'Buyurtmadan keyin',
-  confirm_order: IS_RU?'Подтвердить заказ':'Buyurtmani tasdiqlash',
-  cancel: IS_RU?'Отмена':'Bekor qilish',
-  close: IS_RU?'Закрыть':'Yopish',
-  status_pending: IS_RU?'Ожидает рассмотрения':'Ko\'rib chiqilmoqda',
-  status_approved: IS_RU?'Подтверждено, готовится':'Tasdiqlandi, tayyorlanmoqda',
-  status_sent: IS_RU?'Отправлено':'Yuborildi',
-  status_completed: IS_RU?'Получено':'Qabul qilindi',
-  status_rejected: IS_RU?'Отклонено':'Rad etildi',
-  status_cancelled: IS_RU?'Отменено':'Bekor qilingan',
-  status_not_received: IS_RU?'Не получено':'Qabul qilinmadi',
-  confirm_receipt: IS_RU?'Подтвердить получение':'Qabul qildim',
-  promo_empty: IS_RU?'История пуста':'Tarix bo\'sh',
-  promo_empty_sub: IS_RU?'Введите первый промокод':'Birinchi promokodingizni kiriting',
-  orders_empty: IS_RU?'Заявок пока нет':'Hali so\'rovlar yo\'q',
-  orders_empty_sub: IS_RU?'Обменяйте баллы на подарок':"Ballarni sovg'aga almashtiring",
-  gifts_empty: IS_RU?'Подарков пока нет':"Hali sovg'alar yo\'q",
-  cancel_order: IS_RU?'Отменить заявку':'Arizani bekor qilish',
-  phone: IS_RU?'Телефон':'Telefon',
-  region: IS_RU?'Регион':'Viloyat',
-  username: IS_RU?'Username':'Username',
-  member_since: IS_RU?'Участник с':'A\'zo bo\'lgan',
-  total_scans: IS_RU?'Всего сканов':'Jami skan',
-  total_pts: IS_RU?'Всего баллов заработано':'Jami yig\'ilgan ball',
-  loading: IS_RU?'Загрузка...':'Yuklanmoqda...',
-  error_load: IS_RU?'Ошибка загрузки':'Yuklashda xato',
-  retry: IS_RU?'Повторить':'Qaytadan',
-  loyalty: IS_RU?'Программа лояльности':'Sodiqlik dasturi',
-  promo_activated: IS_RU?'Промокод активирован!':'Promokod faollashdi!',
-  rank: IS_RU?'Место':'O\'rin',
-  scans: IS_RU?'Сканов':'Skan',
-  my_place: IS_RU?'Моё место':'Mening o\'rnim',
-  not_in_top: IS_RU?'Пока нет в топе':'Hali topda yo\'q',
-  tg_id: IS_RU?'Telegram ID':'Telegram ID',
+<div class="content" data-content></div>
+<div class="tabbar" data-tabbar></div>
+<div class="overlay" data-overlay></div>
+<div class="sheet" data-sheet></div>
+<div class="toast" id="toast"></div>
+<script>
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();tg.enableClosingConfirmation?.();}
+const _urlTgId=new URLSearchParams(location.search).get('tg_id');
+const TG_ID=tg?.initDataUnsafe?.user?.id||(_urlTgId?parseInt(_urlTgId):null);
+const LANG=document.body.dataset.lang||'uz_latin';
+const IS_RU=LANG==='ru';
+const haptic=(t='light')=>tg?.HapticFeedback?.impactOccurred?.(t);
+const hapticOk=()=>tg?.HapticFeedback?.notificationOccurred?.('success');
+const hapticErr=()=>tg?.HapticFeedback?.notificationOccurred?.('error');
+const LOGO="{% static 'webapp/img/jip_group.jpg' %}";
+const T={
+  loading:IS_RU?'Загрузка...':'Yuklanmoqda...',
+  error:IS_RU?'Ошибка загрузки':'Yuklashda xato',
+  retry:IS_RU?'Повторить':'Qaytadan',
+  loyalty:IS_RU?'ПРОГРАММА ЛОЯЛЬНОСТИ':'SODIQLIK DASTURI',
+  hint:IS_RU?'Введите промокод для получения баллов':"Promokod kiriting va ball to'plang",
+  promo_h:IS_RU?'Активировать промокод':'Promokod faollashtirish',
+  promo_s:IS_RU?'Введите код и получите баллы':'Kodni kiriting va ball oling',
+  promo_ph:IS_RU?'Введите промокод':'Promokodni kiriting',
+  all_gifts:IS_RU?'🎁 Смотреть все подарки':"🎁 Barcha sovg'alarni ko'rish",
+  top_h:IS_RU?'Топ сантехников':'Top santexniklar',
+  top_s:IS_RU?'Рейтинг месяца':'Shu oy reytingi',
+  top_all:IS_RU?'Все':'Barchasi',
+  con_h:IS_RU?'Связаться с администратором':"Administrator bilan bog'lanish",
+  con_s:IS_RU?'Помощь по вопросам':"Savollar bo'yicha yordam",
+  con_tg:IS_RU?'Написать в Telegram':'Telegram orqali yozing',
+  gifts_h:IS_RU?'Подарки':"Sovg'alar",
+  gifts_s:IS_RU?'Обменяйте баллы на подарки':'Ballaringizni mukofotlarga almashtiring',
+  hist_h:IS_RU?'История':'Tarix',
+  hist_e:IS_RU?'История пуста':"Tarix bo'sh",
+  hist_es:IS_RU?'Введите первый промокод':'Birinchi promokodingizni kiriting',
+  ord_h:IS_RU?'Заявки':"So'rovlar",
+  ord_s:IS_RU?'Статус ваших заказов':'Buyurtmalaringiz holati',
+  ord_e:IS_RU?'Заявок пока нет':"Hali so'rovlar yo'q",
+  ord_es:IS_RU?'Обменяйте баллы на подарок':"Ballarni sovg'aga almashtiring",
+  prof_h:IS_RU?'Профиль':'Profil',
+  balls:IS_RU?'Баллов':'Balllar',
+  scans:IS_RU?'Сканов':'Skanlar',
+  orders_c:IS_RU?'Подарков':"Sovg'alar",
+  tg_id:'Telegram ID',
+  phone:IS_RU?'Телефон':'Telefon',
+  tg_lbl:'Telegram',
+  lang:IS_RU?'Язык интерфейса':'Interfeys tili',
+  bal_lbl:IS_RU?'Ваш баланс':'Sizning balansingiz',
+  cost_lbl:IS_RU?'Стоимость подарка':"Sovg'ani buyurtma qilish",
+  after_lbl:IS_RU?'После заказа':'Buyurtmadan keyin',
+  not_enough:IS_RU?'не хватает':'yetmaydi',
+  exchange:IS_RU?'Обменять':'Almashtirish',
+  s1:IS_RU?'Принято':'Qabul qilindi',
+  s2:IS_RU?'Рассмотрено':"Ko'rib chiqildi",
+  s3:IS_RU?'Отправлено':'Yuborildi',
+  s4:IS_RU?'Доставлено':'Yetkazildi',
+  you:IS_RU?'Вы':'Siz',
 };
-const t = k => i18n[k] || k;
-
-// ── Design tokens ─────────────────────────────────────────────
-const C = {
-  bg: '#f2f3f5',
-  card: '#ffffff',
-  border: '#e8e8ec',
-  text: '#111111',
-  sub: '#6b6b7a',
-  faint: '#c8c8d0',
-  brand: '#4f46e5',
-  brandDeep: '#3730a3',
-  brandSoft: '#eef2ff',
-  brandTint: '#f5f3ff',
-  brandLite: '#818cf8',
-  good: '#10b981',
-  goodSoft: '#d1fae5',
-  warn: '#f59e0b',
-  warnSoft: '#fef3c7',
-  bad: '#ef4444',
-  badSoft: '#fee2e2',
-  tabH: 64,
-  navH: 56,
+const I={
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+  gift:'<rect x="3" y="8" width="18" height="13" rx="1.5"/><path d="M3 12h18M12 8v13"/><path d="M12 8S10 3 7.5 4 8 8 12 8Zm0 0s2-5 4.5-4-.5 4-4.5 4Z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  list:'<path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/>',
+  qr:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M21 21v-4M14 21h3"/>',
+  send:'<path d="M22 3 2 11l6 2 2.5 7 3-4.5 5.5 4L22 3Z"/><path d="m9 13.5 12-11"/>',
+  telegram:'<path d="M22 3 2 11l6 2 2.5 7 3-4.5 5.5 4L22 3Z" fill="currentColor" stroke="none"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  check:'<path d="m4 12 5 5L20 6"/>',
+  phone:'<path d="M5 3h3l2 5-2.5 1.5a13 13 0 0 0 7 7L19 14l5 2v3a2 2 0 0 1-2 2A18 18 0 0 1 3 5a2 2 0 0 1 2-2Z"/>',
+  idcard:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M13 9h5M13 13h5M5 16h7"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z"/>',
+  trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5a2 2 0 0 0 0 4H7M17 6h2.5a2 2 0 0 1 0 4H17M9 21h6M12 14v7"/>',
+  spark:'<path d="M12 3v4M12 17v4M5 12H1M23 12h-4M6 6l2.5 2.5M18 6l-2.5 2.5M6 18l2.5-2.5M18 18l-2.5-2.5"/>',
+  cap:'<path d="M4 13c0-5 3.5-8 8-8s8 3 8 8H4Z"/><path d="M2 13h20v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2Z"/><path d="M12 5V3"/>',
+  shirt:'<path d="m4 7 4-3 4 2 4-2 4 3-3 3v9H7v-9L4 7Z"/>',
+  thermos:'<rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 7h6v13a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2V7Z"/><path d="M9 12h6"/>',
+  tools:'<path d="M14 7a4 4 0 0 0-5 5l-6 6 2 2 6-6a4 4 0 0 0 5-5l-2.5 2.5L11 11l1.5-1.5L14 7Z"/><path d="m15 12 5 5-2 2-5-5"/>',
+  bag:'<path d="M6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>',
 };
-
-// ── API ───────────────────────────────────────────────────────
-const BASE = '/api';
-const api = async (path, opts={}) => {
-  const sep = path.includes('?')?'&':'?';
-  const url = TG_ID && !opts.noId ? `${BASE}${path}${sep}telegram_id=${TG_ID}` : `${BASE}${path}`;
-  const r = await fetch(url, {
-    method: opts.method||'GET',
-    headers: {'Content-Type':'application/json',...(opts.headers||{})},
-    cache: 'no-store',
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  const data = await r.json().catch(()=>({}));
-  if (!r.ok) throw data;
-  return data;
-};
-
-// ── Helpers ───────────────────────────────────────────────────
-const fmtPts = n => (n||0).toLocaleString('ru-RU');
-const fmtDate = s => s ? new Date(s).toLocaleDateString(IS_RU?'ru-RU':'uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
-const statusInfo = s => {
-  const map = {
-    pending:  {label:t('status_pending'),  color:C.warn,   bg:C.warnSoft,  step:0},
-    approved: {label:t('status_approved'), color:C.brand,  bg:C.brandSoft, step:1},
-    sent:     {label:t('status_sent'),     color:'#0ea5e9',bg:'#e0f2fe',   step:2},
-    completed:{label:t('status_completed'),color:C.good,   bg:C.goodSoft,  step:3},
-    rejected: {label:t('status_rejected'), color:C.bad,    bg:C.badSoft,   step:-1},
-    cancelled_by_user:{label:t('status_cancelled'),color:C.sub,bg:'#f4f4f6',step:-1},
-    not_received:{label:t('status_not_received'),color:C.bad,bg:C.badSoft,step:-1},
-  };
-  return map[s] || {label:s,color:C.sub,bg:'#f4f4f6',step:0};
-};
-
-// ── Icons ─────────────────────────────────────────────────────
-const Icon = ({n,size=20,color='currentColor',sw=1.8,style:st}) => {
-  const s = {fill:'none',stroke:color,strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round'};
-  const shapes = {
-    home:   <><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-5h4v5h5V9.5"/></>,
-    gift:   <><path d="M3 9h18v4H3z"/><path d="M5 13v8h14v-8"/><path d="M12 9v12"/><path d="M12 9c-2.7-.9-4.5-2-4.5-3.5A2.5 2.5 0 0 1 12 3a2.5 2.5 0 0 1 4.5 2.5C16.5 7 14.7 8 12 9"/></>,
-    clock:  <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></>,
-    list:   <><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill={color} stroke="none"/><circle cx="4" cy="12" r="1.2" fill={color} stroke="none"/><circle cx="4" cy="18" r="1.2" fill={color} stroke="none"/></>,
-    user:   <><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></>,
-    coin:   <><circle cx="12" cy="12" r="9"/><path d="M9 8h4.5a2.5 2.5 0 0 1 0 5H9m0 0h5a2.5 2.5 0 0 1 0 5H9V5v14"/></>,
-    qr:     <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM18 14h3M14 18v3"/></>,
-    chevR:  <path d="m9 6 6 6-6 6"/>,
-    chevL:  <path d="m15 6-6 6 6 6"/>,
-    check:  <path d="m5 12 5 5L20 7"/>,
-    x:      <><path d="M6 6l12 12"/><path d="M18 6 6 18"/></>,
-    phone:  <path d="M5 4h3l2 5-2 1.5a11 11 0 0 0 5.5 5.5L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>,
-    send:   <><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></>,
-    trophy: <><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h2.5a1.5 1.5 0 0 1 0 5h-2"/><path d="M7 5H4.5a1.5 1.5 0 0 0 0 5h2"/></>,
-    star:   <path d="m12 2 3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/>,
-    info:   <><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="8" r=".5" fill={color} sw={0}/></>,
-    img:    <><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></>,
-    tg:     <><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></>,
-    globe:  <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></>,
-    spin:   <path d="M21 12a9 9 0 1 1-3-6.7"/>,
-    bag:    <><path d="M6 2 3 6v14h18V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></>,
-  };
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" style={st}>
-      <g {...s}>{shapes[n]||null}</g>
-    </svg>
-  );
-};
-
-// ── Spinner ───────────────────────────────────────────────────
-const Spin = ({size=20,color=C.brand}) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" style={{animation:'spin 0.8s linear infinite',flexShrink:0}}>
-    <circle cx="12" cy="12" r="9" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="48" strokeDashoffset="16"/>
-  </svg>
-);
-
-// ── Pill badge ────────────────────────────────────────────────
-const Badge = ({label,color,bg,style:st}) => (
-  <span style={{display:'inline-flex',alignItems:'center',padding:'3px 10px',borderRadius:999,
-    fontSize:11,fontWeight:700,color,background:bg,letterSpacing:0.1,...st}}>{label}</span>
-);
-
-// ── Avatar ────────────────────────────────────────────────────
-const Avatar = ({name,size=40}) => {
-  const letter = (name||'?').trim()[0].toUpperCase();
-  let h=0; for(const c of name||'') h=(h*31+c.charCodeAt(0))%1000;
-  const colors=['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6'];
-  const bg = colors[h%colors.length];
-  return (
-    <div style={{width:size,height:size,borderRadius:999,background:bg,
-      display:'flex',alignItems:'center',justifyContent:'center',
-      color:'#fff',fontWeight:700,fontSize:size*0.42,flexShrink:0}}>
-      {letter}
-    </div>
-  );
-};
-
-// ── Toast ─────────────────────────────────────────────────────
-let _toastTimer;
-const Toast = ({msg,type='success',onHide}) => {
-  useEffect(()=>{
-    _toastTimer = setTimeout(onHide,2800);
-    return ()=>clearTimeout(_toastTimer);
-  },[]);
-  const bg = type==='success'?C.good : type==='error'?C.bad : C.warn;
-  return (
-    <div style={{position:'fixed',top:16,left:'50%',transform:'translateX(-50%)',
-      zIndex:200,background:bg,color:'#fff',
-      borderRadius:12,padding:'10px 18px',fontSize:14,fontWeight:600,
-      boxShadow:'0 6px 24px rgba(0,0,0,0.18)',
-      display:'flex',alignItems:'center',gap:8,maxWidth:'calc(100vw - 32px)',
-      animation:'fadeUp 260ms cubic-bezier(.22,1,.36,1) both',whiteSpace:'pre-wrap'}}>
-      <Icon n={type==='success'?'check':'info'} size={16} color="#fff"/>
-      {msg}
-    </div>
-  );
-};
-
-// ── Bottom Sheet ──────────────────────────────────────────────
-const Sheet = ({open,onClose,title,children,maxH='88vh'}) => (
-  <div style={{position:'fixed',inset:0,zIndex:100,
-    pointerEvents:open?'auto':'none',display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
-    <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)',
-      opacity:open?1:0,transition:'opacity 220ms ease'}}/>
-    <div className="scroll-y" style={{position:'relative',background:'#fff',borderRadius:'20px 20px 0 0',
-      maxHeight:maxH,overflow:'auto',
-      transform:open?'translateY(0)':'translateY(110%)',
-      transition:'transform 300ms cubic-bezier(.22,1,.36,1)',
-      boxShadow:'0 -8px 32px rgba(0,0,0,0.15)',paddingBottom:32}}>
-      <div style={{display:'flex',justifyContent:'center',padding:'10px 0 2px',flexShrink:0}}>
-        <div style={{width:36,height:4,borderRadius:4,background:C.faint}}/>
-      </div>
-      {title && (
-        <div style={{padding:'8px 20px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{fontSize:18,fontWeight:700,color:C.text}}>{title}</div>
-          <button className="press" onClick={onClose} style={{padding:6,borderRadius:8,background:C.bg}}>
-            <Icon n="x" size={18} color={C.sub}/>
-          </button>
-        </div>
-      )}
-      <div style={{padding:'0 20px'}}>{children}</div>
-    </div>
-  </div>
-);
-
-// ── Promo input ───────────────────────────────────────────────
-const PromoInput = ({onSuccess}) => {
-  const [val,setVal] = useState('');
-  const [loading,setLoading] = useState(false);
-  const [err,setErr] = useState('');
-
-  const submit = async () => {
-    const code = val.trim().toUpperCase();
-    if (!code) return;
-    haptic();
-    setLoading(true); setErr('');
-    try {
-      const res = await api('/webapp/register-qr/',{method:'POST',body:{telegram_id:TG_ID,qr_code:code}});
-      hapticSuccess();
-      setVal('');
-      onSuccess && onSuccess(res);
-    } catch(e) {
-      hapticError();
-      setErr(e.error || t('error_load'));
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <div style={{marginBottom:4}}>
-      <div style={{display:'flex',gap:8}}>
-        <input
-          value={val}
-          onChange={e=>{setVal(e.target.value);setErr('');}}
-          onKeyDown={e=>e.key==='Enter'&&submit()}
-          placeholder={t('enter_promo')}
-          style={{flex:1,height:48,borderRadius:12,border:`1.5px solid ${err?C.bad:C.border}`,
-            background:C.card,padding:'0 14px',fontSize:15,color:C.text,outline:'none',
-            transition:'border-color 180ms'}}
-        />
-        <button
-          onClick={submit}
-          disabled={loading||!val.trim()}
-          className="press"
-          style={{height:48,minWidth:48,borderRadius:12,background:val.trim()?C.brand:'#e8e8ec',
-            color:val.trim()?'#fff':C.faint,display:'flex',alignItems:'center',justifyContent:'center',
-            padding:'0 16px',gap:6,fontSize:14,fontWeight:600,transition:'background 180ms'}}>
-          {loading ? <Spin size={18} color="#fff"/> : <><Icon n="send" size={16} color={val.trim()?'#fff':C.faint}/> {t('activate')}</>}
-        </button>
-      </div>
-      {err && <div style={{marginTop:6,fontSize:12,color:C.bad,fontWeight:500}}>{err}</div>}
-    </div>
-  );
-};
-
-// ── Banner slider ─────────────────────────────────────────────
-const Banner = () => {
-  const [items,setItems] = useState([]);
-  const [idx,setIdx] = useState(0);
-  const ref = useRef();
-
-  useEffect(()=>{
-    api('/webapp/promotions/',{noId:true}).then(d=>setItems(Array.isArray(d)?d:[])).catch(()=>{});
-  },[]);
-
-  useEffect(()=>{
-    if(items.length<=1) return;
-    const id = setInterval(()=>setIdx(i=>(i+1)%items.length),3500);
-    return ()=>clearInterval(id);
-  },[items.length]);
-
-  if(!items.length) return null;
-
-  return (
-    <div style={{borderRadius:16,overflow:'hidden',position:'relative',aspectRatio:'2.4/1',background:C.brandTint}}>
-      {items.map((it,i)=>(
-        <div key={it.id} style={{position:'absolute',inset:0,opacity:i===idx?1:0,
-          transition:'opacity 500ms ease',pointerEvents:i===idx?'auto':'none'}}>
-          {it.image
-            ? <img src={it.image} alt={it.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-            : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',
-                background:`linear-gradient(135deg,${C.brand},${C.brandLite})`,color:'#fff',fontSize:15,fontWeight:600,padding:20,textAlign:'center'}}>{it.title}</div>
-          }
-        </div>
-      ))}
-      {items.length>1 && (
-        <div style={{position:'absolute',bottom:8,left:'50%',transform:'translateX(-50%)',
-          display:'flex',gap:4,pointerEvents:'none'}}>
-          {items.map((_,i)=>(
-            <div key={i} style={{width:i===idx?16:5,height:5,borderRadius:999,
-              background:i===idx?'#fff':'rgba(255,255,255,0.5)',transition:'width 300ms ease'}}/>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════
-// PAGE: HOME
-// ══════════════════════════════════════════════════════════════
-const PageHome = ({user,onRefreshUser,onTab,showToast}) => {
-  const [redemptions,setRedemptions] = useState([]);
-  const [topUsers,setTopUsers] = useState([]);
-  const [contact,setContact] = useState(null);
-  const [promoResult,setPromoResult] = useState(null);
-
-  useEffect(()=>{
-    if(!TG_ID) return;
-    api('/webapp/redemptions/').then(d=>setRedemptions(Array.isArray(d)?d:[])).catch(()=>{});
-    api('/webapp/top-users/?period=all&limit=5').then(d=>setTopUsers(d.items||[])).catch(()=>{});
-    api('/webapp/admin-contact/',{noId:true}).then(setContact).catch(()=>{});
-  },[]);
-
-  const activeOrder = useMemo(()=>
-    redemptions.find(r=>!['completed','rejected','cancelled_by_user','not_received'].includes(r.status))
-  ,[redemptions]);
-
-  const handlePromoSuccess = (res) => {
-    showToast(res.message || t('promo_activated'),'success');
-    onRefreshUser();
-  };
-
-  const si = activeOrder ? statusInfo(activeOrder.status) : null;
-
-  return (
-    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:16}}>
-
-      {/* Hero card */}
-      <div className="anim-up" style={{background:`linear-gradient(135deg, ${C.brandDeep} 0%, ${C.brand} 60%, ${C.brandLite} 100%)`,
-        borderRadius:20,padding:'20px 20px 18px',color:'#fff',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',top:-20,right:-20,width:100,height:100,borderRadius:999,
-          background:'rgba(255,255,255,0.06)'}}/>
-        <div style={{position:'absolute',bottom:-30,right:20,width:80,height:80,borderRadius:999,
-          background:'rgba(255,255,255,0.05)'}}/>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16,position:'relative'}}>
-          <Avatar name={user.first_name||'U'} size={44}/>
-          <div>
-            <div style={{fontSize:11,fontWeight:600,opacity:0.7,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:2}}>{t('loyalty')}</div>
-            <div style={{fontSize:16,fontWeight:700}}>{user.first_name||'—'}</div>
-          </div>
-          <div style={{marginLeft:'auto',background:'rgba(255,255,255,0.12)',borderRadius:10,padding:'4px 10px',
-            fontSize:11,color:'rgba(255,255,255,0.8)',fontWeight:600}}>
-            ID {user.telegram_id}
-          </div>
-        </div>
-        <div style={{position:'relative'}}>
-          <div style={{fontSize:11,fontWeight:600,opacity:0.65,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:4}}>{t('balance')}</div>
-          <div style={{fontSize:42,fontWeight:800,letterSpacing:'-0.03em',lineHeight:1}}>
-            {fmtPts(user.points)}
-            <span style={{fontSize:16,fontWeight:600,marginLeft:6,opacity:0.75}}>{t('pts')}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Banner */}
-      <div className="anim-up" style={{animationDelay:'40ms'}}><Banner/></div>
-
-      {/* Promo input */}
-      <div className="anim-up" style={{animationDelay:'80ms',background:C.card,borderRadius:16,padding:'16px 16px 14px',
-        border:`1px solid ${C.border}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>
-          <Icon n="qr" size={15} color={C.brand} style={{verticalAlign:'middle',marginRight:6}}/>
-          {IS_RU?'Активировать промокод':'Promokod faollashtirish'}
-        </div>
-        <PromoInput onSuccess={handlePromoSuccess}/>
-      </div>
-
-      {/* All gifts button */}
-      <button className="press anim-up" onClick={()=>{hapticSelect();onTab('gifts');}}
-        style={{animationDelay:'100ms',width:'100%',height:48,borderRadius:14,
-          background:C.brandSoft,border:`1.5px solid ${C.brand}33`,
-          color:C.brand,fontSize:14,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-        <Icon n="gift" size={18} color={C.brand}/>
-        {t('all_gifts')}
-      </button>
-
-      {/* Active order card */}
-      {activeOrder && (
-        <div className="anim-up" style={{animationDelay:'120ms',background:C.card,borderRadius:16,
-          border:`1.5px solid ${si.color}44`,padding:'14px 16px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-            <div style={{width:8,height:8,borderRadius:999,background:si.color,
-              boxShadow:`0 0 0 3px ${si.bg}`}}/>
-            <div style={{fontSize:12,fontWeight:700,color:si.color,letterSpacing:'0.05em',textTransform:'uppercase'}}>
-              {IS_RU?'Активная заявка':'Faol ariza'}
-            </div>
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            {activeOrder.gift?.image
-              ? <img src={activeOrder.gift.image} alt="" style={{width:52,height:52,borderRadius:10,objectFit:'cover'}}/>
-              : <div style={{width:52,height:52,borderRadius:10,background:C.brandTint,display:'flex',
-                  alignItems:'center',justifyContent:'center'}}><Icon n="gift" size={22} color={C.brand}/></div>
-            }
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:2,
-                overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                {activeOrder.gift?.name}
-              </div>
-              <Badge label={si.label} color={si.color} bg={si.bg}/>
-            </div>
-            <button className="press" onClick={()=>{haptic();onTab('orders');}}
-              style={{padding:'6px 12px',borderRadius:10,background:C.bg,fontSize:12,fontWeight:600,color:C.sub}}>
-              {IS_RU?'Детали':'Batafsil'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Top santexniks */}
-      {topUsers.length>0 && (
-        <div className="anim-up" style={{animationDelay:'140ms'}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text,display:'flex',alignItems:'center',gap:6}}>
-              <Icon n="trophy" size={15} color="#f59e0b"/>
-              {t('top_title')}
-            </div>
-          </div>
-          <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden'}}>
-            {topUsers.map((u,i)=>(
-              <div key={u.telegram_id} style={{display:'flex',alignItems:'center',gap:12,
-                padding:'11px 16px',borderBottom:i<topUsers.length-1?`1px solid ${C.border}`:'none',
-                background:u.is_me?C.brandTint:'transparent'}}>
-                <div style={{width:26,height:26,borderRadius:8,
-                  background:i===0?'#fef3c7':i===1?'#f4f4f6':i===2?'#fef3c7':'#f4f4f6',
-                  display:'flex',alignItems:'center',justifyContent:'center',
-                  fontSize:13,fontWeight:800,color:i===0?'#d97706':i===1?'#71717a':i===2?'#b45309':C.sub,flexShrink:0}}>
-                  {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
-                </div>
-                <Avatar name={u.name} size={30}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:600,color:C.text,
-                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                    {u.name}{u.is_me&&<span style={{color:C.brand,marginLeft:4,fontSize:11}}> ({IS_RU?'Вы':'Siz'})</span>}
-                  </div>
-                </div>
-                <div style={{fontSize:13,fontWeight:700,color:C.brand,whiteSpace:'nowrap'}}>
-                  {fmtPts(u.points)} {t('pts')}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Admin contact */}
-      {contact?.contacts?.length>0 && (
-        <div className="anim-up" style={{animationDelay:'160ms',background:C.card,borderRadius:16,
-          border:`1px solid ${C.border}`,padding:'14px 16px'}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12,display:'flex',alignItems:'center',gap:6}}>
-            <Icon n="phone" size={15} color={C.brand}/>
-            {t('contact_admin')}
-          </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {contact.contacts.map((c,i)=>(
-              <a key={i} href={c.contact_url||'#'} target="_blank" rel="noreferrer"
-                className="press"
-                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
-                  borderRadius:12,background:C.bg,textDecoration:'none',
-                  border:`1px solid ${C.border}`}}>
-                <div style={{width:36,height:36,borderRadius:10,
-                  background:c.contact_type==='telegram'?C.brandSoft:'#f0fdf4',
-                  display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <Icon n={c.contact_type==='telegram'?'send':'phone'} size={16}
-                    color={c.contact_type==='telegram'?C.brand:C.good}/>
-                </div>
-                <div>
-                  <div style={{fontSize:11,color:C.sub,fontWeight:500,marginBottom:1}}>
-                    {c.contact_type==='telegram'?'Telegram':'Telefon'}
-                  </div>
-                  <div style={{fontSize:14,fontWeight:600,color:C.text}}>{c.contact_value}</div>
-                </div>
-                <Icon n="chevR" size={16} color={C.faint} style={{marginLeft:'auto'}}/>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{height:8}}/>
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════
-// PAGE: GIFTS
-// ══════════════════════════════════════════════════════════════
-const PageGifts = ({user,onRefreshUser,showToast}) => {
-  const [gifts,setGifts] = useState([]);
-  const [loading,setLoading] = useState(true);
-  const [selected,setSelected] = useState(null);
-  const [ordering,setOrdering] = useState(false);
-
-  useEffect(()=>{
-    setLoading(true);
-    api('/webapp/gifts/').then(d=>{setGifts(Array.isArray(d)?d:[]);setLoading(false);})
-      .catch(()=>setLoading(false));
-  },[]);
-
-  const orderGift = async (gift) => {
-    if(user.points < gift.points_cost) return;
-    haptic();
-    setOrdering(true);
-    try {
-      await api('/webapp/request-gift/',{method:'POST',body:{telegram_id:TG_ID,gift_id:gift.id}});
-      hapticSuccess();
-      showToast(IS_RU?`Заявка на «${gift.name}» отправлена!`:`«${gift.name}» uchun ariza yuborildi!`,'success');
-      setSelected(null);
-      onRefreshUser();
-    } catch(e) {
-      hapticError();
-      showToast(e.error||t('error_load'),'error');
-    } finally { setOrdering(false); }
-  };
-
-  const canAfford = g => user.points >= g.points_cost;
-  const affordable = gifts.filter(canAfford).sort((a,b)=>a.points_cost-b.points_cost);
-  const upcoming = gifts.filter(g=>!canAfford(g)).sort((a,b)=>a.points_cost-b.points_cost);
-  const all = [...affordable,...upcoming];
-
-  return (
-    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:12}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0 8px'}}>
-        <div style={{fontSize:22,fontWeight:800,letterSpacing:'-0.02em',color:C.text}}>{t('gifts')}</div>
-        {user.points>0 && (
-          <div style={{fontSize:13,fontWeight:600,color:C.brand,background:C.brandSoft,
-            padding:'5px 12px',borderRadius:999}}>
-            {fmtPts(user.points)} {t('pts')}
-          </div>
-        )}
-      </div>
-
-      {loading && (
-        <div style={{display:'flex',justifyContent:'center',padding:40}}><Spin/></div>
-      )}
-
-      {!loading && all.length===0 && (
-        <div style={{textAlign:'center',padding:'60px 20px'}}>
-          <Icon n="gift" size={48} color={C.faint}/>
-          <div style={{fontSize:15,fontWeight:600,color:C.sub,marginTop:12}}>{t('gifts_empty')}</div>
-        </div>
-      )}
-
-      {!loading && all.length>0 && (
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          {all.map(g=>{
-            const ok = canAfford(g);
-            return (
-              <div key={g.id} className="press anim-up"
-                onClick={()=>{hapticSelect();setSelected(g);}}
-                style={{background:C.card,borderRadius:16,overflow:'hidden',cursor:'pointer',
-                  border:`1.5px solid ${ok?C.brand+'33':C.border}`,
-                  boxShadow:ok?`0 2px 12px ${C.brand}18`:'none'}}>
-                <div style={{height:120,background:C.brandTint,position:'relative',overflow:'hidden'}}>
-                  {g.image
-                    ? <img src={g.image} alt={g.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                    : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        <Icon n="gift" size={36} color={C.brandLite}/>
-                      </div>
-                  }
-                  {ok && (
-                    <div style={{position:'absolute',top:8,right:8,
-                      background:C.good,borderRadius:999,width:20,height:20,
-                      display:'flex',alignItems:'center',justifyContent:'center'}}>
-                      <Icon n="check" size={12} color="#fff" sw={2.5}/>
-                    </div>
-                  )}
-                </div>
-                <div style={{padding:'10px 10px 12px'}}>
-                  <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6,
-                    overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>
-                    {g.name}
-                  </div>
-                  <div style={{fontSize:13,fontWeight:800,color:ok?C.brand:C.sub}}>
-                    {fmtPts(g.points_cost)} {t('pts')}
-                  </div>
-                  {!ok && (
-                    <div style={{fontSize:11,color:C.bad,marginTop:2,fontWeight:500}}>
-                      +{fmtPts(g.points_cost-user.points)} {t('need_pts')}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div style={{height:8}}/>
-
-      {/* Gift detail sheet */}
-      <Sheet open={!!selected} onClose={()=>setSelected(null)} title={selected?.name}>
-        {selected && (
-          <div>
-            {selected.image && (
-              <img src={selected.image} alt={selected.name}
-                style={{width:'100%',height:200,objectFit:'cover',borderRadius:14,marginBottom:16}}/>
-            )}
-            {selected.description && (
-              <p style={{fontSize:14,color:C.sub,lineHeight:1.6,marginBottom:16}}>{selected.description}</p>
-            )}
-            <div style={{background:C.bg,borderRadius:14,padding:'14px 16px',marginBottom:16}}>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-                <span style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('your_balance')}</span>
-                <span style={{fontSize:14,fontWeight:700,color:C.text}}>{fmtPts(user.points)} {t('pts')}</span>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-                <span style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('order_gift')}</span>
-                <span style={{fontSize:14,fontWeight:700,color:C.brand}}>−{fmtPts(selected.points_cost)} {t('pts')}</span>
-              </div>
-              <div style={{height:1,background:C.border,margin:'8px 0'}}/>
-              <div style={{display:'flex',justifyContent:'space-between'}}>
-                <span style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('after_order')}</span>
-                <span style={{fontSize:15,fontWeight:800,
-                  color:canAfford(selected)?C.good:C.bad}}>
-                  {fmtPts(user.points - selected.points_cost)} {t('pts')}
-                </span>
-              </div>
-            </div>
-
-            {canAfford(selected) ? (
-              <button className="press" onClick={()=>orderGift(selected)} disabled={ordering}
-                style={{width:'100%',height:52,borderRadius:14,background:C.brand,
-                  color:'#fff',fontSize:16,fontWeight:700,display:'flex',alignItems:'center',
-                  justifyContent:'center',gap:8}}>
-                {ordering ? <Spin size={20} color="#fff"/> : <><Icon n="check" size={18} color="#fff"/>{t('exchange')}</>}
-              </button>
-            ) : (
-              <div style={{textAlign:'center',padding:'14px 0 4px',fontSize:14,
-                color:C.bad,fontWeight:600}}>
-                {IS_RU
-                  ?`Не хватает ${fmtPts(selected.points_cost-user.points)} баллов`
-                  :`${fmtPts(selected.points_cost-user.points)} ball yetmaydi`}
-              </div>
-            )}
-          </div>
-        )}
-      </Sheet>
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════
-// PAGE: PROMO HISTORY
-// ══════════════════════════════════════════════════════════════
-const PageHistory = () => {
-  const [items,setItems] = useState([]);
-  const [loading,setLoading] = useState(true);
-
-  useEffect(()=>{
-    setLoading(true);
-    api('/webapp/qr-history/').then(d=>{setItems(Array.isArray(d)?d:[]);setLoading(false);})
-      .catch(()=>setLoading(false));
-  },[]);
-
-  return (
-    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:12}}>
-      <div style={{fontSize:22,fontWeight:800,letterSpacing:'-0.02em',color:C.text,padding:'4px 0 8px'}}>
-        {t('history')}
-      </div>
-
-      {loading && <div style={{display:'flex',justifyContent:'center',padding:40}}><Spin/></div>}
-
-      {!loading && items.length===0 && (
-        <div style={{textAlign:'center',padding:'60px 20px'}}>
-          <Icon n="qr" size={48} color={C.faint}/>
-          <div style={{fontSize:15,fontWeight:600,color:C.sub,marginTop:12}}>{t('promo_empty')}</div>
-          <div style={{fontSize:13,color:C.faint,marginTop:4}}>{t('promo_empty_sub')}</div>
-        </div>
-      )}
-
-      {!loading && items.length>0 && (
-        <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden'}}>
-          {items.map((item,i)=>(
-            <div key={item.id} style={{display:'flex',alignItems:'center',gap:12,padding:'13px 16px',
-              borderBottom:i<items.length-1?`1px solid ${C.border}`:'none'}}>
-              <div style={{width:40,height:40,borderRadius:12,background:C.goodSoft,
-                display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <Icon n="qr" size={20} color={C.good}/>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:600,color:C.text,
-                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                  {item.code}
-                </div>
-                <div style={{fontSize:12,color:C.sub,marginTop:1}}>
-                  {item.scanned_at}
-                  {item.store_name && <span style={{marginLeft:6,color:C.faint}}>· {item.store_name}</span>}
-                </div>
-              </div>
-              <div style={{fontSize:15,fontWeight:800,color:C.good,flexShrink:0}}>
-                +{fmtPts(item.points)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{height:8}}/>
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════
-// PAGE: ORDERS (gift redemptions)
-// ══════════════════════════════════════════════════════════════
-const STEPS = ['pending','approved','sent','completed'];
-
-const OrderCard = ({order,onConfirm,onCancel}) => {
-  const si = statusInfo(order.status);
-  const step = si.step;
-  const isFinal = ['completed','rejected','cancelled_by_user','not_received'].includes(order.status);
-  const isFailed = ['rejected','cancelled_by_user','not_received'].includes(order.status);
-  const canConfirm = order.status==='sent';
-  const canCancel = order.status==='pending';
-
-  return (
-    <div style={{background:C.card,borderRadius:16,border:`1.5px solid ${isFailed?C.bad+'33':si.color+'33'}`,
-      overflow:'hidden',marginBottom:12}}>
-      {/* Header */}
-      <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12}}>
-        {order.gift?.image
-          ? <img src={order.gift.image} alt="" style={{width:52,height:52,borderRadius:10,objectFit:'cover'}}/>
-          : <div style={{width:52,height:52,borderRadius:10,background:C.brandTint,
-              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n="gift" size={22} color={C.brand}/>
-            </div>
-        }
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:700,color:C.text,overflow:'hidden',
-            textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:3}}>
-            {order.gift?.name}
-          </div>
-          <Badge label={si.label} color={si.color} bg={si.bg}/>
-        </div>
-      </div>
-
-      {/* Progress steps — only for active orders */}
-      {!isFailed && (
-        <div style={{padding:'0 16px 12px',display:'flex',alignItems:'center',gap:0}}>
-          {STEPS.map((s,i)=>{
-            const done = step>i;
-            const active = step===i;
-            const labels = IS_RU
-              ?['Принято','Готовится','Отправлено','Получено']
-              :['Qabul','Tayyorlanmoqda','Yuborildi','Qabul qilindi'];
-            return (
-              <React.Fragment key={s}>
-                <div style={{display:'flex',flexDirection:'column',alignItems:'center',flex:'none',width:56}}>
-                  <div style={{width:24,height:24,borderRadius:999,
-                    background:done||active?C.brand:C.border,
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                    transition:'background 300ms'}}>
-                    {done
-                      ? <Icon n="check" size={12} color="#fff" sw={2.5}/>
-                      : <div style={{width:8,height:8,borderRadius:999,
-                          background:active?'#fff':C.faint}}/>
-                    }
-                  </div>
-                  <div style={{fontSize:9,fontWeight:600,marginTop:3,textAlign:'center',
-                    color:done||active?C.brand:C.faint,lineHeight:1.2}}>{labels[i]}</div>
-                </div>
-                {i<STEPS.length-1 && (
-                  <div style={{flex:1,height:2,background:done?C.brand:C.border,
-                    marginBottom:14,transition:'background 300ms'}}/>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Date */}
-      <div style={{padding:'0 16px 12px',fontSize:12,color:C.sub}}>
-        {IS_RU?'Заявка от ':'Ariza: '}{fmtDate(order.requested_at)}
-      </div>
-
-      {/* Admin notes */}
-      {order.admin_notes && (
-        <div style={{margin:'0 16px 12px',background:'#f8f8fa',borderRadius:10,
-          padding:'10px 12px',fontSize:13,color:C.sub}}>
-          <span style={{fontWeight:600,color:C.text}}>{IS_RU?'Примечание: ':'Izoh: '}</span>
-          {order.admin_notes}
-        </div>
-      )}
-
-      {/* Actions */}
-      {(canConfirm || canCancel) && (
-        <div style={{padding:'0 16px 14px',display:'flex',gap:8}}>
-          {canConfirm && (
-            <button className="press" onClick={()=>onConfirm(order)}
-              style={{flex:1,height:44,borderRadius:12,background:C.good,
-                color:'#fff',fontSize:14,fontWeight:700,display:'flex',
-                alignItems:'center',justifyContent:'center',gap:6}}>
-              <Icon n="check" size={16} color="#fff"/>
-              {t('confirm_receipt')}
-            </button>
-          )}
-          {canCancel && (
-            <button className="press" onClick={()=>onCancel(order)}
-              style={{flex:canConfirm?0:1,height:44,borderRadius:12,
-                background:C.badSoft,border:`1px solid ${C.bad}33`,
-                color:C.bad,fontSize:14,fontWeight:700,padding:'0 16px',
-                display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-              <Icon n="x" size={14} color={C.bad}/>
-              {t('cancel_order')}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const PageOrders = ({showToast,onRefreshUser}) => {
-  const [orders,setOrders] = useState([]);
-  const [loading,setLoading] = useState(true);
-  const [filter,setFilter] = useState('active');
-
-  const load = useCallback(()=>{
-    setLoading(true);
-    api('/webapp/redemptions/').then(d=>{setOrders(Array.isArray(d)?d:[]);setLoading(false);})
-      .catch(()=>setLoading(false));
-  },[]);
-
-  useEffect(()=>{ load(); },[]);
-
-  const confirm = async (order) => {
-    haptic('medium');
-    try {
-      await api('/webapp/confirm-delivery/',{method:'POST',body:{redemption_id:order.id,confirmed:true}});
-      hapticSuccess();
-      showToast(IS_RU?'Получение подтверждено!':'Qabul tasdiqlandi!','success');
-      load(); onRefreshUser();
-    } catch(e) {
-      hapticError();
-      showToast(e.error||t('error_load'),'error');
-    }
-  };
-
-  const cancel = async (order) => {
-    haptic();
-    try {
-      await api('/webapp/cancel-order/',{method:'POST',body:{redemption_id:order.id,telegram_id:TG_ID}});
-      hapticSuccess();
-      showToast(IS_RU?'Заявка отменена':'Ariza bekor qilindi','success');
-      load(); onRefreshUser();
-    } catch(e) {
-      hapticError();
-      showToast(e.error||t('error_load'),'error');
-    }
-  };
-
-  const active = orders.filter(o=>!['completed','rejected','cancelled_by_user','not_received'].includes(o.status));
-  const done = orders.filter(o=>['completed','rejected','cancelled_by_user','not_received'].includes(o.status));
-  const shown = filter==='active' ? active : done;
-
-  return (
-    <div className="scroll-y" style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
-      <div style={{padding:'12px 16px 8px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div style={{fontSize:22,fontWeight:800,letterSpacing:'-0.02em',color:C.text,padding:'4px 0'}}>{t('orders')}</div>
-        {orders.length>0 && (
-          <div style={{display:'flex',gap:4}}>
-            {['active','done'].map(f=>(
-              <button key={f} className="press" onClick={()=>{hapticSelect();setFilter(f);}}
-                style={{padding:'6px 12px',borderRadius:10,fontSize:12,fontWeight:700,
-                  background:filter===f?C.brand:C.bg,color:filter===f?'#fff':C.sub,
-                  border:filter===f?'none':`1px solid ${C.border}`}}>
-                {f==='active'?(IS_RU?'Активные':'Faol'):(IS_RU?'История':'Tarix')}
-                {f==='active'&&active.length>0&&(
-                  <span style={{marginLeft:4,background:filter==='active'?'rgba(255,255,255,0.2)':'#e8e8ec',
-                    color:filter==='active'?'#fff':C.sub,borderRadius:999,padding:'0 5px',fontSize:11}}>
-                    {active.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{flex:1,padding:'4px 16px 12px'}}>
-        {loading && <div style={{display:'flex',justifyContent:'center',padding:40}}><Spin/></div>}
-
-        {!loading && shown.length===0 && (
-          <div style={{textAlign:'center',padding:'60px 20px'}}>
-            <Icon n="list" size={48} color={C.faint}/>
-            <div style={{fontSize:15,fontWeight:600,color:C.sub,marginTop:12}}>{t('orders_empty')}</div>
-            <div style={{fontSize:13,color:C.faint,marginTop:4}}>{t('orders_empty_sub')}</div>
-          </div>
-        )}
-
-        {!loading && shown.map(o=>(
-          <OrderCard key={o.id} order={o} onConfirm={confirm} onCancel={cancel}/>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════
-// PAGE: PROFILE
-// ══════════════════════════════════════════════════════════════
-const PageProfile = ({user,onLangChange}) => {
-  const [history,setHistory] = useState([]);
-  const [redemptions,setRedemptions] = useState([]);
-
-  useEffect(()=>{
-    api('/webapp/qr-history/').then(d=>setHistory(Array.isArray(d)?d:[])).catch(()=>{});
-    api('/webapp/redemptions/').then(d=>setRedemptions(Array.isArray(d)?d:[])).catch(()=>{});
-  },[]);
-
-  const totalEarned = history.reduce((s,h)=>s+(h.points||0),0);
-  const completedOrders = redemptions.filter(r=>r.status==='completed').length;
-
-  const Row = ({label,value,icon,href}) => (
-    <div style={{display:'flex',alignItems:'center',gap:12,padding:'13px 16px',
-      borderBottom:`1px solid ${C.border}`}}>
-      <div style={{width:36,height:36,borderRadius:10,background:C.brandSoft,
-        display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-        <Icon n={icon} size={16} color={C.brand}/>
-      </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:11,color:C.sub,fontWeight:500,marginBottom:1}}>{label}</div>
-        {href
-          ? <a href={href} target="_blank" rel="noreferrer"
-              style={{fontSize:14,fontWeight:600,color:C.brand,textDecoration:'none'}}>
-              {value||'—'}
-            </a>
-          : <div style={{fontSize:14,fontWeight:600,color:C.text,overflow:'hidden',
-              textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{value||'—'}</div>
-        }
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="scroll-y" style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:16}}>
-      {/* Header */}
-      <div style={{display:'flex',alignItems:'center',gap:14,padding:'4px 0 4px'}}>
-        <Avatar name={user.first_name||'U'} size={56}/>
-        <div>
-          <div style={{fontSize:20,fontWeight:800,color:C.text,letterSpacing:'-0.02em'}}>
-            {user.first_name||'—'}
-          </div>
-          {user.username && (
-            <div style={{fontSize:13,color:C.sub,marginTop:2}}>@{user.username}</div>
-          )}
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-        {[
-          {label:IS_RU?'Баллов':'Balllar', value:fmtPts(user.points), color:C.brand},
-          {label:IS_RU?'Сканов':'Skanlar', value:history.length, color:C.good},
-          {label:IS_RU?'Подарков':'Sovg\'alar', value:completedOrders, color:'#f59e0b'},
-        ].map(s=>(
-          <div key={s.label} style={{background:C.card,borderRadius:14,padding:'14px 10px',
-            border:`1px solid ${C.border}`,textAlign:'center'}}>
-            <div style={{fontSize:22,fontWeight:800,color:s.color,letterSpacing:'-0.02em'}}>{s.value}</div>
-            <div style={{fontSize:11,color:C.sub,fontWeight:600,marginTop:3}}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Info */}
-      <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden'}}>
-        <Row label={t('tg_id')} value={`#${user.telegram_id}`} icon="user"/>
-        {user.phone_number && <Row label={t('phone')} value={user.phone_number} icon="phone"/>}
-        {user.username && <Row label="Telegram" value={`@${user.username}`} icon="send"
-          href={`https://t.me/${user.username}`}/>}
-      </div>
-
-      {/* Language */}
-      <div style={{background:C.card,borderRadius:16,border:`1px solid ${C.border}`,padding:'14px 16px'}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
-          <Icon n="globe" size={15} color={C.brand}/>
-          {IS_RU?'Язык интерфейса':'Interfeys tili'}
-        </div>
-        <div style={{display:'flex',gap:8}}>
-          {[['uz_latin',"🇺🇿 O'zbek"],['ru','🇷🇺 Русский']].map(([code,label])=>(
-            <button key={code} className="press" onClick={()=>onLangChange(code)}
-              style={{flex:1,height:44,borderRadius:12,fontSize:14,fontWeight:700,
-                background:LANG===code?C.brand:C.bg,
-                color:LANG===code?'#fff':C.sub,
-                border:LANG===code?'none':`1px solid ${C.border}`}}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{height:8}}/>
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════
-// TAB BAR
-// ══════════════════════════════════════════════════════════════
-const TABS = [
-  {id:'home',  icon:'home',  label:()=>t('home')},
-  {id:'gifts', icon:'gift',  label:()=>t('gifts')},
-  {id:'history',icon:'clock',label:()=>t('history')},
-  {id:'orders',icon:'list',  label:()=>t('orders')},
-  {id:'profile',icon:'user', label:()=>t('profile')},
+const svg=(p,x='')=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${x}>${p}</svg>`;
+const GC=['gi-1','gi-2','gi-3','gi-4','gi-5'];
+const RC=['linear-gradient(135deg,#fbbf24,#f59e0b)','linear-gradient(135deg,#64748b,#94a3b8)','linear-gradient(135deg,#c2842a,#a86a1c)','linear-gradient(135deg,#60a5fa,#2563eb)','linear-gradient(135deg,#34d399,#10b981)','linear-gradient(135deg,#a78bfa,#7c3aed)','linear-gradient(135deg,#f87171,#ef4444)','linear-gradient(135deg,#fb923c,#ea580c)'];
+const MEDALS=['🥇','🥈','🥉'];
+const DEF_SLIDES=[
+  {cls:'sl-1',e:'🚀',t:IS_RU?'Новая акция! 2x балла':'Yangi aksiya! 2x ball',s:IS_RU?'За каждый промокод вдвое':"Har bir promokod uchun ikki barobar"},
+  {cls:'sl-2',e:'🏆',t:IS_RU?'Войдите в Топ-10':'Top-10 ga kiring',s:IS_RU?'Активные мастера получают призы':"Eng faol ustalar sovrin oladi"},
+  {cls:'sl-3',e:'🎁',t:IS_RU?'Подарки обновлены':"Sovg'alar yangilandi",s:IS_RU?'Смотрите новые награды':"Yangi mukofotlarni ko'ring"},
 ];
-
-const TabBar = ({active,onChange,badge}) => (
-  <div style={{height:C.tabH,background:C.card,borderTop:`1px solid ${C.border}`,
-    display:'flex',alignItems:'center',flexShrink:0,
-    paddingBottom:'env(safe-area-inset-bottom,0)'}}>
-    {TABS.map(tab=>{
-      const on = active===tab.id;
-      return (
-        <button key={tab.id} className="press"
-          onClick={()=>{if(!on){hapticSelect();onChange(tab.id);}}}
-          style={{flex:1,height:'100%',display:'flex',flexDirection:'column',
-            alignItems:'center',justifyContent:'center',gap:3,
-            color:on?C.brand:C.sub,position:'relative'}}>
-          <div style={{position:'relative'}}>
-            <Icon n={tab.icon} size={22} color={on?C.brand:C.sub}
-              sw={on?2.2:1.8}/>
-            {badge[tab.id]>0 && (
-              <div style={{position:'absolute',top:-2,right:-4,
-                minWidth:14,height:14,borderRadius:999,
-                background:C.bad,color:'#fff',fontSize:9,fontWeight:800,
-                display:'flex',alignItems:'center',justifyContent:'center',
-                padding:'0 3px'}}>
-                {badge[tab.id]>9?'9+':badge[tab.id]}
-              </div>
-            )}
-          </div>
-          <div style={{fontSize:10,fontWeight:on?700:500,letterSpacing:'-0.01em',
-            transition:'color 180ms',lineHeight:1}}>
-            {tab.label()}
-          </div>
-        </button>
-      );
-    })}
-  </div>
-);
-
-// ══════════════════════════════════════════════════════════════
-// APP ROOT
-// ══════════════════════════════════════════════════════════════
-const App = () => {
-  const [tab,setTab] = useState('home');
-  const [user,setUser] = useState(null);
-  const [userLoading,setUserLoading] = useState(true);
-  const [userError,setUserError] = useState(false);
-  const [toast,setToast] = useState(null);
-  const [ordersBadge,setOrdersBadge] = useState(0);
-
-  const loadUser = useCallback(()=>{
-    if(!TG_ID){ setUserLoading(false); setUserError(true); return; }
-    api('/webapp/user/').then(d=>{setUser(d);setUserError(false);setUserLoading(false);})
-      .catch(()=>{setUserError(true);setUserLoading(false);});
-  },[]);
-
-  const loadBadge = useCallback(()=>{
-    if(!TG_ID) return;
-    api('/webapp/redemptions/').then(d=>{
-      const arr = Array.isArray(d)?d:[];
-      const n = arr.filter(o=>o.status==='sent').length;
-      setOrdersBadge(n);
-    }).catch(()=>{});
-  },[]);
-
-  useEffect(()=>{ loadUser(); loadBadge(); },[]);
-  useEffect(()=>{ if(tab==='orders') loadBadge(); },[tab]);
-
-  const showToast = useCallback((msg,type='success')=>{
-    setToast({msg,type,key:Date.now()});
-  },[]);
-
-  const handleLangChange = async (lang) => {
-    if(lang===LANG) return;
-    haptic();
-    try {
-      await api('/webapp/update-language/',{method:'POST',body:{telegram_id:TG_ID,language:lang}});
-      showToast(IS_RU?'Язык изменён, перезагрузите страницу':'Til o\'zgartirildi, sahifani yangilang','success');
-    } catch(e) {}
-  };
-
-  if(userLoading) return (
-    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',
-      alignItems:'center',justifyContent:'center',gap:12,background:C.bg}}>
-      <Spin size={32}/>
-      <div style={{fontSize:13,color:C.sub,fontWeight:500}}>{t('loading')}</div>
-    </div>
-  );
-
-  if(userError||!user) return (
-    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',
-      alignItems:'center',justifyContent:'center',gap:12,background:C.bg,padding:24}}>
-      <Icon n="info" size={48} color={C.faint}/>
-      <div style={{fontSize:15,fontWeight:600,color:C.sub,textAlign:'center'}}>{t('error_load')}</div>
-      <button className="press" onClick={loadUser}
-        style={{padding:'12px 28px',borderRadius:12,background:C.brand,
-          color:'#fff',fontSize:14,fontWeight:700}}>
-        {t('retry')}
-      </button>
-    </div>
-  );
-
-  const badge = {orders:ordersBadge};
-  TABS.forEach(tb=>{ if(!badge[tb.id]) badge[tb.id]=0; });
-
-  return (
-    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',
-      paddingTop:'env(safe-area-inset-top,0)',background:C.bg}}>
-      {/* Content */}
-      <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column',position:'relative'}}>
-        {tab==='home'    && <PageHome    user={user} onRefreshUser={loadUser} onTab={setTab} showToast={showToast}/>}
-        {tab==='gifts'   && <PageGifts   user={user} onRefreshUser={loadUser} showToast={showToast}/>}
-        {tab==='history' && <PageHistory/>}
-        {tab==='orders'  && <PageOrders  showToast={showToast} onRefreshUser={loadUser}/>}
-        {tab==='profile' && <PageProfile user={user} onLangChange={handleLangChange}/>}
-      </div>
-
-      {/* Tab bar */}
-      <TabBar active={tab} onChange={setTab} badge={badge}/>
-
-      {/* Toast */}
-      {toast && <Toast key={toast.key} msg={toast.msg} type={toast.type} onHide={()=>setToast(null)}/>}
-    </div>
-  );
-};
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+function gCol(id){return GC[(id-1)%5];}
+function gIco(name){const n=(name||'').toLowerCase();if(n.includes('kepka')||n.includes('кепка'))return 'cap';if(n.includes('футболка')||n.includes('futbolka'))return 'shirt';if(n.includes('термос')||n.includes('termos'))return 'thermos';if(n.includes('набор')||n.includes('инструмент')||n.includes('asbob'))return 'tools';if(n.includes('сумка')||n.includes('sumka'))return 'bag';return 'gift';}
+function ini(u){if(!u)return '?';return((u.first_name||'')+' '+(u.last_name||'')).trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('')||'?';}
+function pts(n){return(n||0).toLocaleString('ru-RU');}
+function fname(u){return[u?.first_name,u?.last_name].filter(Boolean).join(' ')||u?.username||'Santexnik';}
+function fdate(s){return s?new Date(s).toLocaleDateString('ru-RU'):'';}
+let S={user:null,gifts:[],history:[],orders:[],top:[],contact:null,banners:[]};
+const BASE='/api/webapp';
+async function apiGet(p){const r=await fetch(BASE+p,{headers:{Accept:'application/json'}});if(!r.ok)throw r.status;return r.json();}
+async function apiPost(p,b){const r=await fetch(BASE+p,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(b)});return{ok:r.ok,data:await r.json().catch(()=>({}))};}
+const toastEl=document.getElementById('toast');
+let toastTm;
+function toast(msg,type=''){toastEl.textContent=msg;toastEl.className='toast '+(type==='ok'?'ok':type==='err'?'err':'')+' show';clearTimeout(toastTm);toastTm=setTimeout(()=>toastEl.classList.remove('show'),2800);}
+function spInfo(status){return({pending:{pill:'sp-blue',lbl:IS_RU?'На рассмотрении':'Kutilmoqda',steps:[1,0,0,0]},approved:{pill:'sp-blue',lbl:IS_RU?'Одобрено':'Tasdiqlandi',steps:[2,1,0,0]},sent:{pill:'sp-blue',lbl:IS_RU?'Отправлено':'Yuborildi',steps:[2,2,1,0]},completed:{pill:'sp-green',lbl:IS_RU?'Доставлено':'Yetkazildi',steps:[2,2,2,2]},rejected:{pill:'sp-red',lbl:IS_RU?'Отклонено':'Rad etildi',steps:null},cancelled_by_user:{pill:'sp-gray',lbl:IS_RU?'Отменено':'Bekor qilindi',steps:null},not_received:{pill:'sp-red',lbl:IS_RU?'Не получено':'Yetib kelmadi',steps:null}})[status]||{pill:'sp-gray',lbl:status,steps:null};}
+/* screens */
+function homeScreen(){
+  const u=S.user,bal=u?.points||0,in_=ini(u),fn=fname(u);
+  const slides=S.banners.length?S.banners.map((b,i)=>`<div class="slide sl-${(i%3)+1}"><div class="glow"></div><div class="s-emoji">${b.emoji||'🎁'}</div><div class="s-title">${b.title||''}</div><div class="s-sub">${b.subtitle||''}</div></div>`):DEF_SLIDES.map(s=>`<div class="slide ${s.cls}"><div class="glow"></div><div class="s-emoji">${s.e}</div><div class="s-title">${s.t}</div><div class="s-sub">${s.s}</div></div>`);
+  const topHtml=S.top.length?`<div class="card" style="margin-top:14px;"><div class="lb-head"><div class="lb-ico">${svg(I.trophy)}</div><div style="flex:1;min-width:0;"><h3>${T.top_h}</h3><p>${T.top_s}</p></div></div><div class="lb-rows">${S.top.slice(0,5).map((p,i)=>`<div class="lb-row"><div class="lb-rank ${i<3?'medal':''}">${i<3?MEDALS[i]:i+1}</div><div class="lb-av" style="background:${RC[i]}">${ini({first_name:p.first_name,last_name:p.last_name||p.username})}</div><div class="lb-name">${p.first_name||p.username||'—'}</div><div class="lb-pts">${pts(p.points)}<span>ball</span></div></div>`).join('')}</div>${u?`<div class="lb-you"><div class="lb-rank">—</div><div class="lb-av" style="background:linear-gradient(135deg,#fdba74,#f97316)">${in_}</div><div class="lb-name">${fn} · <span style="color:var(--sub);font-weight:600">${T.you}</span></div><div class="lb-pts">${pts(bal)}<span>ball</span></div></div>`:''}</div>`:'';
+  const conHtml=S.contact?`<div class="card" style="margin-top:14px;"><div class="contact-head"><div class="pk-ico">${svg(I.send)}</div><div><h3 style="margin:0;font-size:15px;font-weight:700;">${T.con_h}</h3><p style="margin:2px 0 0;font-size:11.5px;color:var(--sub);">${T.con_s}</p></div></div><div class="contact-row" onclick="openContact()"><div class="tg-ico">${svg(I.telegram)}</div><div class="c-main"><div class="c-name">${S.contact.contact_value||'Admin'}</div><div class="c-sub">${T.con_tg}</div></div><div class="chev">${svg(I.chev)}</div></div></div>`:'';
+  return `<div class="hero"><div class="b1"></div><div class="b2"></div><div class="hero-row1"><img src="${LOGO}" class="hero-logo" alt="JIP"/><div class="hero-id">ID ${u?.telegram_id||TG_ID||'—'}</div></div><div class="hero-user"><div class="avatar">${in_}</div><div><div class="hero-name">${fn}</div><div class="hero-prog">${T.loyalty}</div></div></div><div class="hero-bal"><div class="row"><span class="num">${pts(bal)}</span><span class="lbl">ball</span></div><div class="cap">${svg(I.spark,'width="12" height="12"')} ${T.hint}</div></div></div><div class="banner" data-banner><div class="banner-track">${slides.join('')}</div><div class="dots">${slides.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div></div><div class="card" style="margin-top:14px;"><div class="pk-head"><div class="pk-ico">${svg(I.qr)}</div><div><h3>${T.promo_h}</h3><p>${T.promo_s}</p></div></div><div class="pk-body"><input class="pk-input" placeholder="${T.promo_ph}" data-pk/><button class="btn btn-primary pk-go" data-pk-btn disabled>${svg(I.check)}</button></div></div><button class="btn btn-outline" data-goto="gifts">${T.all_gifts}</button>${topHtml}${conHtml}`;
+}
+function giftsScreen(){
+  const bal=S.user?.points||0;
+  if(!S.gifts.length)return `<div class="page-title">${T.gifts_h}</div><div class="empty"><div class="empty-ico">${svg(I.gift)}</div><h4>${IS_RU?'Подарков пока нет':"Sovg'alar yo'q"}</h4><p>${IS_RU?'Скоро появятся новые подарки':"Tez orada yangi sovg'alar"}</p></div>`;
+  return `<div class="page-title">${T.gifts_h}</div><div class="section-sub">${T.gifts_s}</div><div class="gift-grid">${S.gifts.map(g=>{const n=IS_RU?(g.name_ru||g.name_uz_latin||g.name):(g.name_uz_latin||g.name_ru||g.name);const need=g.points_cost-bal;return `<div class="gift-card" data-gift="${g.id}"><div class="gift-img ${gCol(g.id)}">${svg(I[gIco(n)]||I.gift)}</div><div class="gift-info"><div class="gift-name">${n}</div><div class="gift-meta"><span class="pts-badge">${g.points_cost} ball</span>${need>0?`<span class="need-badge">+${need} ${T.not_enough}</span>`:''}</div></div></div>`;}).join('')}</div>`;
+}
+function historyScreen(){
+  if(!S.history.length)return `<div class="page-title">${T.hist_h}</div><div class="empty"><div class="empty-ico">${svg(I.qr)}</div><h4>${T.hist_e}</h4><p>${T.hist_es}</p></div>`;
+  return `<div class="page-title">${T.hist_h}</div><div class="card" style="margin-top:8px;">${S.history.map(h=>`<div class="hist-item"><div class="hist-ico">${svg(I.qr)}</div><div style="flex:1;"><div class="hist-code">${h.code||h.qr_code||'—'}</div><div class="hist-date">${fdate(h.scanned_at||h.date)}</div></div><div class="hist-pts">+${h.points||h.points_earned||0} ball</div></div>`).join('')}</div>`;
+}
+function ordersScreen(){
+  if(!S.orders.length)return `<div class="page-title">${T.ord_h}</div><div class="empty"><div class="empty-ico">${svg(I.list)}</div><h4>${T.ord_e}</h4><p>${T.ord_es}</p></div>`;
+  const SLBLS=[T.s1,T.s2,T.s3,T.s4];
+  return `<div class="page-title">${T.ord_h}</div><div class="section-sub">${T.ord_s}</div>${S.orders.map(o=>{const n=IS_RU?(o.gift_name_ru||o.gift_name_uz_latin||o.gift_name||'—'):(o.gift_name_uz_latin||o.gift_name_ru||o.gift_name||'—');const si=spInfo(o.status);const col=gCol(o.gift_id||1);const ico=gIco(n);const stHtml=si.steps?`<div class="steps">${SLBLS.map((lbl,i)=>{const s=si.steps[i];const pDone=i>0&&si.steps[i-1]===2;const dot=s===2?`<div class="step-dot done">${svg(I.check)}</div>`:s===1?`<div class="step-dot active"><i></i></div>`:`<div class="step-dot"></div>`;return `<div class="step ${i===0?'first':''}"><div class="step-line ${pDone?'done':''}"></div>${dot}<div class="step-lbl ${s===2?'done':s===1?'active':''}">${lbl}</div></div>`;}).join('')}</div>`:'';return `<div class="card order-card"><div class="order-row"><div class="order-img ${col}">${svg(I[ico]||I.gift)}</div><div style="flex:1;"><div class="order-top"><h3>${n}</h3><span class="sp ${si.pill}">${si.lbl}</span></div><div class="order-date">${fdate(o.created_at)} · ${o.points_cost||0} ball</div></div></div>${stHtml}</div>`;}).join('')}`;
+}
+function profileScreen(){
+  const u=S.user,in_=ini(u),fn=fname(u),curL=u?.language||LANG;
+  return `<div class="prof-top"><div class="avatar" style="width:70px;height:70px;border-radius:24px;font-size:25px;">${in_}</div><div><div class="prof-name">${fn}</div><div class="prof-handle">${u?.username?'@'+u.username:''}</div></div></div><div class="stat-grid"><div class="stat s-indigo"><div class="s-num">${pts(u?.points||0)}</div><div class="s-lbl">${T.balls}</div></div><div class="stat s-green"><div class="s-num">${u?.qr_scan_count||S.history.length||0}</div><div class="s-lbl">${T.scans}</div></div><div class="stat s-amber"><div class="s-num">${S.orders.length}</div><div class="s-lbl">${T.orders_c}</div></div></div><div class="card">${u?.telegram_id?`<div class="inforow"><div class="ir-ico iri-1">${svg(I.idcard)}</div><div class="iflex"><div class="if-lbl">${T.tg_id}</div><div class="if-val">#${u.telegram_id}</div></div></div>`:''}${u?.phone_number?`<div class="inforow"><div class="ir-ico iri-2">${svg(I.phone)}</div><div class="iflex"><div class="if-lbl">${T.phone}</div><div class="if-val">${u.phone_number}</div></div></div>`:''}${u?.username?`<div class="inforow"><div class="ir-ico iri-3">${svg(I.telegram)}</div><div class="iflex"><div class="if-lbl">${T.tg_lbl}</div><div class="if-val link">@${u.username}</div></div></div>`:''}</div><div class="card" style="margin-top:14px;"><div class="lang-head"><div class="ir-ico iri-1">${svg(I.globe)}</div><h3>${T.lang}</h3></div><div class="lang-btns"><button class="lang-btn ${curL!=='ru'?'on':'off'}" data-lang="uz_latin">🇺🇿 O'zbek</button><button class="lang-btn ${curL==='ru'?'on':'off'}" data-lang="ru">🇷🇺 Русский</button></div></div><div class="brand-foot"><img src="${LOGO}" alt="JIP"/><div class="bf-txt">Jahon Invest Plast</div><div class="bf-sub">Sodiqlik dasturi · v1.0</div></div>`;
+}
+/* app */
+const content=document.querySelector('[data-content]');
+const tabbar=document.querySelector('[data-tabbar]');
+const overlay=document.querySelector('[data-overlay]');
+const sheet=document.querySelector('[data-sheet]');
+let bannerTm=null;
+const TABS=[
+  {id:'home',lbl:IS_RU?'Главная':'Asosiy',ico:'home'},
+  {id:'gifts',lbl:IS_RU?'Подарки':"Sovg'alar",ico:'gift'},
+  {id:'history',lbl:IS_RU?'История':'Tarix',ico:'clock'},
+  {id:'orders',lbl:IS_RU?'Заявки':"So'rovlar",ico:'list'},
+  {id:'profile',lbl:IS_RU?'Профиль':'Profil',ico:'user'},
+];
+const SCREENS={home:homeScreen,gifts:giftsScreen,history:historyScreen,orders:ordersScreen,profile:profileScreen};
+function buildTabbar(){
+  const cnt=S.orders.filter(o=>o.status==='sent').length;
+  tabbar.innerHTML=TABS.map(t=>`<button class="tab" data-tab="${t.id}">${svg(I[t.ico])}<span>${t.lbl}</span>${t.id==='orders'&&cnt>0?`<span class="badge">${cnt}</span>`:''}</button>`).join('');
+  tabbar.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{closeSheet();render(b.dataset.tab);}));
+}
+function render(tab){
+  if(bannerTm){clearInterval(bannerTm);bannerTm=null;}
+  content.innerHTML=SCREENS[tab]();
+  content.classList.remove('fade-in');void content.offsetWidth;content.classList.add('fade-in');
+  content.scrollTop=0;
+  tabbar.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  wire(tab);
+}
+function wire(tab){
+  const pk=content.querySelector('[data-pk]'),pkBtn=content.querySelector('[data-pk-btn]');
+  if(pk&&pkBtn){
+    pk.addEventListener('input',()=>pkBtn.disabled=!pk.value.trim());
+    pkBtn.addEventListener('click',async()=>{
+      const code=pk.value.trim();if(!code||!TG_ID)return;
+      pkBtn.disabled=true;pk.disabled=true;haptic();
+      const res=await apiPost('/redeem-promo/',{telegram_id:TG_ID,code});
+      pk.disabled=false;pk.value='';
+      if(res.ok){hapticOk();toast(`✅ +${res.data.points||0} ball!`,'ok');S.user=await apiGet(`/user/?telegram_id=${TG_ID}&format=json`).catch(()=>S.user);buildTabbar();render('home');}
+      else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Неверный промокод':"Noto'g'ri promokod")),'err');pkBtn.disabled=false;}
+    });
+  }
+  content.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>{closeSheet();render(b.dataset.goto);}));
+  const banner=content.querySelector('[data-banner]');
+  if(banner){const track=banner.querySelector('.banner-track');const dots=banner.querySelectorAll('.dots i');const n=track.children.length;if(n>1){let idx=0;bannerTm=setInterval(()=>{idx=(idx+1)%n;track.style.transform=`translateX(-${idx*100}%)`;dots.forEach((d,i)=>d.classList.toggle('on',i===idx));},2800);}}
+  content.querySelectorAll('[data-gift]').forEach(c=>c.addEventListener('click',()=>openSheet(+c.dataset.gift)));
+  content.querySelectorAll('[data-lang]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const lang=btn.dataset.lang;
+    content.querySelectorAll('[data-lang]').forEach(b=>{b.classList.remove('on');b.classList.add('off');});
+    btn.classList.remove('off');btn.classList.add('on');haptic();
+    await apiPost('/update-language/',{telegram_id:TG_ID,language:lang});
+    toast(IS_RU?'Язык изменён, перезагрузите':"Til o'zgartirildi, qayta yuklang",'ok');
+  }));
+}
+function openSheet(id){
+  const g=S.gifts.find(x=>x.id===id);if(!g)return;haptic('medium');
+  const bal=S.user?.points||0,need=g.points_cost-bal;
+  const n=IS_RU?(g.name_ru||g.name_uz_latin||g.name):(g.name_uz_latin||g.name_ru||g.name);
+  const d=IS_RU?(g.description_ru||g.description_uz_latin||''):(g.description_uz_latin||g.description_ru||'');
+  sheet.innerHTML=`<div class="handle"></div><div class="sheet-img ${gCol(g.id)}">${svg(I[gIco(n)]||I.gift)}</div><div class="sheet-name">${n}</div>${d?`<div class="sheet-desc">${d}</div>`:''}<div class="info-rows"><div class="info-row"><span class="ir-lbl">${T.bal_lbl}</span><span class="ir-val">${pts(bal)} ball</span></div><div class="info-row"><span class="ir-lbl">${T.cost_lbl}</span><span class="ir-val red">−${g.points_cost} ball</span></div><div class="info-row"><span class="ir-lbl">${T.after_lbl}</span><span class="ir-val red">${pts(bal-g.points_cost)} ball</span></div></div>${need>0?`<div class="warn-text">⚠ ${need} ${T.not_enough}</div>`:''}<button class="btn btn-primary btn-block" id="sbtn" ${need>0?'disabled':''}>${T.exchange}</button>`;
+  overlay.classList.add('show');sheet.classList.add('show');
+  document.getElementById('sbtn')?.addEventListener('click',async()=>{
+    if(!TG_ID)return;const btn=document.getElementById('sbtn');btn.disabled=true;btn.textContent=IS_RU?'Отправка...':'Yuborilmoqda...';haptic('medium');
+    const res=await apiPost(`/gifts/${g.id}/request/`,{telegram_id:TG_ID});
+    if(res.ok){hapticOk();closeSheet();toast(IS_RU?'✅ Заявка отправлена!':"✅ So'rov yuborildi!",'ok');S.orders=await apiGet(`/redemptions/?telegram_id=${TG_ID}&format=json`).catch(()=>S.orders);S.user=await apiGet(`/user/?telegram_id=${TG_ID}&format=json`).catch(()=>S.user);buildTabbar();render('orders');}
+    else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Ошибка':'Xato')),'err');btn.disabled=false;btn.textContent=T.exchange;}
+  });
+}
+function closeSheet(){overlay.classList.remove('show');sheet.classList.remove('show');}
+overlay.addEventListener('click',closeSheet);
+function openContact(){
+  if(!S.contact)return;haptic();
+  const v=S.contact.contact_value||'';
+  let url=v.startsWith('https://')?v:v.match(/^\+?[0-9]+$/)?`tel:${v}`:`https://t.me/${v.replace('@','')}`;
+  tg?tg.openLink(url):window.open(url,'_blank');
+}
+window.openContact=openContact;
+async function init(){
+  if(!TG_ID){content.innerHTML=`<div class="splash"><div class="err-ico">${svg(I.info)}</div><div class="splash-txt">${IS_RU?'Откройте через Telegram бот':'Telegram bot orqali oching'}</div></div>`;return;}
+  content.innerHTML=`<div class="splash"><div class="spin"></div><div class="splash-txt">${T.loading}</div></div>`;
+  try{
+    const[user,gifts,history,orders,topRaw,conRaw,bannersRaw]=await Promise.all([
+      apiGet(`/user/?telegram_id=${TG_ID}&format=json`),
+      apiGet(`/gifts/?telegram_id=${TG_ID}&format=json`),
+      apiGet(`/qr-history/?telegram_id=${TG_ID}&format=json`),
+      apiGet(`/redemptions/?telegram_id=${TG_ID}&format=json`),
+      apiGet(`/top-users/?format=json`),
+      apiGet(`/admin-contact/?telegram_id=${TG_ID}&format=json`),
+      apiGet(`/promotions/?telegram_id=${TG_ID}&format=json`),
+    ]);
+    S.user=user;
+    S.gifts=Array.isArray(gifts)?gifts:[];
+    S.history=Array.isArray(history)?history:(history?.results||[]);
+    S.orders=Array.isArray(orders)?orders:(orders?.results||[]);
+    S.top=topRaw?.items||[];
+    S.contact=(conRaw?.contacts?.length?conRaw.contacts[0]:null)||(conRaw?.contact_value?conRaw:null);
+    S.banners=Array.isArray(bannersRaw)?bannersRaw:[];
+    buildTabbar();render('home');
+  }catch(e){
+    content.innerHTML=`<div class="splash"><div class="err-ico">${svg(I.info)}</div><div class="splash-txt">${T.error}</div><button class="btn-retry" onclick="init()">${T.retry}</button></div>`;
+  }
+}
+window.init=init;
+init();
 </script>
-{% endverbatim %}
 </body>
 </html>
