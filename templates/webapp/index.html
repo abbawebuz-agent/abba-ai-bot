@@ -43,7 +43,8 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 // ── Telegram ───────────────────────────────────────────────────
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation?.(); }
-const TG_ID = tg?.initDataUnsafe?.user?.id || null;
+const _urlTgId = new URLSearchParams(location.search).get('tg_id');
+const TG_ID = tg?.initDataUnsafe?.user?.id || (_urlTgId ? parseInt(_urlTgId) : null);
 const TG_USER_RAW = tg?.initDataUnsafe?.user || {};
 const LANG = document.body.dataset.lang || 'uz_latin';
 const IS_RU = LANG === 'ru';
