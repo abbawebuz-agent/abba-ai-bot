@@ -727,6 +727,64 @@ def health_check(request):
     return HttpResponse('OK', content_type='text/plain', status=200)
 
 
+def admin_send_dev_update_view(request):
+    """JIP Development guruhiga dev update xabarini yuboradi."""
+    import json, urllib.request, urllib.parse
+    from django.conf import settings
+    from django.contrib import messages as dj_messages
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        dj_messages.error(request, "TELEGRAM_BOT_TOKEN topilmadi")
+        return redirect('admin:index')
+
+    def tg_get(method, params=None):
+        url = f"https://api.telegram.org/bot{token}/{method}"
+        if params:
+            url += "?" + urllib.parse.urlencode(params)
+        with urllib.request.urlopen(url, timeout=10) as r:
+            return json.loads(r.read())
+
+    def tg_post(method, payload):
+        url = f"https://api.telegram.org/bot{token}/{method}"
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+
+    # Step 1: find group chat id from recent updates
+    data = tg_get("getUpdates", {"limit": 50, "offset": -50})
+    group_id = None
+    group_name = None
+    for upd in reversed(data.get("result", [])):
+        chat = (upd.get("message") or upd.get("my_chat_member", {}).get("chat", {})) or {}
+        if isinstance(chat, dict) and chat.get("type") in ("group", "supergroup"):
+            group_id = chat["id"]
+            group_name = chat.get("title", "")
+            break
+
+    if not group_id:
+        dj_messages.error(request, f"Guruh topilmadi. getUpdates result count: {len(data.get('result', []))}")
+        return redirect('admin:index')
+
+    msg = request.GET.get('msg', '')
+    if not msg:
+        dj_messages.error(request, "?msg= parametri kerak")
+        return redirect('admin:index')
+
+    send_data = tg_post("sendMessage", {"chat_id": group_id, "text": msg, "parse_mode": "HTML"})
+
+    if send_data.get("ok"):
+        dj_messages.success(request, f"✅ '{group_name}' ({group_id}) guruhiga yuborildi")
+    else:
+        dj_messages.error(request, f"❌ Xato: {send_data}")
+    return redirect('admin:index')
+
+
 def admin_backup_test_view(request):
     """Test BACKUP_CHANNEL_ID + bot ulanish (diagnostika)."""
     import io
@@ -856,6 +914,7 @@ urlpatterns = [
     path('admin/dashboard/export/', admin.site.admin_view(dashboard_export_view), name='dashboard_export'),
     path('admin/dashboard/user/<int:user_id>/', admin.site.admin_view(user_detail_view), name='user_detail_page'),
     path('admin/dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
+    path('admin/send-dev-update/', admin.site.admin_view(admin_send_dev_update_view), name='admin_send_dev_update'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
