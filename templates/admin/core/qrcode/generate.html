@@ -1,55 +1,53 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 
-{% block title %}Генерация QR-кодов{% endblock %}
+{% block title %}QR-promokodlar generatsiyasi{% endblock %}
 
 {% block content %}
-<h1>Генерация QR-кодов</h1>
+<h1>QR-promokodlar generatsiyasi</h1>
+<p style="color:#666;margin-bottom:20px;">Har bir promokodga global tartib raqami (sequence_number) avtomatik beriladi.</p>
 
 <form method="post" action="{% url 'admin:core_qrcode_generate' %}">
     {% csrf_token %}
 
     <div style="margin-bottom: 20px;">
-        <label for="store">Do'kon:</label>
-        <select name="store" id="store" required style="padding: 5px; margin-left: 10px; min-width: 220px;">
-            <option value="">Do'konni tanlang</option>
+        <label for="quantity"><strong>Miqdor:</strong></label>
+        <input type="number" name="quantity" id="quantity" min="1" max="30000" required
+               style="padding: 5px; margin-left: 10px; width: 120px;">
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <label for="points"><strong>Ballar (har biri):</strong></label>
+        <input type="number" name="points" id="points" min="1"
+               style="padding: 5px; margin-left: 10px; width: 100px;"
+               placeholder="50">
+        <small style="color: #666; margin-left: 8px;">Standart: 50 ball</small>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <label for="store">Do'kon (ixtiyoriy):</label>
+        <select name="store" id="store" style="padding: 5px; margin-left: 10px; min-width: 220px;">
+            <option value="">— Tanlanmagan —</option>
             {% for s in stores %}
             <option value="{{ s.pk }}">{{ s.name }}</option>
             {% endfor %}
         </select>
     </div>
 
-    <div style="margin-bottom: 20px;">
-        <label for="quantity">Количество:</label>
-        <input type="number" name="quantity" id="quantity" min="1" max="30000" required
-               style="padding: 5px; margin-left: 10px; width: 100px;">
-    </div>
-
-    <div style="margin-bottom: 20px;">
-        <label for="points">Баллы за QR-код:</label>
-        <input type="number" name="points" id="points" min="0"
-               style="padding: 5px; margin-left: 10px; width: 100px;"
-               placeholder="50">
-        <small style="display: block; margin-top: 5px; color: #666;">
-            По умолчанию: 50 баллов за QR-код
-        </small>
-    </div>
-
     <div>
-        <button type="submit" style="padding: 10px 20px; background-color: #417690; color: white; border: none; cursor: pointer;">
-            Сгенерировать QR-коды
+        <button type="submit" style="padding: 10px 24px; background-color: #417690; color: white; border: none; cursor: pointer; font-size: 14px;">
+            Generatsiya qilish
         </button>
     </div>
 </form>
 
 <div style="margin-top: 30px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
-    <h3>Информация:</h3>
+    <h3>Qanday ishlaydi:</h3>
     <ul>
-        <li>QR-коды генерируются для сантехников (E-): 50 баллов по умолчанию</li>
-        <li>Каждая партия привязывается к выбранному до'кону</li>
-        <li>Вы можете указать любое количество баллов в поле "Баллы за QR-код"</li>
-        <li>Генерация выполняется асинхронно — после нажатия вы будете перенаправлены на список партий</li>
-        <li>После завершения генерации можно скачать ZIP-архив со всеми изображениями</li>
+        <li>Har bir promokodga <strong>global tartib raqami</strong> beriladi (sequence_number: 1, 2, 3...)</li>
+        <li>Bu raqamlar keyinchalik <strong>Sotuvchilar</strong> sahifasida diapazonga biriktiriladi (masalan: 200–300 → Sotuvchi A)</li>
+        <li>Santexniklar o'sha diapazondan promokod skan qilganda sotuvchi statistikasida ko'rinadi</li>
+        <li>Generatsiya asinxron — ZIP arxiv tayyor bo'lgach yuklab olish mumkin</li>
     </ul>
 </div>
 {% endblock %}

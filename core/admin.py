@@ -1618,14 +1618,19 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         # JIP: Eski QRCodeGeneration flow deprecated.
         # Yangi flow: QRCodeBatch admin orqali → har batch bitta Store ga biriktirilgan.
         if request.method == 'POST':
-            store_id = request.POST.get('store')
-            quantity = int(request.POST.get('quantity', 0))
+            store_id = request.POST.get('store') or None
+            quantity_raw = request.POST.get('quantity', '0')
             points_raw = request.POST.get('points')
 
-            if store_id and quantity > 0:
+            try:
+                quantity = int(quantity_raw)
+            except (ValueError, TypeError):
+                quantity = 0
+
+            if quantity > 0:
                 try:
                     from core.models import Store, QRCodeBatch
-                    store = Store.objects.get(pk=store_id)
+                    store = Store.objects.get(pk=store_id) if store_id else None
                     points = int(points_raw) if points_raw else 50
 
                     batch = QRCodeBatch.objects.create(
@@ -1643,13 +1648,13 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
                     messages.success(
                         request,
-                        f"Partiya '{batch.name}' yaratildi va generatsiya boshlandi!"
+                        f"Partiya '{batch.name}' yaratildi ({quantity} ta, har biri {points} ball)!"
                     )
                     return redirect('admin:core_qrcodebatch_changelist')
                 except Exception as e:
                     messages.error(request, f'Partiya yaratishda xatolik: {str(e)}')
             else:
-                messages.error(request, "Do'kon va miqdorni to'g'ri tanlang!")
+                messages.error(request, "Miqdorni to'g'ri kiriting!")
 
         from core.models import Store
         context = {

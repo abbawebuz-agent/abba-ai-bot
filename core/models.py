@@ -895,27 +895,31 @@ class QRCode(models.Model):
 
     @classmethod
     def create_code(cls, batch, points=None):
-        """Yangi QR-karta yaratish — batch + store kontekstida.
+        """Yangi QR-karta yaratish — batch kontekstida, global sequence_number bilan."""
+        from django.db import transaction
+        from django.db.models import Max
 
-        Kod format: JIP{hash}. Prefix endi konfiguratsiya emas, hardcoded.
-        """
         hash_code = cls.generate_hash()
         code = f"JIP{hash_code}"
 
         if points is None:
             points = batch.points_per_code
 
-        # Create QR first, then update serial number (needs ID)
-        qr = cls.objects.create(
-            code=code,
-            hash_code=hash_code,
-            serial_number=f"TEMP-{hash_code}",
-            points=points,
-            store=batch.store,
-            batch=batch,
-        )
-        qr.serial_number = cls.generate_serial_number(batch)
-        qr.save(update_fields=['serial_number'])
+        with transaction.atomic():
+            result = cls.objects.select_for_update().aggregate(m=Max('sequence_number'))
+            seq_num = (result['m'] or 0) + 1
+
+            qr = cls.objects.create(
+                code=code,
+                hash_code=hash_code,
+                serial_number=f"TEMP-{hash_code}",
+                points=points,
+                store=batch.store,
+                batch=batch,
+                sequence_number=seq_num,
+            )
+            qr.serial_number = cls.generate_serial_number(batch)
+            qr.save(update_fields=['serial_number'])
         return qr
 
 

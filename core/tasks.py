@@ -81,9 +81,10 @@ def _do_generate_batch_zip(batch: QRCodeBatch):
         # CSV ro'yxat
         csv_buf = io.StringIO()
         writer = csv.writer(csv_buf)
-        writer.writerow(['serial_number', 'code', 'hash_code', 'points', 'store'])
+        writer.writerow(['serial_number', 'sequence_number', 'code', 'hash_code', 'points', 'store'])
         for qr in qr_list:
-            writer.writerow([qr.serial_number, qr.code, qr.hash_code, qr.points, batch.store.name])
+            store_name = batch.store.name if batch.store else '—'
+            writer.writerow([qr.serial_number, qr.sequence_number, qr.code, qr.hash_code, qr.points, store_name])
         zf.writestr('codes.csv', csv_buf.getvalue())
 
         # PNG rasmlar
