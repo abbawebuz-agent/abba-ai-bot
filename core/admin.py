@@ -1676,34 +1676,47 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             elif points <= 0:
                 messages.error(request, "Ballar 0 dan katta bo'lishi kerak!")
             else:
+                # Railway'da Celery worker yo'q — sinxron yaratamiz.
+                # Har create_promo_code ichida atomic transaction → xavfsiz.
+                import time
+                import traceback
+                import logging
+                _logger = logging.getLogger(__name__)
+                start = time.time()
+                created = 0
+                last_err = None
                 try:
-                    from core.tasks import generate_promo_codes_task
-                    generate_promo_codes_task.delay(quantity, points)
+                    from core.models import QRCode
+                    for _ in range(quantity):
+                        try:
+                            QRCode.create_promo_code(points=points)
+                            created += 1
+                        except Exception as inner_exc:
+                            _logger.exception("create_promo_code failed at #%s", created + 1)
+                            last_err = inner_exc
+                            break
+                except Exception as outer_exc:
+                    last_err = outer_exc
+                    _logger.exception("generate_qr_codes_view bulk loop fatal")
+
+                elapsed = time.time() - start
+                if created == quantity:
                     messages.success(
                         request,
-                        f"✅ {quantity} ta promokod yaratish jarayonida "
-                        f"(har biri {points} ball). Ro'yxat sahifasini yangilang."
+                        f"✅ {created} ta promokod yaratildi "
+                        f"(har biri {points} ball, {elapsed:.1f}s)"
                     )
-                except Exception as exc:
-                    # Celery broker mavjud bo'lmasa — fallback: sync
-                    import traceback
-                    import logging
-                    logging.getLogger(__name__).exception("Celery .delay failed, fallback to sync")
-                    try:
-                        from core.models import QRCode
-                        for _ in range(quantity):
-                            QRCode.create_promo_code(points=points)
-                        messages.success(
-                            request,
-                            f"✅ {quantity} ta promokod yaratildi (sync mode, "
-                            f"{points} ball). Celery: {exc.__class__.__name__}"
-                        )
-                    except Exception as sync_exc:
-                        tb = traceback.format_exc()
-                        messages.error(
-                            request,
-                            f"❌ Promokod yaratishda xato: {sync_exc}. Traceback: {tb[-1500:]}"
-                        )
+                elif created > 0:
+                    messages.warning(
+                        request,
+                        f"⚠️ {created}/{quantity} ta yaratildi, xato: {last_err}"
+                    )
+                else:
+                    tb = traceback.format_exc() if last_err else ''
+                    messages.error(
+                        request,
+                        f"❌ Promokod yaratilmadi: {last_err}. {tb[-800:]}"
+                    )
                 return redirect('admin:core_qrcode_changelist')
 
         context = {
