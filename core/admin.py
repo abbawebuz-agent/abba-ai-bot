@@ -769,6 +769,9 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                     import asyncio
                     import tempfile
                     import os
+                    import traceback
+                    import logging as _logging
+                    _logger = _logging.getLogger(__name__)
 
                     photo_path = None
                     if image_file:
@@ -805,7 +808,33 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                                 except OSError:
                                     pass
 
-                    sent, failed = asyncio.run(send_all())
+                    try:
+                        # asgiref async_to_sync — Django ichida ishlatish uchun xavfsiz
+                        from asgiref.sync import async_to_sync
+                        sent, failed = async_to_sync(send_all)()
+                    except Exception as send_exc:
+                        tb = traceback.format_exc()
+                        _logger.exception("region_message send_all failed: %s", send_exc)
+                        from django.utils import timezone as _tz
+                        RegionMessageLog.objects.create(
+                            region_code=region_code,
+                            user_type_filter=user_type_filter,
+                            language_filter=language_filter,
+                            total=len(filtered),
+                            sent_count=0,
+                            failed_count=len(filtered),
+                            status='failed',
+                            initiated_by=request.user,
+                            message_text=message_text,
+                            error_message=f"{send_exc}\n\n{tb}"[:5000],
+                            completed_at=_tz.now(),
+                        )
+                        self.message_user(
+                            request,
+                            f'❌ Yuborishda xato: {send_exc}. Tarixda batafsil.',
+                            messages.ERROR,
+                        )
+                        return redirect('admin:core_regionmessagelog_changelist')
 
                     # RegionMessageLog yozuv (kichik rassılka uchun ham)
                     from django.utils import timezone as _tz
