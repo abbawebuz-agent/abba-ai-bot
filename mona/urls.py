@@ -853,6 +853,93 @@ def admin_backup_test_view(request):
     return redirect('admin:index')
 
 
+def admin_claude_inbox_view(request):
+    """Bot guruhda @santexnik_JIP_bot mention qilingan xabarlar ro'yxati.
+
+    GET params:
+        format=json    — JSON ko'rinishida (Claude o'qish uchun)
+        unread_only=1  — faqat o'qilmaganlar
+        mark_read=ID   — bitta yozuvni o'qildi deb belgilash
+    """
+    from django.http import JsonResponse, HttpResponse
+    from django.utils import timezone as _tz
+    from core.models import ClaudeInbox
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    # Mark read
+    mark_read = request.GET.get('mark_read')
+    if mark_read:
+        try:
+            ClaudeInbox.objects.filter(pk=int(mark_read)).update(is_read=True)
+        except (ValueError, TypeError):
+            pass
+
+    # Mark answered
+    answered_id = request.GET.get('answered')
+    answer_text = request.GET.get('answer', '')
+    if answered_id:
+        try:
+            ClaudeInbox.objects.filter(pk=int(answered_id)).update(
+                is_answered=True, answer_text=answer_text, answered_at=_tz.now(), is_read=True,
+            )
+        except (ValueError, TypeError):
+            pass
+
+    qs = ClaudeInbox.objects.all().order_by('-created_at')
+    if request.GET.get('unread_only') == '1':
+        qs = qs.filter(is_read=False)
+
+    items = list(qs[:50].values(
+        'id', 'chat_id', 'chat_title', 'message_id',
+        'sender_id', 'sender_username', 'sender_name',
+        'text', 'is_read', 'is_answered', 'answer_text',
+        'created_at',
+    ))
+    # Serialize datetime
+    for it in items:
+        if it['created_at']:
+            it['created_at'] = it['created_at'].isoformat()
+
+    if request.GET.get('format') == 'json':
+        return JsonResponse({
+            'count': len(items),
+            'unread_count': ClaudeInbox.objects.filter(is_read=False).count(),
+            'items': items,
+        }, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+    # HTML simple list
+    html = ['<html><head><title>Claude Inbox</title>'
+            '<style>body{font-family:sans-serif;padding:20px;max-width:1000px;margin:auto;}'
+            '.item{border:1px solid #ccc;padding:10px;margin:10px 0;border-radius:8px;}'
+            '.unread{background:#fff8e6;border-color:#f59e0b;}'
+            '.answered{background:#e6ffe6;border-color:#16a34a;}'
+            '.meta{color:#666;font-size:12px;}'
+            'pre{white-space:pre-wrap;}</style></head><body>']
+    html.append(f'<h1>Claude Inbox — {len(items)} ta xabar</h1>')
+    html.append('<p><a href="?format=json">JSON</a> | <a href="?unread_only=1">Faqat o\'qilmagan</a> | <a href="/admin/">← Admin</a></p>')
+    for it in items:
+        cls = 'item'
+        if it['is_answered']:
+            cls += ' answered'
+        elif not it['is_read']:
+            cls += ' unread'
+        html.append(f'<div class="{cls}">')
+        html.append(f'<div class="meta">#{it["id"]} • {it["created_at"]} • '
+                    f'<b>{it["sender_name"] or it["sender_username"] or it["sender_id"]}</b> '
+                    f'in {it["chat_title"] or it["chat_id"]}</div>')
+        html.append(f'<pre>{(it["text"] or "").replace("<", "&lt;")[:2000]}</pre>')
+        if it['is_answered']:
+            html.append(f'<div class="meta">✅ Javob: <pre>{(it["answer_text"] or "").replace("<","&lt;")[:1000]}</pre></div>')
+        else:
+            html.append(f'<a href="?mark_read={it["id"]}">O\'qildi deb belgilash</a>')
+        html.append('</div>')
+    html.append('</body></html>')
+    return HttpResponse('\n'.join(html))
+
+
 def admin_backup_now_view(request):
     """Admin paneldagi "Backup ni Telegramga yuklash" tugma.
 
@@ -961,6 +1048,7 @@ urlpatterns = [
     path('admin/dashboard/user/<int:user_id>/', admin.site.admin_view(user_detail_view), name='user_detail_page'),
     path('admin/dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
     path('admin/send-dev-update/', admin.site.admin_view(admin_send_dev_update_view), name='admin_send_dev_update'),
+    path('admin/claude-inbox/', admin.site.admin_view(admin_claude_inbox_view), name='admin_claude_inbox'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),

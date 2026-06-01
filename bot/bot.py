@@ -1701,7 +1701,47 @@ async def handle_message(message: Message, state: FSMContext = None):
     # Игнорируем сообщения от ботов
     if message.from_user.is_bot:
         return
-    
+
+    # Guruhda bot mention'ini topib Claude inbox'ga yozish
+    chat_type = (message.chat.type if message.chat else '') or ''
+    if chat_type in ('group', 'supergroup'):
+        text = message.text or message.caption or ''
+        mentioned = False
+        # Aiogram entity'lari orqali — eng aniq usul
+        try:
+            entities = (message.entities or []) + (message.caption_entities or [])
+            for ent in entities:
+                if ent.type in ('mention', 'text_mention'):
+                    mention_text = text[ent.offset:ent.offset + ent.length] if text else ''
+                    if mention_text.lower() == '@santexnik_jip_bot':
+                        mentioned = True
+                        break
+        except Exception:
+            pass
+        # Reserve: oddiy matn ichida
+        if not mentioned and '@santexnik_JIP_bot' in text:
+            mentioned = True
+
+        if mentioned and text:
+            @sync_to_async
+            def save_inbox():
+                from core.models import ClaudeInbox
+                ClaudeInbox.objects.create(
+                    chat_id=message.chat.id,
+                    chat_title=message.chat.title or '',
+                    message_id=message.message_id,
+                    sender_id=message.from_user.id,
+                    sender_username=message.from_user.username or '',
+                    sender_name=(message.from_user.full_name or '').strip(),
+                    text=text,
+                )
+            try:
+                await save_inbox()
+                logger.info(f"[claude_inbox] saved mention from {message.from_user.id} in chat {message.chat.id}")
+            except Exception as e:
+                logger.exception(f"[claude_inbox] save failed: {e}")
+        return  # Guruh xabarlarini boshqa logic'lar bilan ishlamaymiz
+
     @sync_to_async
     def get_user():
         return TelegramUser.objects.get(telegram_id=message.from_user.id)

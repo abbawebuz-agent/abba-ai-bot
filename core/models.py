@@ -1918,6 +1918,40 @@ class SellerBatch(models.Model):
 # ════════════════════════════════════════════════════════════════════
 # ActivityLog — markazlashtirilgan audit log tizimi
 # ════════════════════════════════════════════════════════════════════
+class ClaudeInbox(models.Model):
+    """Foydalanuvchi guruhda @santexnik_JIP_bot ni mention qilganda
+    qoladigan inbox yozuvi — Claude (AI) keyinroq o'qiydi.
+
+    Bot webhook handler'i guruh xabaridagi bot mention'ini topadi va
+    bu yerga yozadi. Admin /admin/claude-inbox/ orqali yangilarni
+    ko'radi va read qiladi.
+    """
+
+    chat_id = models.BigIntegerField(db_index=True, verbose_name='Guruh chat ID')
+    chat_title = models.CharField(max_length=255, blank=True, verbose_name='Guruh nomi')
+    message_id = models.BigIntegerField(verbose_name='Telegram xabar ID')
+    sender_id = models.BigIntegerField(verbose_name='Foydalanuvchi TG ID')
+    sender_username = models.CharField(max_length=255, blank=True)
+    sender_name = models.CharField(max_length=255, blank=True)
+    text = models.TextField(verbose_name='Savol matni')
+    is_read = models.BooleanField(default=False, db_index=True, verbose_name="O'qildi")
+    is_answered = models.BooleanField(default=False, db_index=True, verbose_name="Javob berildi")
+    answer_text = models.TextField(blank=True, verbose_name='Javob matni')
+    answered_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Claude inbox xabar'
+        verbose_name_plural = 'Claude inbox (bot mention)'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_read', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.sender_name or self.sender_username or self.sender_id}: {self.text[:50]}"
+
+
 class ActivityLog(models.Model):
     """Tizimdagi barcha amallarning markazlashtirilgan logi.
 
