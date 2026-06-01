@@ -728,8 +728,10 @@ def health_check(request):
 
 
 def admin_send_dev_update_view(request):
-    """JIP Development guruhiga dev update xabarini yuboradi."""
-    import json, urllib.request, urllib.parse
+    """JIP Development guruhiga dev update xabarini yuboradi.
+    GET: msg=<text>, chat_id=<optional>
+    """
+    import json, urllib.request, urllib.parse, urllib.error
     from django.conf import settings
     from django.contrib import messages as dj_messages
 
@@ -742,46 +744,68 @@ def admin_send_dev_update_view(request):
         dj_messages.error(request, "TELEGRAM_BOT_TOKEN topilmadi")
         return redirect('admin:index')
 
-    def tg_get(method, params=None):
-        url = f"https://api.telegram.org/bot{token}/{method}"
-        if params:
-            url += "?" + urllib.parse.urlencode(params)
-        with urllib.request.urlopen(url, timeout=10) as r:
-            return json.loads(r.read())
-
-    def tg_post(method, payload):
-        url = f"https://api.telegram.org/bot{token}/{method}"
-        data = json.dumps(payload).encode()
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read())
-
-    # Step 1: find group chat id from recent updates
-    data = tg_get("getUpdates", {"limit": 50, "offset": -50})
-    group_id = None
-    group_name = None
-    for upd in reversed(data.get("result", [])):
-        chat = (upd.get("message") or upd.get("my_chat_member", {}).get("chat", {})) or {}
-        if isinstance(chat, dict) and chat.get("type") in ("group", "supergroup"):
-            group_id = chat["id"]
-            group_name = chat.get("title", "")
-            break
-
-    if not group_id:
-        dj_messages.error(request, f"Guruh topilmadi. getUpdates result count: {len(data.get('result', []))}")
-        return redirect('admin:index')
-
-    msg = request.GET.get('msg', '')
+    msg = request.GET.get('msg', '').strip()
     if not msg:
         dj_messages.error(request, "?msg= parametri kerak")
         return redirect('admin:index')
 
-    send_data = tg_post("sendMessage", {"chat_id": group_id, "text": msg, "parse_mode": "HTML"})
+    def tg_call(method, payload=None, is_get=False, params=None):
+        url = f"https://api.telegram.org/bot{token}/{method}"
+        if is_get and params:
+            url += "?" + urllib.parse.urlencode(params)
+        try:
+            if is_get:
+                req = urllib.request.Request(url)
+            else:
+                data = json.dumps(payload or {}).encode()
+                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            try:
+                return json.loads(e.read())
+            except Exception:
+                return {"ok": False, "description": str(e)}
+        except Exception as e:
+            return {"ok": False, "description": str(e)}
+
+    # If chat_id provided directly, skip discovery
+    chat_id = request.GET.get('chat_id', '').strip()
+    group_name = chat_id or "guruh"
+
+    if not chat_id:
+        # Webhook aktiv bo'lganda getUpdates ishlamaydi → vaqtincha o'chiramiz
+        wh_info = tg_call("getWebhookInfo", is_get=True)
+        webhook_url = (wh_info.get("result") or {}).get("url", "")
+
+        tg_call("deleteWebhook", {"drop_pending_updates": False})
+
+        upd_data = tg_call("getUpdates", is_get=True, params={"limit": 50, "offset": -50})
+
+        # Darhol webhookni qayta qo'yamiz
+        if webhook_url:
+            tg_call("setWebhook", {"url": webhook_url, "drop_pending_updates": False})
+
+        for upd in reversed((upd_data or {}).get("result", [])):
+            raw_msg = upd.get("message") or {}
+            mc = (upd.get("my_chat_member") or {})
+            chat = raw_msg.get("chat") or mc.get("chat") or {}
+            if isinstance(chat, dict) and chat.get("type") in ("group", "supergroup"):
+                chat_id = str(chat["id"])
+                group_name = chat.get("title", chat_id)
+                break
+
+        if not chat_id:
+            dj_messages.error(request,
+                "Guruh topilmadi. URL ga &chat_id=GROUP_ID parametrini qo'shing")
+            return redirect('admin:index')
+
+    send_data = tg_call("sendMessage", {"chat_id": int(chat_id), "text": msg, "parse_mode": "HTML"})
 
     if send_data.get("ok"):
-        dj_messages.success(request, f"✅ '{group_name}' ({group_id}) guruhiga yuborildi")
+        dj_messages.success(request, f"✅ '{group_name}' ({chat_id}) guruhiga yuborildi")
     else:
-        dj_messages.error(request, f"❌ Xato: {send_data}")
+        dj_messages.error(request, f"❌ Telegram: {send_data.get('description', send_data)}")
     return redirect('admin:index')
 
 
