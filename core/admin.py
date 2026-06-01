@@ -3398,15 +3398,7 @@ class SellerAdmin(admin.ModelAdmin):
     """Admin panel orqali qo'lda boshqariladigan Sotuvchilar."""
 
     def changelist_view(self, request, extra_context=None):
-        import traceback
-        try:
-            return super().changelist_view(request, extra_context=extra_context)
-        except Exception as exc:
-            return HttpResponse(
-                f'<pre style="white-space:pre-wrap;padding:20px;">'
-                f'SellerAdmin xatolik:\n\n{traceback.format_exc()}</pre>',
-                status=200,
-            )
+        return HttpResponse('<h1>DEBUG: changelist_view called OK</h1>', status=200)
 
     list_display = [
         'name', 'phone', 'region', 'district',
