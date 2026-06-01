@@ -853,6 +853,37 @@ def admin_backup_test_view(request):
     return redirect('admin:index')
 
 
+def admin_qr_diag_view(request):
+    """QRCode.create_promo_code diagnostika — 1 ta QR yaratish urinishi, batafsil natija."""
+    import traceback
+    from django.http import JsonResponse
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    from core.models import QRCode
+    result = {}
+    try:
+        qr = QRCode.create_promo_code(points=50)
+        result = {
+            'ok': True,
+            'qr_id': qr.id,
+            'code': qr.code,
+            'hash_code': qr.hash_code,
+            'serial_number': qr.serial_number,
+            'sequence_number': qr.sequence_number,
+            'points': qr.points,
+        }
+    except Exception as e:
+        result = {
+            'ok': False,
+            'error_type': type(e).__name__,
+            'error': str(e),
+            'traceback': traceback.format_exc(),
+        }
+    return JsonResponse(result, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+
 def admin_bot_diag_view(request):
     """Bot diagnostika: getMe, getWebhookInfo, getChat — guruh nimani ko'ra olishini tekshirish."""
     import json, urllib.request, urllib.error, urllib.parse
@@ -1095,6 +1126,7 @@ urlpatterns = [
     path('admin/send-dev-update/', admin.site.admin_view(admin_send_dev_update_view), name='admin_send_dev_update'),
     path('admin/claude-inbox/', admin.site.admin_view(admin_claude_inbox_view), name='admin_claude_inbox'),
     path('admin/bot-diag/', admin.site.admin_view(admin_bot_diag_view), name='admin_bot_diag'),
+    path('admin/qr-diag/', admin.site.admin_view(admin_qr_diag_view), name='admin_qr_diag'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
