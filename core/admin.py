@@ -2921,7 +2921,8 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     def xlsx_link(self, obj):
         # On-demand xlsx (productionda media files servirovat qilinmaydi)
         if obj.pk and obj.qr_codes.exists():
-            url = reverse('admin:admin_batch_xlsx', args=[obj.pk])
+            # Top-level URL — admin namespace'da emas
+            url = f'/admin/qrcodebatch/{obj.pk}/xlsx/'
             return format_html(
                 '<a href="{}" target="_blank" '
                 'style="background:#16a34a;color:#fff;padding:5px 12px;border-radius:6px;'
