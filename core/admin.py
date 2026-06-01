@@ -3396,6 +3396,18 @@ class SellerBatchInline(admin.TabularInline):
 @admin.register(Seller)
 class SellerAdmin(admin.ModelAdmin):
     """Admin panel orqali qo'lda boshqariladigan Sotuvchilar."""
+
+    def changelist_view(self, request, extra_context=None):
+        import traceback
+        try:
+            return super().changelist_view(request, extra_context=extra_context)
+        except Exception as exc:
+            return HttpResponse(
+                f'<pre style="white-space:pre-wrap;padding:20px;">'
+                f'SellerAdmin 500 xatolik:\n\n{traceback.format_exc()}</pre>',
+                status=500,
+            )
+
     list_display = [
         'name', 'phone', 'region', 'district',
         'total_promos_col', 'total_points_col', 'activation_col', 'created_at',
