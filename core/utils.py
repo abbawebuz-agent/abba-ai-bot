@@ -14,6 +14,53 @@ from .models import QRCode
 _playwright_semaphore = threading.Semaphore(3)  # Максимум 3 одновременных операции
 
 
+def build_promo_batch_xlsx(batch):
+    """QRCodeBatch ichidagi barcha promokodlarni xlsx ga export qiladi.
+
+    Ustunlar: #, sequence_number, code, hash_code, points, generated_at.
+    `batch.qr_codes` (related_name) orqali sequence_number bo'yicha sortlangan.
+    """
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Promokodlar"
+
+    # Sarlavha qatori
+    headers = ['#', 'Tartib raqam', 'Code', 'Hash', 'Ball', 'Yaratilgan']
+    ws.append(headers)
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='1D4ED8', end_color='1D4ED8', fill_type='solid')
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    # Ma'lumot qatorlari
+    qr_qs = batch.qr_codes.order_by('sequence_number')
+    for i, qr in enumerate(qr_qs, start=1):
+        ws.append([
+            i,
+            qr.sequence_number or '',
+            qr.code,
+            qr.hash_code,
+            qr.points,
+            qr.generated_at.strftime('%Y-%m-%d %H:%M:%S') if qr.generated_at else '',
+        ])
+
+    # Column kengligi
+    col_widths = {1: 6, 2: 14, 3: 16, 4: 14, 5: 8, 6: 22}
+    for col, width in col_widths.items():
+        ws.column_dimensions[chr(64 + col)].width = width
+
+    output = BytesIO()
+    wb.save(output)
+    return output.getvalue()
+
+
 def format_phone_uz(raw):
     """O'zbekiston telefon raqamini +998 XX XXX XX XX formatiga keltiradi.
 

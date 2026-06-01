@@ -372,11 +372,10 @@ JAZZMIN_SETTINGS = {
     "hide_apps": [],
     "hide_models": [
         # Eski sotuvchi tizimi — admin'da yashirilgan (modellar saqlanadi)
-        "core.QRCodeBatch",
         "core.Store",
         "core.SellerPointsTransaction",
         "core.SellerRegistrationCode",
-        # Internal (yashirin) modellar — alohida admin'larda foydalanilmaydi
+        # NOTE: QRCodeBatch endi "Promokod yaratish tarixi" sifatida ko'rinadi
     ],
     "show_ui_builder": False,
     "default_model_icon": "fas fa-circle",

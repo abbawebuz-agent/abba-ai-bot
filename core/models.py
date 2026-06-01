@@ -707,8 +707,8 @@ class QRCodeBatch(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        verbose_name = 'Partiya'
-        verbose_name_plural = "Partiyalar"
+        verbose_name = 'Promokod yaratish tarixi'
+        verbose_name_plural = "Promokod yaratish tarixi"
         ordering = ['-created_at']
         constraints = [
             # Unique batch name per seller (store endi optional)
@@ -923,12 +923,14 @@ class QRCode(models.Model):
         return qr
 
     @classmethod
-    def create_promo_code(cls, points=50):
-        """Yangi promokod — batch'siz, S + 7 alphanumeric format.
+    def create_promo_code(cls, points=50, batch=None):
+        """Yangi promokod — S + 7 alphanumeric format.
 
-        Sotuvchiga keyinchalik SellerBatch range orqali biriktiriladi
-        (sequence_number diapazonidan topiladi). Hash 7 belgi (eski 6 dan
-        farqli) — kolliziya kamayadi.
+        Args:
+            points: har QR uchun ball (default 50)
+            batch: ixtiyoriy QRCodeBatch (yaratish tarixiga bog'lash uchun).
+                Sotuvchiga biriktirish — bu yerda emas, SellerBatch range
+                orqali sequence_number diapazonidan topiladi.
         """
         from django.db import transaction
         from django.db.models import Max
@@ -946,6 +948,7 @@ class QRCode(models.Model):
                 serial_number=serial,
                 points=points,
                 sequence_number=seq_num,
+                batch=batch,
             )
 
 

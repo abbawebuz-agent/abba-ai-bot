@@ -1677,34 +1677,71 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 messages.error(request, "Ballar 0 dan katta bo'lishi kerak!")
             else:
                 # Railway'da Celery worker yo'q — sinxron yaratamiz.
-                # Har create_promo_code ichida atomic transaction → xavfsiz.
                 import time
                 import traceback
                 import logging
+                from django.utils import timezone as _tz
+                from core.models import QRCode, QRCodeBatch
+
                 _logger = logging.getLogger(__name__)
                 start = time.time()
                 created = 0
                 last_err = None
+                batch = None
+
                 try:
-                    from core.models import QRCode
+                    # Generatsiya tarixini yozish uchun batch yaratamiz
+                    batch_name = f"PROMO-{_tz.now():%Y%m%d-%H%M%S}-{quantity}"
+                    batch = QRCodeBatch.objects.create(
+                        name=batch_name,
+                        quantity=quantity,
+                        points_per_code=points,
+                        status='active',
+                        created_by=request.user if request.user.is_authenticated else None,
+                    )
+
                     for _ in range(quantity):
                         try:
-                            QRCode.create_promo_code(points=points)
+                            QRCode.create_promo_code(points=points, batch=batch)
                             created += 1
                         except Exception as inner_exc:
                             _logger.exception("create_promo_code failed at #%s", created + 1)
                             last_err = inner_exc
                             break
+
+                    # Batch'ni tugaganlik bilan belgilash + xlsx fayl yaratish
+                    if created > 0:
+                        batch.completed_at = _tz.now()
+                        if created < quantity:
+                            batch.quantity = created
+                            batch.error_message = f"Qisman yaratildi: {created}/{quantity}. Xato: {last_err}"
+                            batch.save(update_fields=['completed_at', 'quantity', 'error_message'])
+                        else:
+                            batch.save(update_fields=['completed_at'])
+
+                        # xlsx generatsiyasi
+                        try:
+                            from core.utils import build_promo_batch_xlsx
+                            from django.core.files.base import ContentFile
+                            xlsx_bytes = build_promo_batch_xlsx(batch)
+                            batch.zip_file.save(f"{batch_name}.xlsx",
+                                                ContentFile(xlsx_bytes), save=True)
+                        except Exception as xlsx_exc:
+                            _logger.exception("xlsx generation failed: %s", xlsx_exc)
+                            batch.error_message = (batch.error_message + '\n' if batch.error_message else '') + f"xlsx: {xlsx_exc}"
+                            batch.save(update_fields=['error_message'])
+
                 except Exception as outer_exc:
                     last_err = outer_exc
-                    _logger.exception("generate_qr_codes_view bulk loop fatal")
+                    _logger.exception("generate_qr_codes_view fatal")
 
                 elapsed = time.time() - start
                 if created == quantity:
                     messages.success(
                         request,
                         f"✅ {created} ta promokod yaratildi "
-                        f"(har biri {points} ball, {elapsed:.1f}s)"
+                        f"(har biri {points} ball, {elapsed:.1f}s). "
+                        f"Tarix: Promokod yaratish tarixi → #{batch.id if batch else '—'}"
                     )
                 elif created > 0:
                     messages.warning(
@@ -1717,7 +1754,7 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                         request,
                         f"❌ Promokod yaratilmadi: {last_err}. {tb[-800:]}"
                     )
-                return redirect('admin:core_qrcode_changelist')
+                return redirect('admin:core_qrcodebatch_changelist')
 
         context = {
             **self.admin_site.each_context(request),
@@ -2789,104 +2826,113 @@ def _notify_seller_new_batch(seller_id: int, batch_name: str, qty: int, points: 
 
 @admin.register(QRCodeBatch)
 class QRCodeBatchAdmin(SimpleHistoryAdmin):
-    """JIP: Skretch-karta batch admin. Sidebar dan yashirilgan — yangi Seller tizimi ishlatiladi."""
+    """Promokod yaratish tarixi — har generatsiya bitta yozuv.
 
-    def has_module_permission(self, request):
-        return False
+    Yangi tizim:
+    - Admin "Promo-kodni yaratish" tugmasi orqali N ta promokod yaratadi
+    - Har generatsiya bitta QRCodeBatch yozuvi sifatida log qilinadi
+    - .xlsx fayl avtomatik yaratiladi va batch'ga biriktiriladi
+    - Sotuvchiga biriktirish — bu yerda emas, SellerAdmin → Partiyalar
+    """
 
     list_display = [
-        'name', 'seller_link', 'quantity', 'points_per_code',
-        'activation_display', 'scanned_count', 'status', 'delivery_status',
-        'zip_link', 'created_at',
+        'id_col', 'quantity_col', 'points_col', 'status_col',
+        'scanned_col', 'activation_col',
+        'created_by', 'created_at', 'completed_at', 'xlsx_link',
     ]
-    list_filter = ['status', 'delivery_status']
-    search_fields = ['name', 'seller__first_name', 'seller__phone_number']
-    autocomplete_fields = ['seller']
-    readonly_fields = [
-        'name', 'points_per_code',
-        'created_at', 'completed_at', 'zip_file', 'error_message',
-        'batch_qr_history_link',
-    ]
+    list_filter = ['status', ('created_at', DateTimeRangeFilterBuilder(title='Yaratilgan sana'))]
+    search_fields = ['name']
+    ordering = ['-created_at']
     list_per_page = 50
+    date_hierarchy = 'created_at'
 
-    # Yangi partiya yaratish formasi — minimal: faqat seller + miqdor
-    add_fieldsets = (
-        ("Partiya ma'lumotlari", {
-            'fields': ('seller', 'quantity'),
-            'description': (
-                "Sotuvchini tanlang va miqdorni kiriting. "
-                "Ballar (50 × miqdor) sotuvchiga avtomatik qo'shiladi."
-            ),
-        }),
-    )
+    readonly_fields = [
+        'name', 'quantity', 'points_per_code', 'status',
+        'created_at', 'completed_at', 'created_by',
+        'zip_file', 'error_message', 'batch_qr_history_link',
+    ]
 
-    # Mavjud partiyalar uchun — to'liq fieldsets
     fieldsets = (
-        ("Partiya ma'lumotlari", {
-            'fields': ('seller', 'quantity', 'points_per_code'),
+        ('Generatsiya', {
+            'fields': ('name', 'quantity', 'points_per_code', 'status',
+                       'created_by', 'created_at', 'completed_at'),
         }),
-        ('📊 QR tarixi', {
+        ('Fayl', {
+            'fields': ('zip_file', 'error_message'),
+        }),
+        ('Promokodlar', {
             'fields': ('batch_qr_history_link',),
         }),
-        ('Generatsiya', {
-            'fields': ('status', 'zip_file', 'error_message', 'created_at', 'completed_at'),
-        }),
-        ('Yetkazib berish', {
-            'fields': ('delivery_status', 'shipped_at', 'delivered_at', 'delivered_by'),
-        }),
-        ('Audit', {
-            'fields': ('created_by',),
-        }),
     )
 
-    def get_fieldsets(self, request, obj=None):
-        # Yangi qo'shishda — qisqacha forma; tahrirda — to'liq
-        if obj is None:
-            return self.add_fieldsets
-        return self.fieldsets
+    def has_add_permission(self, request):
+        # Faqat "Promo-kodni yaratish" sahifasi orqali yaratiladi
+        return False
 
-    def seller_link(self, obj):
-        if obj.seller_id:
-            url = reverse('admin:core_telegramuser_change', args=[obj.seller_id])
-            name = obj.seller.first_name or f'ID:{obj.seller.telegram_id}'
-            return format_html('<a href="{}">{}</a>', url, name)
-        return obj.store.name if obj.store_id else '—'
-    seller_link.short_description = 'Sotuvchi'
-    seller_link.admin_order_field = 'seller__first_name'
+    def has_change_permission(self, request, obj=None):
+        return False
 
-    def scanned_count(self, obj):
+    def id_col(self, obj):
+        return format_html('<strong>#{}</strong>', obj.id)
+    id_col.short_description = 'ID'
+
+    def quantity_col(self, obj):
+        return f'{obj.quantity}'
+    quantity_col.short_description = 'Miqdor'
+    quantity_col.admin_order_field = 'quantity'
+
+    def points_col(self, obj):
+        return format_html(
+            '<span style="color:#1d4ed8;font-weight:600;">{} ball</span>',
+            obj.points_per_code,
+        )
+    points_col.short_description = 'Ball/QR'
+
+    def status_col(self, obj):
+        color = '#16a34a' if obj.status == 'active' else '#9ca3af'
+        return format_html(
+            '<span style="background:{};color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;">{}</span>',
+            color, obj.get_status_display(),
+        )
+    status_col.short_description = 'Holat'
+
+    def scanned_col(self, obj):
         scanned = obj.qr_codes.filter(is_scanned=True).count()
         url = reverse('admin:core_qrcode_changelist') + f'?batch__id__exact={obj.pk}&is_scanned__exact=1'
         return format_html('<a href="{}">{} ta</a>', url, scanned)
-    scanned_count.short_description = 'Skanlanganlar'
+    scanned_col.short_description = 'Aktivlashtirilgan'
 
-    def zip_link(self, obj):
+    def activation_col(self, obj):
+        total = obj.qr_codes.count()
+        scanned = obj.qr_codes.filter(is_scanned=True).count()
+        pct = round((scanned / total * 100), 1) if total else 0
+        color = '#16a34a' if pct >= 50 else ('#ca8a04' if pct >= 20 else '#dc2626')
+        return format_html(
+            '<span style="color:{};font-weight:600;">{}%</span>',
+            color, pct,
+        )
+    activation_col.short_description = 'Aktivatsiya'
+
+    def xlsx_link(self, obj):
         if obj.zip_file:
-            return format_html('<a href="{}" target="_blank">⬇ ZIP</a>', obj.zip_file.url)
-        return format_html('<span style="color:#999;">—</span>')
-    zip_link.short_description = 'ZIP'
+            return format_html(
+                '<a href="{}" target="_blank" '
+                'style="background:#16a34a;color:#fff;padding:5px 12px;border-radius:6px;'
+                'text-decoration:none;font-size:12px;white-space:nowrap;">📊 .xlsx</a>',
+                obj.zip_file.url,
+            )
+        return format_html('<span style="color:#9ca3af;">—</span>')
+    xlsx_link.short_description = 'Yuklab olish'
 
     def batch_qr_history_link(self, obj):
         if not obj.pk:
             return '—'
         url = reverse('admin:core_qrcode_changelist') + f'?batch__id__exact={obj.pk}'
-        scanned_url = url + '&is_scanned__exact=1'
-        total = obj.quantity
-        scanned = obj.qr_codes.filter(is_scanned=True).count()
         return format_html(
-            '<a href="{}" class="button">📋 Barcha {} ta QR kodni ko\'rish</a> &nbsp; '
-            '<a href="{}" class="button" style="background:#16a34a;">✅ {} ta skanlanganlarni ko\'rish</a>',
-            url, total, scanned_url, scanned
+            '<a href="{}" class="button">📋 {} ta promokodni ko\'rish</a>',
+            url, obj.qr_codes.count(),
         )
-    batch_qr_history_link.short_description = 'QR kodlar tarixi'
-
-    def activation_display(self, obj):
-        rate = obj.activation_rate()
-        color = '#16a34a' if rate >= 50 else ('#ca8a04' if rate >= 20 else '#dc2626')
-        return format_html('<span style="color:{}; font-weight:600;">{}%</span>', color, rate)
-    activation_display.short_description = 'Aktivatsiya'
-
-    actions = ['action_generate_zip', 'action_mark_active', 'action_mark_inactive']
+    batch_qr_history_link.short_description = 'Promokodlar ro\'yxati'
 
     @admin.action(description="📦 ZIP generatsiya qilish (Celery)")
     def action_generate_zip(self, request, queryset):
