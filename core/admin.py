@@ -1709,17 +1709,26 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                             last_err = inner_exc
                             break
 
-                    # Batch'ni tugaganlik bilan belgilash + xlsx fayl yaratish
-                    if created > 0:
-                        batch.completed_at = _tz.now()
-                        if created < quantity:
+                    # Batch'ni har qanday holatda yangilash (created=0 bo'lsa ham)
+                    batch.completed_at = _tz.now()
+                    if created < quantity:
+                        # Xato batafsil yozish — created==0 ham
+                        tb_str = traceback.format_exc() if last_err else ''
+                        batch.error_message = (
+                            f"Qisman yaratildi: {created}/{quantity}.\n"
+                            f"Xato turi: {type(last_err).__name__ if last_err else 'N/A'}\n"
+                            f"Xato: {last_err}\n\n"
+                            f"Traceback:\n{tb_str[-2500:]}"
+                        )
+                        # Agar 0 yaratilgan bo'lsa quantity ni saqlaymiz tushunish uchun
+                        if created > 0:
                             batch.quantity = created
-                            batch.error_message = f"Qisman yaratildi: {created}/{quantity}. Xato: {last_err}"
-                            batch.save(update_fields=['completed_at', 'quantity', 'error_message'])
-                        else:
-                            batch.save(update_fields=['completed_at'])
+                        batch.save(update_fields=['completed_at', 'quantity', 'error_message'])
+                    else:
+                        batch.save(update_fields=['completed_at'])
 
-                        # xlsx generatsiyasi
+                    # xlsx faqat created > 0 bo'lganda
+                    if created > 0:
                         try:
                             from core.utils import build_promo_batch_xlsx
                             from django.core.files.base import ContentFile
@@ -1734,6 +1743,12 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 except Exception as outer_exc:
                     last_err = outer_exc
                     _logger.exception("generate_qr_codes_view fatal")
+                    if batch:
+                        try:
+                            batch.error_message = f"FATAL: {outer_exc}\n{traceback.format_exc()[-2500:]}"
+                            batch.save(update_fields=['error_message'])
+                        except Exception:
+                            pass
 
                 elapsed = time.time() - start
                 if created == quantity:
