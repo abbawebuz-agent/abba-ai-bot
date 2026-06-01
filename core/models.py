@@ -922,6 +922,32 @@ class QRCode(models.Model):
             qr.save(update_fields=['serial_number'])
         return qr
 
+    @classmethod
+    def create_promo_code(cls, points=50):
+        """Yangi promokod — batch'siz, S + 7 alphanumeric format.
+
+        Sotuvchiga keyinchalik SellerBatch range orqali biriktiriladi
+        (sequence_number diapazonidan topiladi). Hash 7 belgi (eski 6 dan
+        farqli) — kolliziya kamayadi.
+        """
+        from django.db import transaction
+        from django.db.models import Max
+
+        hash_code = cls.generate_hash(length=7)
+        code = f"S{hash_code}"
+
+        with transaction.atomic():
+            result = cls.objects.select_for_update().aggregate(m=Max('sequence_number'))
+            seq_num = (result['m'] or 0) + 1
+            serial = f"PROMO-{seq_num:08d}"
+            return cls.objects.create(
+                code=code,
+                hash_code=hash_code,
+                serial_number=serial,
+                points=points,
+                sequence_number=seq_num,
+            )
+
 
 class MonthlyPromoTicket(models.Model):
     """

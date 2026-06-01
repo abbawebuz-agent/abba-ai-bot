@@ -1,11 +1,15 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 
-{% block title %}QR-promokodlar generatsiyasi{% endblock %}
+{% block title %}Promokodlar generatsiyasi{% endblock %}
 
 {% block content %}
-<h1>QR-promokodlar generatsiyasi</h1>
-<p style="color:#666;margin-bottom:20px;">Har bir promokodga global tartib raqami (sequence_number) avtomatik beriladi.</p>
+<h1>Promokodlar generatsiyasi</h1>
+<p style="color:#666;margin-bottom:20px;">
+    Promokodlar batch'siz yaratiladi. Har biriga global tartib raqami (<strong>sequence_number</strong>)
+    avtomatik beriladi. Sotuvchiga keyinchalik <em>Sotuvchilar → Partiyalar</em> bo'limidan diapazon
+    biriktiriladi (masalan: <code>1–256</code>).
+</p>
 
 <form method="post" action="{% url 'admin:core_qrcode_generate' %}">
     {% csrf_token %}
@@ -14,40 +18,37 @@
         <label for="quantity"><strong>Miqdor:</strong></label>
         <input type="number" name="quantity" id="quantity" min="1" max="30000" required
                style="padding: 5px; margin-left: 10px; width: 120px;">
+        <small style="color: #666; margin-left: 8px;">1 - 30000</small>
     </div>
 
     <div style="margin-bottom: 20px;">
         <label for="points"><strong>Ballar (har biri):</strong></label>
-        <input type="number" name="points" id="points" min="1"
-               style="padding: 5px; margin-left: 10px; width: 100px;"
-               placeholder="50">
+        <input type="number" name="points" id="points" min="1" value="50"
+               style="padding: 5px; margin-left: 10px; width: 100px;">
         <small style="color: #666; margin-left: 8px;">Standart: 50 ball</small>
     </div>
 
-    <div style="margin-bottom: 20px;">
-        <label for="store">Do'kon (ixtiyoriy):</label>
-        <select name="store" id="store" style="padding: 5px; margin-left: 10px; min-width: 220px;">
-            <option value="">— Tanlanmagan —</option>
-            {% for s in stores %}
-            <option value="{{ s.pk }}">{{ s.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
     <div>
-        <button type="submit" style="padding: 10px 24px; background-color: #417690; color: white; border: none; cursor: pointer; font-size: 14px;">
-            Generatsiya qilish
+        <button type="submit" style="padding: 10px 24px; background-color: #417690; color: white; border: none; cursor: pointer; font-size: 14px; border-radius: 4px;">
+            🎯 Generatsiya qilish
         </button>
     </div>
 </form>
 
 <div style="margin-top: 30px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
-    <h3>Qanday ishlaydi:</h3>
+    <h3>📌 Format:</h3>
     <ul>
-        <li>Har bir promokodga <strong>global tartib raqami</strong> beriladi (sequence_number: 1, 2, 3...)</li>
-        <li>Bu raqamlar keyinchalik <strong>Sotuvchilar</strong> sahifasida diapazonga biriktiriladi (masalan: 200–300 → Sotuvchi A)</li>
-        <li>Santexniklar o'sha diapazondan promokod skan qilganda sotuvchi statistikasida ko'rinadi</li>
-        <li>Generatsiya asinxron — ZIP arxiv tayyor bo'lgach yuklab olish mumkin</li>
+        <li>Har promokod: <code>S</code> + 7 ta tasodifiy belgi (masalan <code>S3K9P2L7</code>, <code>SABCDEFG</code>)</li>
+        <li>Adashtiruvchi belgilar yo'q: <code>0</code>, <code>O</code>, <code>1</code>, <code>I</code> ishlatilmaydi</li>
+        <li>Har bir kodga <strong>sequence_number</strong> beriladi (1, 2, 3, ...)</li>
+    </ul>
+
+    <h3>🔗 Sotuvchiga biriktirish:</h3>
+    <ul>
+        <li><em>Sotuvchilar</em> → bitta sotuvchi → <em>Partiyalar</em> bo'limi</li>
+        <li>Yangi partiya: <code>promo_from = 1</code>, <code>promo_to = 100</code></li>
+        <li>Ballar avtomatik hisoblanadi: <code>100 × 50 = 5,000</code></li>
+        <li>Santenik shu diapazondagi promokod skan qilsa — sotuvchi statistikasiga qo'shiladi</li>
     </ul>
 </div>
 {% endblock %}

@@ -370,7 +370,14 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
     "hide_apps": [],
-    "hide_models": [],
+    "hide_models": [
+        # Eski sotuvchi tizimi — admin'da yashirilgan (modellar saqlanadi)
+        "core.QRCodeBatch",
+        "core.Store",
+        "core.SellerPointsTransaction",
+        "core.SellerRegistrationCode",
+        # Internal (yashirin) modellar — alohida admin'larda foydalanilmaydi
+    ],
     "show_ui_builder": False,
     "default_model_icon": "fas fa-circle",
 

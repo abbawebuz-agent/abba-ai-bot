@@ -159,6 +159,16 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         css = {'all': ('core_admin/css/changelist_filters.css',)}
         js = ('core_admin/js/changelist_filters.js',)
 
+    def get_queryset(self, request):
+        """Sotuvchi (user_type='sotuvchi') foydalanuvchilarini menyu/ro'yxatdan yashiramiz.
+
+        Yangi tizimda Sotuvchi alohida `Seller` modeli — admin paneldan
+        qo'lda boshqariladi. Eski sotuvchi TelegramUser yozuvlari bazada
+        qoladi, lekin admin ko'rinishidan chiqariladi.
+        """
+        qs = super().get_queryset(request)
+        return qs.exclude(user_type='sotuvchi')
+
     def changelist_view(self, request, extra_context=None):
         from django.urls import reverse
         extra_context = extra_context or {}
@@ -1637,62 +1647,49 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         return TemplateResponse(request, 'admin/core/qrcode/clear_scans_confirm.html', context)
 
     def generate_qr_codes_view(self, request):
-        """Представление для генерации QR-кодов."""
-        # Проверяем права доступа: только суперадмины могут генерировать QR-коды
-        # Call Center не может создавать QR коды
+        """Promokodlarni ommaviy yaratish (batch'siz).
+
+        Yangi flow:
+        - Faqat `quantity` + `points` qabul qiladi
+        - Har promokod global `sequence_number` oladi (1..N)
+        - Format: `S` + 7 alphanumeric (masalan `S3K9P2L7`)
+        - Sotuvchiga keyinchalik `SellerAdmin → Partiyalar` orqali
+          range biriktiriladi (promo_from..promo_to)
+        """
         if not request.user.is_superuser:
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied("У вас нет прав для генерации QR-кодов.")
 
-        # JIP: Eski QRCodeGeneration flow deprecated.
-        # Yangi flow: QRCodeBatch admin orqali → har batch bitta Store ga biriktirilgan.
         if request.method == 'POST':
-            store_id = request.POST.get('store') or None
             quantity_raw = request.POST.get('quantity', '0')
-            points_raw = request.POST.get('points')
+            points_raw = request.POST.get('points') or '50'
 
             try:
                 quantity = int(quantity_raw)
+                points = int(points_raw)
             except (ValueError, TypeError):
                 quantity = 0
+                points = 50
 
-            if quantity > 0:
-                try:
-                    from core.models import Store, QRCodeBatch
-                    store = Store.objects.get(pk=store_id) if store_id else None
-                    points = int(points_raw) if points_raw else 50
-
-                    batch = QRCodeBatch.objects.create(
-                        store=store,
-                        quantity=quantity,
-                        points_per_code=points,
-                        status='inactive',
-                        created_by=request.user if request.user.is_authenticated else None,
-                    )
-                    batch.name = QRCodeBatch.generate_name(store=store)
-                    batch.save(update_fields=['name'])
-
-                    from core.tasks import generate_batch_zip
-                    generate_batch_zip.delay(batch.id)
-
-                    messages.success(
-                        request,
-                        f"Partiya '{batch.name}' yaratildi ({quantity} ta, har biri {points} ball)!"
-                    )
-                    return redirect('admin:core_qrcodebatch_changelist')
-                except Exception as e:
-                    messages.error(request, f'Partiya yaratishda xatolik: {str(e)}')
+            if quantity <= 0 or quantity > 30000:
+                messages.error(request, "Miqdor 1-30000 oraliqida bo'lishi kerak!")
+            elif points <= 0:
+                messages.error(request, "Ballar 0 dan katta bo'lishi kerak!")
             else:
-                messages.error(request, "Miqdorni to'g'ri kiriting!")
+                from core.tasks import generate_promo_codes_task
+                generate_promo_codes_task.delay(quantity, points)
+                messages.success(
+                    request,
+                    f"✅ {quantity} ta promokod yaratish jarayonida "
+                    f"(har biri {points} ball). Ro'yxat sahifasini yangilang."
+                )
+                return redirect('admin:core_qrcode_changelist')
 
-        from core.models import Store
         context = {
             **self.admin_site.each_context(request),
-            'title': 'Генерация QR-кодов',
+            'title': 'Promokodlar generatsiyasi',
             'has_permission': request.user.is_superuser,
-            'stores': Store.objects.all().order_by('name'),
         }
-
         return TemplateResponse(request, 'admin/core/qrcode/generate.html', context)
 
 
@@ -3453,9 +3450,6 @@ class SellerAdmin(admin.ModelAdmin):
                 'notes', 'created_at',
                 'total_promos_col', 'total_points_col', 'activation_col',
             ),
-        }),
-        ('Partiyalar', {
-            'fields': (),
         }),
     )
 

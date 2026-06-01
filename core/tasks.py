@@ -18,6 +18,37 @@ from .messaging import send_message_to_user, TELEGRAM_MESSAGE_DELAY
 logger = logging.getLogger(__name__)
 
 
+@shared_task
+def generate_promo_codes_task(quantity: int, points: int = 50):
+    """N ta promokod yaratadi — batch'siz, S+7 alphanumeric format.
+
+    Har biri global `sequence_number` oladi. Keyinchalik admin sotuvchi
+    panelida `SellerBatch(promo_from..promo_to)` orqali sotuvchiga
+    biriktirilishi mumkin.
+    """
+    try:
+        qty = int(quantity)
+        pts = int(points)
+    except (TypeError, ValueError):
+        logger.error(f"generate_promo_codes_task: noto'g'ri parametr {quantity=} {points=}")
+        return
+
+    if qty <= 0:
+        return
+
+    created = 0
+    for _ in range(qty):
+        try:
+            QRCode.create_promo_code(points=pts)
+            created += 1
+        except Exception as exc:
+            logger.exception(f"create_promo_code xato (created so far: {created}): {exc}")
+            # Davom ettiramiz — bitta xato butun batch'ni to'xtatmasin
+
+    logger.info(f"generate_promo_codes_task: {created}/{qty} ta promokod yaratildi ({pts} ball)")
+    return {'requested': qty, 'created': created, 'points': pts}
+
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def generate_batch_zip(self, batch_id: int):
     """
