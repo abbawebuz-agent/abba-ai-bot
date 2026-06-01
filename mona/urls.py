@@ -853,6 +853,51 @@ def admin_backup_test_view(request):
     return redirect('admin:index')
 
 
+def admin_bot_diag_view(request):
+    """Bot diagnostika: getMe, getWebhookInfo, getChat — guruh nimani ko'ra olishini tekshirish."""
+    import json, urllib.request, urllib.error, urllib.parse
+    from django.conf import settings
+    from django.http import JsonResponse
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        return JsonResponse({"error": "TELEGRAM_BOT_TOKEN topilmadi"}, status=500)
+
+    def tg(method, params=None):
+        url = f"https://api.telegram.org/bot{token}/{method}"
+        if params:
+            url += "?" + urllib.parse.urlencode(params)
+        try:
+            with urllib.request.urlopen(url, timeout=10) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            try:
+                return json.loads(e.read())
+            except Exception:
+                return {"ok": False, "error": str(e)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    me = tg("getMe")
+    wh = tg("getWebhookInfo")
+    chat_id = request.GET.get('chat_id', '-5287334431')
+    chat = tg("getChat", {"chat_id": chat_id})
+    chat_admins = tg("getChatAdministrators", {"chat_id": chat_id})
+    member = tg("getChatMember", {"chat_id": chat_id, "user_id": (me.get('result') or {}).get('id')})
+
+    return JsonResponse({
+        "getMe": me,
+        "getWebhookInfo": wh,
+        "getChat": chat,
+        "getChatAdministrators": chat_admins,
+        "getChatMember(bot)": member,
+    }, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+
 def admin_claude_inbox_view(request):
     """Bot guruhda @santexnik_JIP_bot mention qilingan xabarlar ro'yxati.
 
@@ -1049,6 +1094,7 @@ urlpatterns = [
     path('admin/dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
     path('admin/send-dev-update/', admin.site.admin_view(admin_send_dev_update_view), name='admin_send_dev_update'),
     path('admin/claude-inbox/', admin.site.admin_view(admin_claude_inbox_view), name='admin_claude_inbox'),
+    path('admin/bot-diag/', admin.site.admin_view(admin_bot_diag_view), name='admin_bot_diag'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
