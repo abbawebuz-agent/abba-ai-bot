@@ -1704,23 +1704,27 @@ async def handle_message(message: Message, state: FSMContext = None):
 
     # Guruhda bot mention'ini topib Claude inbox'ga yozish
     chat_type = (message.chat.type if message.chat else '') or ''
+    logger.info(f"[handle_message] chat_type={chat_type} from {message.from_user.id} text={(message.text or message.caption or '')[:80]!r}")
     if chat_type in ('group', 'supergroup'):
         text = message.text or message.caption or ''
         mentioned = False
         # Aiogram entity'lari orqali — eng aniq usul
         try:
             entities = (message.entities or []) + (message.caption_entities or [])
+            logger.info(f"[handle_message] group msg, entities={[(e.type, e.offset, e.length) for e in entities]}")
             for ent in entities:
                 if ent.type in ('mention', 'text_mention'):
                     mention_text = text[ent.offset:ent.offset + ent.length] if text else ''
+                    logger.info(f"[handle_message] mention found: {mention_text!r}")
                     if mention_text.lower() == '@santexnik_jip_bot':
                         mentioned = True
                         break
-        except Exception:
-            pass
-        # Reserve: oddiy matn ichida
-        if not mentioned and '@santexnik_JIP_bot' in text:
+        except Exception as e:
+            logger.exception(f"[handle_message] entity parse error: {e}")
+        # Reserve: oddiy matn ichida (case-insensitive)
+        if not mentioned and '@santexnik_jip_bot' in text.lower():
             mentioned = True
+            logger.info("[handle_message] mention found in text (fallback)")
 
         if mentioned and text:
             @sync_to_async
