@@ -772,19 +772,40 @@ def admin_send_dev_update_view(request):
     # If chat_id provided directly, skip discovery
     chat_id = request.GET.get('chat_id', '').strip()
     group_name = chat_id or "guruh"
+    debug = request.GET.get('debug', '') == '1'
 
-    if not chat_id:
+    if not chat_id or debug:
         # Webhook aktiv bo'lganda getUpdates ishlamaydi → vaqtincha o'chiramiz
         wh_info = tg_call("getWebhookInfo", is_get=True)
         webhook_url = (wh_info.get("result") or {}).get("url", "")
 
         tg_call("deleteWebhook", {"drop_pending_updates": False})
 
-        upd_data = tg_call("getUpdates", is_get=True, params={"limit": 50, "offset": -50})
+        upd_data = tg_call("getUpdates", is_get=True, params={"limit": 100, "offset": -100})
 
         # Darhol webhookni qayta qo'yamiz
         if webhook_url:
             tg_call("setWebhook", {"url": webhook_url, "drop_pending_updates": False})
+
+        if debug:
+            from django.http import JsonResponse
+            chats = []
+            for upd in (upd_data or {}).get("result", []):
+                raw_msg = upd.get("message") or upd.get("channel_post") or {}
+                mc = (upd.get("my_chat_member") or {})
+                chat = raw_msg.get("chat") or mc.get("chat") or {}
+                if chat:
+                    chats.append({
+                        "id": chat.get("id"),
+                        "type": chat.get("type"),
+                        "title": chat.get("title"),
+                        "username": chat.get("username"),
+                    })
+            return JsonResponse({
+                "webhook_url": webhook_url,
+                "updates_count": len((upd_data or {}).get("result", [])),
+                "chats_seen": chats,
+            }, json_dumps_params={"indent": 2, "ensure_ascii": False})
 
         for upd in reversed((upd_data or {}).get("result", [])):
             raw_msg = upd.get("message") or {}
@@ -797,7 +818,8 @@ def admin_send_dev_update_view(request):
 
         if not chat_id:
             dj_messages.error(request,
-                "Guruh topilmadi. URL ga &chat_id=GROUP_ID parametrini qo'shing")
+                "Guruh topilmadi. Guruhda biror xabar yozing, keyin qaytadan urinib koring "
+                "(yoki URL ga &chat_id=GROUP_ID parametrini qo'shing)")
             return redirect('admin:index')
 
     send_data = tg_call("sendMessage", {"chat_id": int(chat_id), "text": msg, "parse_mode": "HTML"})
