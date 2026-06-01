@@ -3367,7 +3367,7 @@ class SellerBatchInline(admin.TabularInline):
     def points_col(self, obj):
         if not obj.pk:
             return '—'
-        return format_html('<strong style="color:#818cf8;">{:,}</strong>', obj.points())
+        return format_html('<strong style="color:#818cf8;">{}</strong>', f'{obj.points():,}')
     points_col.short_description = 'Ballar'
 
     def activation_col(self, obj):
@@ -3376,8 +3376,8 @@ class SellerBatchInline(admin.TabularInline):
         pct = obj.activation_percent()
         color = '#16a34a' if pct >= 50 else '#ca8a04' if pct >= 20 else '#dc2626'
         return format_html(
-            '<span style="color:{};font-weight:700;">{} ({:.1f}%)</span>',
-            color, obj.activated_count(), pct
+            '<span style="color:{};font-weight:700;">{} ({}%)</span>',
+            color, obj.activated_count(), f'{pct:.1f}',
         )
     activation_col.short_description = 'Aktivatsiya'
 
@@ -3396,28 +3396,6 @@ class SellerBatchInline(admin.TabularInline):
 @admin.register(Seller)
 class SellerAdmin(admin.ModelAdmin):
     """Admin panel orqali qo'lda boshqariladigan Sotuvchilar."""
-
-    def changelist_view(self, request, extra_context=None):
-        import traceback as _tb
-        from django.db import connection
-        try:
-            tables = connection.introspection.table_names()
-            seller_exists = 'core_seller' in tables
-            seller_batch_exists = 'core_sellerbatch' in tables
-            count = Seller.objects.count() if seller_exists else -1
-            result = f'core_seller exists={seller_exists}, core_sellerbatch exists={seller_batch_exists}, count={count}'
-        except Exception:
-            result = _tb.format_exc()
-        try:
-            resp = super().changelist_view(request, extra_context=extra_context)
-            if hasattr(resp, 'render'):
-                resp.render()  # force TemplateResponse to render now, inside try-except
-            return resp
-        except Exception:
-            return HttpResponse(
-                f'<pre style="padding:20px">DB check: {result}\n\nView error:\n{_tb.format_exc()}</pre>',
-                status=200,
-            )
 
     list_display = [
         'name', 'phone', 'region', 'district',
@@ -3456,7 +3434,7 @@ class SellerAdmin(admin.ModelAdmin):
     def total_points_col(self, obj):
         if not obj.pk:
             return '—'
-        return format_html('<strong style="color:#818cf8;">{:,}</strong>', obj.total_points())
+        return format_html('<strong style="color:#818cf8;">{}</strong>', f'{obj.total_points():,}')
     total_points_col.short_description = 'Jami ballar'
 
     def activation_col(self, obj):
@@ -3465,8 +3443,8 @@ class SellerAdmin(admin.ModelAdmin):
         pct = obj.activation_percent()
         color = '#16a34a' if pct >= 50 else '#ca8a04' if pct >= 20 else '#dc2626'
         return format_html(
-            '<span style="color:{};font-weight:700;">{} ta ({:.1f}%)</span>',
-            color, obj.activated_count(), pct,
+            '<span style="color:{};font-weight:700;">{} ta ({}%)</span>',
+            color, obj.activated_count(), f'{pct:.1f}',
         )
     activation_col.short_description = 'Aktivatsiya'
 
