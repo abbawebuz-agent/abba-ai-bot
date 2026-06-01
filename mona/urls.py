@@ -853,6 +853,39 @@ def admin_backup_test_view(request):
     return redirect('admin:index')
 
 
+def admin_batch_xlsx_view(request, batch_id):
+    """Berilgan QRCodeBatch uchun xlsx faylini ondemand generatsiya qiladi va beradi.
+
+    Productionda media files (uploaded files) servirovat qilinmagan,
+    shuning uchun xlsx'ni har murojaatda qayta yaratamiz.
+    """
+    from django.http import HttpResponse, Http404
+    from core.models import QRCodeBatch
+    from core.utils import build_promo_batch_xlsx
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    try:
+        batch = QRCodeBatch.objects.get(pk=batch_id)
+    except QRCodeBatch.DoesNotExist:
+        raise Http404("Batch topilmadi")
+
+    try:
+        xlsx_bytes = build_promo_batch_xlsx(batch)
+    except Exception as exc:
+        return HttpResponse(f"xlsx generatsiya xato: {exc}", status=500)
+
+    filename = f"{batch.name}.xlsx"
+    response = HttpResponse(
+        xlsx_bytes,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
 def admin_qr_diag_view(request):
     """QRCode.create_promo_code diagnostika — 1 ta QR yaratish urinishi, batafsil natija."""
     import traceback
@@ -1127,6 +1160,7 @@ urlpatterns = [
     path('admin/claude-inbox/', admin.site.admin_view(admin_claude_inbox_view), name='admin_claude_inbox'),
     path('admin/bot-diag/', admin.site.admin_view(admin_bot_diag_view), name='admin_bot_diag'),
     path('admin/qr-diag/', admin.site.admin_view(admin_qr_diag_view), name='admin_qr_diag'),
+    path('admin/qrcodebatch/<int:batch_id>/xlsx/', admin.site.admin_view(admin_batch_xlsx_view), name='admin_batch_xlsx'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),

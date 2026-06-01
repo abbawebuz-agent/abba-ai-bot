@@ -1727,18 +1727,8 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                     else:
                         batch.save(update_fields=['completed_at'])
 
-                    # xlsx faqat created > 0 bo'lganda
-                    if created > 0:
-                        try:
-                            from core.utils import build_promo_batch_xlsx
-                            from django.core.files.base import ContentFile
-                            xlsx_bytes = build_promo_batch_xlsx(batch)
-                            batch.zip_file.save(f"{batch_name}.xlsx",
-                                                ContentFile(xlsx_bytes), save=True)
-                        except Exception as xlsx_exc:
-                            _logger.exception("xlsx generation failed: %s", xlsx_exc)
-                            batch.error_message = (batch.error_message + '\n' if batch.error_message else '') + f"xlsx: {xlsx_exc}"
-                            batch.save(update_fields=['error_message'])
+                    # xlsx fayl on-demand yaratiladi /admin/qrcodebatch/<id>/xlsx/
+                    # (productionda media filelar serve qilinmaydi)
 
                 except Exception as outer_exc:
                     last_err = outer_exc
@@ -2929,12 +2919,14 @@ class QRCodeBatchAdmin(SimpleHistoryAdmin):
     activation_col.short_description = 'Aktivatsiya'
 
     def xlsx_link(self, obj):
-        if obj.zip_file:
+        # On-demand xlsx (productionda media files servirovat qilinmaydi)
+        if obj.pk and obj.qr_codes.exists():
+            url = reverse('admin:admin_batch_xlsx', args=[obj.pk])
             return format_html(
                 '<a href="{}" target="_blank" '
                 'style="background:#16a34a;color:#fff;padding:5px 12px;border-radius:6px;'
                 'text-decoration:none;font-size:12px;white-space:nowrap;">📊 .xlsx</a>',
-                obj.zip_file.url,
+                url,
             )
         return format_html('<span style="color:#9ca3af;">—</span>')
     xlsx_link.short_description = 'Yuklab olish'
