@@ -3399,11 +3399,21 @@ class SellerAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         import traceback as _tb
+        from django.db import connection
         try:
-            return super().changelist_view(request, extra_context=extra_context)
+            tables = connection.introspection.table_names()
+            seller_exists = 'core_seller' in tables
+            seller_batch_exists = 'core_sellerbatch' in tables
+            count = Seller.objects.count() if seller_exists else -1
+            result = f'core_seller exists={seller_exists}, core_sellerbatch exists={seller_batch_exists}, count={count}'
+        except Exception:
+            result = _tb.format_exc()
+        try:
+            resp = super().changelist_view(request, extra_context=extra_context)
+            return resp
         except Exception:
             return HttpResponse(
-                f'<pre style="padding:20px">{_tb.format_exc()}</pre>',
+                f'<pre style="padding:20px">DB check: {result}\n\nView error:\n{_tb.format_exc()}</pre>',
                 status=200,
             )
 
