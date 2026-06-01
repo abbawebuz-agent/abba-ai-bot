@@ -339,46 +339,14 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @dp.message(Command("seller_panel"))
 async def cmd_seller_panel(message: Message, state: FSMContext):
-    """/seller_panel — sotuvchi uchun web app tugmasi."""
+    """/seller_panel — deprecated. Sotuvchi endi admin paneldan boshqariladi."""
     if message.from_user.is_bot:
         return
     await state.clear()
-    @sync_to_async
-    def get_user():
-        try:
-            return TelegramUser.objects.get(telegram_id=message.from_user.id)
-        except TelegramUser.DoesNotExist:
-            return None
-    user = await get_user()
-    if user is None:
-        no_user = SimpleNamespace(language='uz_latin')
-        await message.answer(get_text(no_user, 'PLEASE_START'))
-        return
-    if user.user_type != 'sotuvchi':
-        await message.answer("❌ Bu buyruq faqat sotuvchilar uchun.")
-        return
-    if not user.seller_approved:
-        admin_contact = await _get_admin_contact_str()
-        await message.answer(
-            get_text(user, 'SELLER_NOT_APPROVED_YET').format(admin_contact=admin_contact),
-            parse_mode='HTML',
-        )
-        return
-    # Web App tugma
-    web_app_url = get_web_app_url()
-    if not web_app_url:
-        await message.answer("⚠️ Web App URL sozlanmagan.")
-        return
-    seller_url = f"{web_app_url.rstrip('/')}/seller/"
-    inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
-        types.InlineKeyboardButton(
-            text="🏪 Do'kon panelini ochish",
-            web_app=types.WebAppInfo(url=seller_url),
-        )
-    ]])
     await message.answer(
-        "🛒 Sizning sotuvchi panelingiz tayyor!\n\nQuyidagi tugma orqali ochishingiz mumkin:",
-        reply_markup=inline_kb,
+        "ℹ️ Sotuvchi paneli endi mavjud emas.\n\n"
+        "Sotuvchilar admin paneldan qo'lda boshqariladi. "
+        "Promokod qo'lda kiritib aktivlashtirishingiz mumkin."
     )
 
 
@@ -561,15 +529,16 @@ async def process_name(message: Message, state: FSMContext):
 
 
 async def ask_user_type(message: Message, user, state: FSMContext):
-    """Foydalanuvchi turini so'raydi (santenik yoki sotuvchi)."""
+    """Foydalanuvchi turini avtomatik santenik qiladi.
+
+    Yangi tizimda Sotuvchi botda ro'yxatdan o'tmaydi — admin tomonidan
+    qo'lda boshqariladi. Shu sababli "Sotuvchi" tugmasi olib tashlandi
+    va foydalanuvchi avtomatik santenik bo'ladi.
+    """
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(
             text=get_text(user, 'USER_TYPE_ELECTRICIAN'),
             callback_data='user_type_santenik'
-        )],
-        [types.InlineKeyboardButton(
-            text=get_text(user, 'USER_TYPE_SELLER'),
-            callback_data='user_type_sotuvchi'
         )],
     ])
     await message.answer(get_text(user, 'SELECT_USER_TYPE'), reply_markup=keyboard)
