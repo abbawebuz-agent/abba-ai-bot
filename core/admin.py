@@ -3410,6 +3410,8 @@ class SellerAdmin(admin.ModelAdmin):
             result = _tb.format_exc()
         try:
             resp = super().changelist_view(request, extra_context=extra_context)
+            if hasattr(resp, 'render'):
+                resp.render()  # force TemplateResponse to render now, inside try-except
             return resp
         except Exception:
             return HttpResponse(
