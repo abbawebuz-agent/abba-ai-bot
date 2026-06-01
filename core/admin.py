@@ -1651,11 +1651,12 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             else:
                 messages.error(request, "Do'kon va miqdorni to'g'ri tanlang!")
 
-        # Получаем полный контекст админки (как в dashboard)
+        from core.models import Store
         context = {
             **self.admin_site.each_context(request),
             'title': 'Генерация QR-кодов',
-            'has_permission': request.user.is_superuser,  # Только superuser может генерировать QR коды
+            'has_permission': request.user.is_superuser,
+            'stores': Store.objects.all().order_by('name'),
         }
 
         return TemplateResponse(request, 'admin/core/qrcode/generate.html', context)
