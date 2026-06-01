@@ -57,3 +57,4 @@ celerybeat-schedule
 run.sh
 data.json
 celerybeat-schedule
+frontend/node_modules/

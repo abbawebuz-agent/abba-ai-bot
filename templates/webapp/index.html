@@ -75,6 +75,12 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',ui-sans-serif,system-u
 .btn-primary{background:var(--primary);color:#fff;padding:0 18px;box-shadow:0 8px 18px -8px rgba(37,99,235,.7);}
 .btn-primary:active{transform:scale(.97);}
 .btn:disabled{background:#eceef2;color:#a2a6b0;cursor:not-allowed;box-shadow:none;}
+.order-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.btn-sm{height:36px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;font-family:inherit;cursor:pointer;padding:0 14px;transition:.18s;}
+.btn-sm:active{transform:scale(.96);}
+.btn-sm:disabled{opacity:.55;cursor:not-allowed;}
+.btn-sm-danger{background:#fef2f2;color:var(--danger);}
+.btn-sm-green{background:#f0fdf4;color:var(--success);}
 .btn-outline{width:100%;border:1.5px solid var(--primary);color:var(--primary);background:rgba(37,99,235,.04);height:54px;border-radius:16px;font-size:15px;margin-top:14px;}
 .btn-outline:active{transform:scale(.99);}
 .pk-go{width:48px;flex:0 0 48px;padding:0;}
@@ -337,7 +343,7 @@ function spInfo(status){return({pending:{pill:'sp-blue',lbl:IS_RU?'На расс
 function homeScreen(){
   const u=S.user,bal=u?.points||0,in_=ini(u),fn=fname(u);
   const slides=S.banners.length?S.banners.map((b,i)=>`<div class="slide sl-${(i%3)+1}"><div class="glow"></div><div class="s-emoji">${b.emoji||'🎁'}</div><div class="s-title">${b.title||''}</div><div class="s-sub">${b.subtitle||''}</div></div>`):DEF_SLIDES.map(s=>`<div class="slide ${s.cls}"><div class="glow"></div><div class="s-emoji">${s.e}</div><div class="s-title">${s.t}</div><div class="s-sub">${s.s}</div></div>`);
-  const topHtml=S.top.length?`<div class="card" style="margin-top:14px;"><div class="lb-head"><div class="lb-ico">${svg(I.trophy)}</div><div style="flex:1;min-width:0;"><h3>${T.top_h}</h3><p>${T.top_s}</p></div></div><div class="lb-rows">${S.top.slice(0,5).map((p,i)=>`<div class="lb-row"><div class="lb-rank ${i<3?'medal':''}">${i<3?MEDALS[i]:i+1}</div><div class="lb-av" style="background:${RC[i]}">${ini({first_name:p.first_name,last_name:p.last_name||p.username})}</div><div class="lb-name">${p.first_name||p.username||'—'}</div><div class="lb-pts">${pts(p.points)}<span>ball</span></div></div>`).join('')}</div>${u?`<div class="lb-you"><div class="lb-rank">—</div><div class="lb-av" style="background:linear-gradient(135deg,#fdba74,#f97316)">${in_}</div><div class="lb-name">${fn} · <span style="color:var(--sub);font-weight:600">${T.you}</span></div><div class="lb-pts">${pts(bal)}<span>ball</span></div></div>`:''}</div>`:'';
+  const topHtml=S.top.length?`<div class="card" style="margin-top:14px;"><div class="lb-head"><div class="lb-ico">${svg(I.trophy)}</div><div style="flex:1;min-width:0;"><h3>${T.top_h}</h3><p>${T.top_s}</p></div></div><div class="lb-rows">${S.top.slice(0,5).map((p,i)=>`<div class="lb-row"><div class="lb-rank ${i<3?'medal':''}">${i<3?MEDALS[i]:i+1}</div><div class="lb-av" style="background:${RC[i]}">${ini({first_name:p.name||p.first_name})}</div><div class="lb-name">${p.name||p.first_name||'—'}</div><div class="lb-pts">${pts(p.points)}<span>ball</span></div></div>`).join('')}</div>${u?`<div class="lb-you"><div class="lb-rank">—</div><div class="lb-av" style="background:linear-gradient(135deg,#fdba74,#f97316)">${in_}</div><div class="lb-name">${fn} · <span style="color:var(--sub);font-weight:600">${T.you}</span></div><div class="lb-pts">${pts(bal)}<span>ball</span></div></div>`:''}</div>`:'';
   const conHtml=S.contact?`<div class="card" style="margin-top:14px;"><div class="contact-head"><div class="pk-ico">${svg(I.send)}</div><div><h3 style="margin:0;font-size:15px;font-weight:700;">${T.con_h}</h3><p style="margin:2px 0 0;font-size:11.5px;color:var(--sub);">${T.con_s}</p></div></div><div class="contact-row" onclick="openContact()"><div class="tg-ico">${svg(I.telegram)}</div><div class="c-main"><div class="c-name">${S.contact.contact_value||'Admin'}</div><div class="c-sub">${T.con_tg}</div></div><div class="chev">${svg(I.chev)}</div></div></div>`:'';
   return `<div class="hero"><div class="b1"></div><div class="b2"></div><div class="hero-row1"><img src="${LOGO}" class="hero-logo" alt="JIP"/><div class="hero-id">ID ${u?.telegram_id||TG_ID||'—'}</div></div><div class="hero-user"><div class="avatar">${in_}</div><div><div class="hero-name">${fn}</div><div class="hero-prog">${T.loyalty}</div></div></div><div class="hero-bal"><div class="row"><span class="num">${pts(bal)}</span><span class="lbl">ball</span></div><div class="cap">${svg(I.spark,'width="12" height="12"')} ${T.hint}</div></div></div><div class="banner" data-banner><div class="banner-track">${slides.join('')}</div><div class="dots">${slides.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div></div><div class="card" style="margin-top:14px;"><div class="pk-head"><div class="pk-ico">${svg(I.qr)}</div><div><h3>${T.promo_h}</h3><p>${T.promo_s}</p></div></div><div class="pk-body"><input class="pk-input" placeholder="${T.promo_ph}" data-pk/><button class="btn btn-primary pk-go" data-pk-btn disabled>${svg(I.check)}</button></div></div><button class="btn btn-outline" data-goto="gifts">${T.all_gifts}</button>${topHtml}${conHtml}`;
 }
@@ -348,12 +354,12 @@ function giftsScreen(){
 }
 function historyScreen(){
   if(!S.history.length)return `<div class="page-title">${T.hist_h}</div><div class="empty"><div class="empty-ico">${svg(I.qr)}</div><h4>${T.hist_e}</h4><p>${T.hist_es}</p></div>`;
-  return `<div class="page-title">${T.hist_h}</div><div class="card" style="margin-top:8px;">${S.history.map(h=>`<div class="hist-item"><div class="hist-ico">${svg(I.qr)}</div><div style="flex:1;"><div class="hist-code">${h.code||h.qr_code||'—'}</div><div class="hist-date">${fdate(h.scanned_at||h.date)}</div></div><div class="hist-pts">+${h.points||h.points_earned||0} ball</div></div>`).join('')}</div>`;
+  return `<div class="page-title">${T.hist_h}</div><div class="card" style="margin-top:8px;">${S.history.map(h=>`<div class="hist-item"><div class="hist-ico">${svg(I.qr)}</div><div style="flex:1;"><div class="hist-code">${h.code||h.qr_code||'—'}</div><div class="hist-date">${h.scanned_at||h.date||''}</div></div><div class="hist-pts">+${h.points||h.points_earned||0} ball</div></div>`).join('')}</div>`;
 }
 function ordersScreen(){
   if(!S.orders.length)return `<div class="page-title">${T.ord_h}</div><div class="empty"><div class="empty-ico">${svg(I.list)}</div><h4>${T.ord_e}</h4><p>${T.ord_es}</p></div>`;
   const SLBLS=[T.s1,T.s2,T.s3,T.s4];
-  return `<div class="page-title">${T.ord_h}</div><div class="section-sub">${T.ord_s}</div>${S.orders.map(o=>{const n=IS_RU?(o.gift_name_ru||o.gift_name_uz_latin||o.gift_name||'—'):(o.gift_name_uz_latin||o.gift_name_ru||o.gift_name||'—');const si=spInfo(o.status);const col=gCol(o.gift_id||1);const ico=gIco(n);const stHtml=si.steps?`<div class="steps">${SLBLS.map((lbl,i)=>{const s=si.steps[i];const pDone=i>0&&si.steps[i-1]===2;const dot=s===2?`<div class="step-dot done">${svg(I.check)}</div>`:s===1?`<div class="step-dot active"><i></i></div>`:`<div class="step-dot"></div>`;return `<div class="step ${i===0?'first':''}"><div class="step-line ${pDone?'done':''}"></div>${dot}<div class="step-lbl ${s===2?'done':s===1?'active':''}">${lbl}</div></div>`;}).join('')}</div>`:'';return `<div class="card order-card"><div class="order-row"><div class="order-img ${col}">${svg(I[ico]||I.gift)}</div><div style="flex:1;"><div class="order-top"><h3>${n}</h3><span class="sp ${si.pill}">${si.lbl}</span></div><div class="order-date">${fdate(o.created_at)} · ${o.points_cost||0} ball</div></div></div>${stHtml}</div>`;}).join('')}`;
+  return `<div class="page-title">${T.ord_h}</div><div class="section-sub">${T.ord_s}</div>${S.orders.map(o=>{const n=o.gift?.name||'—';const si=spInfo(o.status);const col=gCol(o.gift?.id||1);const ico=gIco(n);const stHtml=si.steps?`<div class="steps">${SLBLS.map((lbl,i)=>{const s=si.steps[i];const pDone=i>0&&si.steps[i-1]===2;const dot=s===2?`<div class="step-dot done">${svg(I.check)}</div>`:s===1?`<div class="step-dot active"><i></i></div>`:`<div class="step-dot"></div>`;return `<div class="step ${i===0?'first':''}"><div class="step-line ${pDone?'done':''}"></div>${dot}<div class="step-lbl ${s===2?'done':s===1?'active':''}">${lbl}</div></div>`;}).join('')}</div>`:'';const actHtml=o.status==='pending'?`<div class="order-actions"><button class="btn-sm btn-sm-danger" data-cancel="${o.id}">${IS_RU?'✕ Отменить':'✕ Bekor qilish'}</button></div>`:o.status==='sent'?`<div class="order-actions"><button class="btn-sm btn-sm-green" data-confirm="${o.id}">${IS_RU?'✓ Получил':'✓ Qabul qildim'}</button><button class="btn-sm btn-sm-danger" data-notrcv="${o.id}">${IS_RU?'✕ Не получил':'✕ Kelmadi'}</button></div>`:'';return `<div class="card order-card"><div class="order-row"><div class="order-img ${col}">${svg(I[ico]||I.gift)}</div><div style="flex:1;"><div class="order-top"><h3>${n}</h3><span class="sp ${si.pill}">${si.lbl}</span></div><div class="order-date">${fdate(o.requested_at)} · ${o.gift?.points_cost||0} ball</div></div></div>${stHtml}${actHtml}</div>`;}).join('')}`;
 }
 function profileScreen(){
   const u=S.user,in_=ini(u),fn=fname(u),curL=u?.language||LANG;
@@ -393,7 +399,7 @@ function wire(tab){
     pkBtn.addEventListener('click',async()=>{
       const code=pk.value.trim();if(!code||!TG_ID)return;
       pkBtn.disabled=true;pk.disabled=true;haptic();
-      const res=await apiPost('/redeem-promo/',{telegram_id:TG_ID,code});
+      const res=await apiPost('/register-qr/',{telegram_id:TG_ID,qr_code:code});
       pk.disabled=false;pk.value='';
       if(res.ok){hapticOk();toast(`✅ +${res.data.points||0} ball!`,'ok');S.user=await apiGet(`/user/?telegram_id=${TG_ID}&format=json`).catch(()=>S.user);buildTabbar();render('home');}
       else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Неверный промокод':"Noto'g'ri promokod")),'err');pkBtn.disabled=false;}
@@ -407,20 +413,38 @@ function wire(tab){
     const lang=btn.dataset.lang;
     content.querySelectorAll('[data-lang]').forEach(b=>{b.classList.remove('on');b.classList.add('off');});
     btn.classList.remove('off');btn.classList.add('on');haptic();
-    await apiPost('/update-language/',{telegram_id:TG_ID,language:lang});
-    toast(IS_RU?'Язык изменён, перезагрузите':"Til o'zgartirildi, qayta yuklang",'ok');
+    const lr=await apiPost('/update-language/',{telegram_id:TG_ID,language:lang});
+    if(lr.ok){window.location.reload();}else{toast(IS_RU?'Xato':'Ошибка','err');}
+  }));
+  content.querySelectorAll('[data-cancel]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const id=+btn.dataset.cancel;if(!TG_ID)return;btn.disabled=true;haptic();
+    const res=await apiPost('/cancel-order/',{redemption_id:id,telegram_id:TG_ID});
+    if(res.ok){hapticOk();toast(IS_RU?'✅ Отменено':'✅ Bekor qilindi','ok');S.orders=await apiGet(`/redemptions/?telegram_id=${TG_ID}&format=json`).catch(()=>S.orders);S.user=await apiGet(`/user/?telegram_id=${TG_ID}&format=json`).catch(()=>S.user);buildTabbar();render('orders');}
+    else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Ошибка':'Xato')),'err');btn.disabled=false;}
+  }));
+  content.querySelectorAll('[data-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const id=+btn.dataset.confirm;btn.disabled=true;haptic();
+    const res=await apiPost('/confirm-delivery/',{redemption_id:id,confirmed:true});
+    if(res.ok){hapticOk();toast(IS_RU?'✅ Подтверждено':'✅ Tasdiqlandi','ok');S.orders=await apiGet(`/redemptions/?telegram_id=${TG_ID}&format=json`).catch(()=>S.orders);buildTabbar();render('orders');}
+    else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Ошибка':'Xato')),'err');btn.disabled=false;}
+  }));
+  content.querySelectorAll('[data-notrcv]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const id=+btn.dataset.notrcv;btn.disabled=true;haptic();
+    const res=await apiPost('/confirm-delivery/',{redemption_id:id,confirmed:false});
+    if(res.ok){hapticOk();toast(IS_RU?'✅ Принято':'✅ Qabul qilindi','ok');S.orders=await apiGet(`/redemptions/?telegram_id=${TG_ID}&format=json`).catch(()=>S.orders);buildTabbar();render('orders');}
+    else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Ошибка':'Xato')),'err');btn.disabled=false;}
   }));
 }
 function openSheet(id){
   const g=S.gifts.find(x=>x.id===id);if(!g)return;haptic('medium');
   const bal=S.user?.points||0,need=g.points_cost-bal;
   const n=IS_RU?(g.name_ru||g.name_uz_latin||g.name):(g.name_uz_latin||g.name_ru||g.name);
-  const d=IS_RU?(g.description_ru||g.description_uz_latin||''):(g.description_uz_latin||g.description_ru||'');
+  const d=g.description||'';
   sheet.innerHTML=`<div class="handle"></div><div class="sheet-img ${gCol(g.id)}">${svg(I[gIco(n)]||I.gift)}</div><div class="sheet-name">${n}</div>${d?`<div class="sheet-desc">${d}</div>`:''}<div class="info-rows"><div class="info-row"><span class="ir-lbl">${T.bal_lbl}</span><span class="ir-val">${pts(bal)} ball</span></div><div class="info-row"><span class="ir-lbl">${T.cost_lbl}</span><span class="ir-val red">−${g.points_cost} ball</span></div><div class="info-row"><span class="ir-lbl">${T.after_lbl}</span><span class="ir-val red">${pts(bal-g.points_cost)} ball</span></div></div>${need>0?`<div class="warn-text">⚠ ${need} ${T.not_enough}</div>`:''}<button class="btn btn-primary btn-block" id="sbtn" ${need>0?'disabled':''}>${T.exchange}</button>`;
   overlay.classList.add('show');sheet.classList.add('show');
   document.getElementById('sbtn')?.addEventListener('click',async()=>{
     if(!TG_ID)return;const btn=document.getElementById('sbtn');btn.disabled=true;btn.textContent=IS_RU?'Отправка...':'Yuborilmoqda...';haptic('medium');
-    const res=await apiPost(`/gifts/${g.id}/request/`,{telegram_id:TG_ID});
+    const res=await apiPost('/request-gift/',{telegram_id:TG_ID,gift_id:g.id});
     if(res.ok){hapticOk();closeSheet();toast(IS_RU?'✅ Заявка отправлена!':"✅ So'rov yuborildi!",'ok');S.orders=await apiGet(`/redemptions/?telegram_id=${TG_ID}&format=json`).catch(()=>S.orders);S.user=await apiGet(`/user/?telegram_id=${TG_ID}&format=json`).catch(()=>S.user);buildTabbar();render('orders');}
     else{hapticErr();toast('⚠ '+(res.data?.error||(IS_RU?'Ошибка':'Xato')),'err');btn.disabled=false;btn.textContent=T.exchange;}
   });
