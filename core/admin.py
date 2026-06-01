@@ -1676,13 +1676,34 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             elif points <= 0:
                 messages.error(request, "Ballar 0 dan katta bo'lishi kerak!")
             else:
-                from core.tasks import generate_promo_codes_task
-                generate_promo_codes_task.delay(quantity, points)
-                messages.success(
-                    request,
-                    f"✅ {quantity} ta promokod yaratish jarayonida "
-                    f"(har biri {points} ball). Ro'yxat sahifasini yangilang."
-                )
+                try:
+                    from core.tasks import generate_promo_codes_task
+                    generate_promo_codes_task.delay(quantity, points)
+                    messages.success(
+                        request,
+                        f"✅ {quantity} ta promokod yaratish jarayonida "
+                        f"(har biri {points} ball). Ro'yxat sahifasini yangilang."
+                    )
+                except Exception as exc:
+                    # Celery broker mavjud bo'lmasa — fallback: sync
+                    import traceback
+                    import logging
+                    logging.getLogger(__name__).exception("Celery .delay failed, fallback to sync")
+                    try:
+                        from core.models import QRCode
+                        for _ in range(quantity):
+                            QRCode.create_promo_code(points=points)
+                        messages.success(
+                            request,
+                            f"✅ {quantity} ta promokod yaratildi (sync mode, "
+                            f"{points} ball). Celery: {exc.__class__.__name__}"
+                        )
+                    except Exception as sync_exc:
+                        tb = traceback.format_exc()
+                        messages.error(
+                            request,
+                            f"❌ Promokod yaratishda xato: {sync_exc}. Traceback: {tb[-1500:]}"
+                        )
                 return redirect('admin:core_qrcode_changelist')
 
         context = {
