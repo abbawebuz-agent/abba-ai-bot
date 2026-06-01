@@ -3404,8 +3404,8 @@ class SellerAdmin(admin.ModelAdmin):
         except Exception as exc:
             return HttpResponse(
                 f'<pre style="white-space:pre-wrap;padding:20px;">'
-                f'SellerAdmin 500 xatolik:\n\n{traceback.format_exc()}</pre>',
-                status=500,
+                f'SellerAdmin xatolik:\n\n{traceback.format_exc()}</pre>',
+                status=200,
             )
 
     list_display = [
