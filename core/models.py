@@ -1900,7 +1900,11 @@ class SellerBatch(models.Model):
         Seller, on_delete=models.CASCADE,
         related_name='seller_batches', verbose_name='Sotuvchi'
     )
-    promo_from = models.PositiveIntegerField(verbose_name='Promokod dan (raqam)')
+    promo_from = models.PositiveIntegerField(
+        verbose_name='Promokod dan (raqam)',
+        help_text='Avtomatik (oxirgi partiya + 1) — saqlanganda o\'zgartirilmaydi.',
+        blank=True, null=True,  # save() avtomatik to'ldiradi
+    )
     promo_to = models.PositiveIntegerField(verbose_name='Promokod gacha (raqam)')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')
 
@@ -1912,21 +1916,44 @@ class SellerBatch(models.Model):
     def __str__(self):
         return f"{self.seller.name} — #{self.promo_from}–#{self.promo_to}"
 
+    @classmethod
+    def get_next_promo_from(cls):
+        """Keyingi partiya boshlanishi — global oxirgi promo_to + 1."""
+        from django.db.models import Max
+        result = cls.objects.aggregate(m=Max('promo_to'))
+        return (result['m'] or 0) + 1
+
+    def save(self, *args, **kwargs):
+        """Yangi partiya yaratilganda promo_from avtomatik max+1.
+
+        Admin qiymat kiritsa ham, foydalanmaydi — har doim auto.
+        """
+        if not self.pk:
+            self.promo_from = self.__class__.get_next_promo_from()
+        super().save(*args, **kwargs)
+
     def clean(self):
         """Diapazon validatsiyasi:
-        - promo_from <= promo_to
-        - Bir xil sotuvchining boshqa partiyalari bilan kesishmasligi kerak
-        - Boshqa sotuvchilarning partiyalari bilan ham kesishmasligi kerak
-          (bitta promokod faqat bitta sotuvchiga tegishli)
+        - Yangi partiya uchun promo_from avtomatik aniqlanadi (save() da)
+        - clean() uchun keyingi raqamni hisoblaymiz
+        - promo_to >= promo_from bo'lishi shart
+        - Kesishish bo'lmasligi shart (overlap_check)
         """
         from django.core.exceptions import ValidationError
 
-        if self.promo_from is None or self.promo_to is None:
+        # Yangi partiya yaratilayotgan bo'lsa promo_from auto
+        if not self.pk:
+            self.promo_from = self.__class__.get_next_promo_from()
+
+        if self.promo_to is None:
             return  # field-level validation handles it
 
         if self.promo_from > self.promo_to:
             raise ValidationError({
-                'promo_to': "'gacha' qiymati 'dan' qiymatidan katta yoki teng bo'lishi kerak."
+                'promo_to': (
+                    f"'gacha' qiymati 'dan' qiymatidan kichik bo'la olmaydi. "
+                    f"Boshlanish raqam: {self.promo_from}, kiriting kamida shu yoki ko'proq."
+                )
             })
 
         # Kesishmalarni topish — barcha boshqa partiyalar bilan

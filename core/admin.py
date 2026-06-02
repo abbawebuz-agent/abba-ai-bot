@@ -3527,10 +3527,39 @@ class SellerBatchInline(admin.TabularInline):
     model = SellerBatch
     extra = 1
     can_delete = True
-    readonly_fields = ['total_count_col', 'points_col', 'activation_col', 'promos_btn', 'created_at']
-    fields = ['promo_from', 'promo_to', 'total_count_col', 'points_col', 'activation_col', 'promos_btn', 'created_at']
+    readonly_fields = [
+        'promo_from_display', 'total_count_col', 'points_col',
+        'activation_col', 'promos_btn', 'created_at',
+    ]
+    # promo_from olib tashlandi (auto-fill), o'rniga promo_from_display ko'rsatamiz
+    fields = [
+        'promo_from_display', 'promo_to', 'total_count_col', 'points_col',
+        'activation_col', 'promos_btn', 'created_at',
+    ]
     verbose_name = 'Partiya'
     verbose_name_plural = 'Partiyalar'
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        # Hint sifatida keyingi raqamni description'da ko'rsatamiz
+        next_from = SellerBatch.get_next_promo_from()
+        formset.form.base_fields['promo_to'].help_text = (
+            f"Yangi partiya boshlanish raqami avtomatik: <strong>#{next_from}</strong>. "
+            f"Faqat 'gacha' qiymatini kiriting (kamida {next_from} bo'lishi kerak)."
+        )
+        return formset
+
+    def promo_from_display(self, obj):
+        """Mavjud partiya uchun promo_from, yangi uchun avto-keyingi son."""
+        if obj and obj.pk and obj.promo_from is not None:
+            return format_html('<strong style="color:#1d4ed8;">#{}</strong>', obj.promo_from)
+        # Yangi partiya — keyingi avto raqamni ko'rsatamiz
+        next_from = SellerBatch.get_next_promo_from()
+        return format_html(
+            '<span style="color:#16a34a;">#{} (avto)</span>',
+            next_from,
+        )
+    promo_from_display.short_description = 'Promokod dan (avto)'
 
     def total_count_col(self, obj):
         if not obj.pk:
