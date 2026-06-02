@@ -2413,12 +2413,9 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
 @admin.register(Promotion)
 class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
-    """Админка для акций — admin paneldan yashirilgan (user talab).
-    Model DB da saqlanadi (data safety), faqat sidebar'dan yo'qoladi.
+    """Админка для баннеров слайдера Web App (santexnik).
+    Admin paneldan banner yuklash / tahrirlash / yangi qo'shish mumkin.
     """
-
-    def has_module_permission(self, request):
-        return False
 
     list_display = [
         'image_preview', 'title', 'date_display', 'order', 'is_active', 'status_badge', 'created_at'
@@ -2434,8 +2431,10 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     date_hierarchy = 'created_at'
 
     fieldsets = (
-        ('Основная информация', {
-            'fields': ('title', 'image', 'date', 'order', 'is_active')
+        ('Banner', {
+            'fields': ('title', 'image_url', 'image', 'image_preview', 'link_url', 'date', 'order', 'is_active'),
+            'description': "Banner rasmini fayl sifatida yuklang YOKI internet havolasini kiriting (image_url). "
+                           "Havola to'ldirilsa, yuklangan fayldan ustun turadi.",
         }),
         ('Системная информация', {
             'fields': ('created_at', 'updated_at'),
@@ -2443,18 +2442,19 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         }),
     )
 
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'image_preview']
 
     def image_preview(self, obj):
-        """Превью изображения акции."""
-        if obj.image:
+        """Превью баннера (image_url yoki yuklangan fayl)."""
+        src = obj.image_url or (obj.image.url if obj.image else '')
+        if src:
             return format_html(
-                '<img src="{}" style="max-width: 100px; max-height: 100px; object-fit: cover; border-radius: 8px;" />',
-                obj.image.url
+                '<img src="{}" style="max-width: 240px; max-height: 90px; object-fit: cover; border-radius: 8px; border:1px solid #ddd;" />',
+                src
             )
         return '-'
 
-    image_preview.short_description = 'Rasm'
+    image_preview.short_description = 'Banner ko‘rinishi'
 
     def date_display(self, obj):
         """Отображает дату в формате DD.MM.YYYY."""

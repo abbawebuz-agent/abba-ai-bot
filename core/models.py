@@ -1391,7 +1391,17 @@ class RegionMessageLog(models.Model):
 class Promotion(models.Model):
     """Модель для акций/баннеров в слайдере Web App."""
     title = models.CharField(max_length=255, verbose_name='Sarlavha', blank=True, null=True)
-    image = models.ImageField(upload_to='promotions/', verbose_name='Rasm')
+    image = models.ImageField(upload_to='promotions/', blank=True, null=True, verbose_name='Banner rasmi (fayl)')
+    image_url = models.URLField(
+        max_length=500, blank=True, default='',
+        verbose_name='Banner rasmi (internet havola)',
+        help_text="Tashqi rasm URL'i. To'ldirilsa, yuklangan fayldan ustun turadi (media saqlanmaganda ham ishlaydi).",
+    )
+    link_url = models.URLField(
+        max_length=500, blank=True, default='',
+        verbose_name='Havola (bosilganda)',
+        help_text="Banner bosilganda ochiladigan URL (ixtiyoriy).",
+    )
     date = models.DateField(verbose_name='Sana', blank=True, null=True)
     is_active = models.BooleanField(default=True, verbose_name='Faol', db_index=True)
     order = models.IntegerField(default=0, verbose_name='Tartib raqami', help_text='Kichikroq raqam yuqorida ko\'rsatiladi')

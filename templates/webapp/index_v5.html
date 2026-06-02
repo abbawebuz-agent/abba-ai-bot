@@ -90,6 +90,10 @@ body{
 .slide .s-eyebrow{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--violet);position:relative;z-index:2;}
 .slide .s-title{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:7px;position:relative;z-index:2;line-height:1.1;}
 .slide .s-sub{font-size:12px;color:var(--sub);margin-top:4px;position:relative;z-index:2;}
+.slide-img{padding:0;cursor:pointer;}
+.slide-img::before{display:none;}
+.slide-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.banner-img{height:130px;}
 .dots{position:absolute;bottom:12px;right:18px;display:flex;gap:5px;z-index:3;}
 .dots i{width:5px;height:5px;border-radius:999px;background:rgba(20,22,40,.18);transition:all .3s;}
 .dots i.on{width:18px;background:var(--violet);box-shadow:0 0 8px var(--glow);}
@@ -360,6 +364,7 @@ const APP = {
   orders: [],
   history: [],
   leaderboard: [],
+  banners: [],
   adminContact: '@JIP_admin_support',
 };
 
@@ -451,6 +456,19 @@ async function loadAdminContact(){
   try { const d = await api('/webapp/admin-contact/'); APP.adminContact = d.contact || d.username || APP.adminContact; }
   catch(e){}
 }
+async function loadBanners(){
+  try {
+    const d = await api('/webapp/promotions/');
+    const arr = Array.isArray(d) ? d : (d.results || []);
+    APP.banners = arr.map(b => ({
+      id: b.id,
+      title: b.title || '',
+      img: b.image_url || b.image || '',
+      link: b.link || b.link_url || '',
+      date: b.date || '',
+    })).filter(b => b.img);
+  } catch(e){ APP.banners = []; }
+}
 
 /* ============ SCREENS ============ */
 function homeScreen(){
@@ -481,11 +499,13 @@ function homeScreen(){
     </div>
   </div>
 
-  <div class="banner" data-banner>
+  <div class="banner ${APP.banners.length?'banner-img':''}" data-banner>
     <div class="banner-track">
-      ${SLIDES.map(s=>`<div class="slide"><div class="glow"></div><div class="s-eyebrow">${s.eyebrow}</div><div class="s-title">${s.title}</div><div class="s-sub">${s.sub}</div></div>`).join('')}
+      ${APP.banners.length
+        ? APP.banners.map(b=>`<div class="slide slide-img" ${b.link?`data-blink="${b.link}"`:''}><img src="${b.img}" alt="${b.title||''}" loading="lazy"/></div>`).join('')
+        : SLIDES.map(s=>`<div class="slide"><div class="glow"></div><div class="s-eyebrow">${s.eyebrow}</div><div class="s-title">${s.title}</div><div class="s-sub">${s.sub}</div></div>`).join('')}
     </div>
-    <div class="dots">${SLIDES.map((s,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div>
+    <div class="dots">${(APP.banners.length?APP.banners:SLIDES).map((s,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div>
   </div>
 
   <div class="panel" style="margin-top:14px;">
@@ -743,12 +763,20 @@ function wire(tab){
   if (banner) {
     const track = banner.querySelector('.banner-track');
     const dots = banner.querySelectorAll('.dots i');
+    const count = track.children.length;
     let idx = 0;
-    bannerTimer = setInterval(() => {
-      idx = (idx + 1) % SLIDES.length;
-      track.style.transform = `translateX(-${idx*100}%)`;
-      dots.forEach((d,i) => d.classList.toggle('on', i === idx));
-    }, 2800);
+    if (count > 1) {
+      bannerTimer = setInterval(() => {
+        idx = (idx + 1) % count;
+        track.style.transform = `translateX(-${idx*100}%)`;
+        dots.forEach((d,i) => d.classList.toggle('on', i === idx));
+      }, 3200);
+    }
+    // Banner havolasini ochish (bosilganda)
+    banner.querySelectorAll('[data-blink]').forEach(s => s.addEventListener('click', () => {
+      const url = s.dataset.blink;
+      if (url) { try { TG && TG.openLink ? TG.openLink(url) : window.open(url,'_blank'); } catch(e){ window.open(url,'_blank'); } }
+    }));
   }
   // Gift cards → bottom sheet
   content.querySelectorAll('[data-gift]').forEach(c => c.addEventListener('click', () => openSheet(+c.dataset.gift)));
@@ -890,6 +918,7 @@ overlay.addEventListener('click', closeSheet);
     loadHistory(),
     loadLeaderboard(),
     loadAdminContact(),
+    loadBanners(),
   ]);
   renderTabs();
   render('home');

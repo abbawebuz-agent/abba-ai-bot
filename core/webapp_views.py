@@ -446,9 +446,11 @@ def get_promotions(request):
                 'id': promotion.id,
                 'title': promotion.title,
                 'image': request.build_absolute_uri(promotion.image.url) if promotion.image else None,
+                'image_url': promotion.image_url or None,
+                'link': promotion.link_url or None,
                 'date': promotion.date.strftime('%d.%m.%Y') if promotion.date else None,
             })
-        
+
         return Response(promotions_data)
     except Exception as e:
         return Response(
