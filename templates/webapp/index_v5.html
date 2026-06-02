@@ -523,6 +523,10 @@ function homeScreen(){
   </div>`;
 }
 
+function giftImgError(el){
+  // Rasm yuklanmasa: img'ni fallback ikonka bilan almashtirish (inline onerror'da tirnoq konflikti bo'lmasin)
+  try { el.outerHTML = svg(I.gift_sm); } catch(e){ el.style.display='none'; }
+}
 function giftsScreen(){
   return `
   <div class="page-head"><div class="eyebrow">Katalog</div><div class="page-title">Sovg'alar</div><div class="section-sub">Ballaringizni mukofotlarga almashtiring</div></div>
@@ -535,7 +539,7 @@ function giftsScreen(){
         const name = g.name_uz || g.name || g.title || 'Sovg\'a';
         const img = g.image_url || g.image || '';
         return `<div class="gift-card" data-gift="${g.id}">
-          <div class="gift-img">${img?`<img src="${img}" alt="${name}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'${svg(I.gift_sm).replace(/'/g,"\\'")}'}).firstChild)"/>`:svg(I.gift_sm)}</div>
+          <div class="gift-img">${img?`<img src="${img}" alt="${name}" onerror="giftImgError(this)"/>`:svg(I.gift_sm)}</div>
           <div class="gift-info"><div class="gift-name">${name}</div>
           <div class="gift-meta"><span class="pts-badge">${fmtNum(pts)} ball</span>${need>0?`<span class="need-badge">+${fmtNum(need)} kerak</span>`:''}</div></div>
         </div>`;
@@ -593,7 +597,7 @@ function orderCard(o){
   const canConfirm = (status === 'shipped' || status === 'delivered');
   return `<div class="panel order-card">
     <div class="order-row">
-      <div class="order-img">${giftImg ? `<img src="${giftImg}" alt="${giftName}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'${svg(I.gift_sm).replace(/'/g,"\\'")}'}).firstChild)"/>` : svg(I.gift_sm)}</div>
+      <div class="order-img">${giftImg ? `<img src="${giftImg}" alt="${giftName}" onerror="giftImgError(this)"/>` : svg(I.gift_sm)}</div>
       <div style="flex:1;min-width:0;">
         <div class="order-top"><h3 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${giftName}</h3><span class="status-pill ${cls}">${statusLabel}</span></div>
         <div class="order-date">${date} · ${fmtNum(pts)} BALL</div>
