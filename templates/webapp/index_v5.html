@@ -446,7 +446,7 @@ function homeScreen(){
     <div class="hero-glow"></div>
     <div class="hero-in">
       <div class="hero-row1">
-        <img src="{% static 'core_admin/img/logo.svg' %}" class="hero-logo" alt="JIP" onerror="this.style.display='none'"/>
+        <img src="{% static 'core_admin/img/jip-group-logo.png' %}" class="hero-logo" alt="JIP GROUP" onerror="this.style.display='none'"/>
         <div class="hero-id mono">ID·${tgId}</div>
       </div>
       <div class="hero-user">
@@ -530,7 +530,7 @@ function giftsScreen(){
     `<div class="empty"><div class="empty-ico">${svg(I.gift_sm)}</div><h4>Sovg'alar yo'q</h4><p>Hozircha mavjud sovg'alar yo'q</p></div>` :
     `<div class="gift-grid">
       ${APP.gifts.map(g=>{
-        const pts = g.points_required || g.points || g.pts || 0;
+        const pts = g.points_cost || g.points_required || g.points || g.pts || 0;
         const need = pts - APP.balance;
         const name = g.name_uz || g.name || g.title || 'Sovg\'a';
         const img = g.image_url || g.image || '';
@@ -572,7 +572,7 @@ function orderCard(o){
   const gift = o.gift || {};
   const giftName = gift.name_uz || gift.name || o.gift_name || 'Sovg\'a';
   const giftImg = gift.image_url || gift.image || o.gift_image || '';
-  const pts = gift.points_required || gift.points || o.points || 0;
+  const pts = gift.points_cost || gift.points_required || gift.points || o.points || 0;
   const status = (o.status || 'pending').toLowerCase();
   const statusLabel = {
     pending: 'Kutilmoqda', approved: "Ko'rib chiqildi", shipped: 'Yuborildi',
@@ -815,6 +815,14 @@ overlay.addEventListener('click', closeSheet);
 /* ============ INIT ============ */
 (async function init(){
   APP.tgId = getTgId();
+  // Telegram Mini App: to'liq ekran + header/fon rangini app foniga moslash (tepadagi kulrang seam yo'qoladi)
+  if (TG) {
+    try { TG.ready(); } catch(e){}
+    try { TG.expand(); } catch(e){}
+    try { TG.setHeaderColor('#eef0f4'); } catch(e){}
+    try { TG.setBackgroundColor('#eef0f4'); } catch(e){}
+    try { if (TG.disableVerticalSwipes) TG.disableVerticalSwipes(); } catch(e){}
+  }
   // Parallel data loading
   await Promise.all([
     loadUser(),
