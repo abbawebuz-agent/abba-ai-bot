@@ -1842,25 +1842,50 @@ class Seller(models.Model):
     def get_batches_qs(self):
         return self.seller_batches.all().order_by('-created_at')
 
-    def total_promos(self):
-        total = 0
+    def _merged_ranges(self):
+        """Barcha partiyalardagi diapazonlarni union qilib qaytaradi.
+
+        Returns: list of (low, high) tuples, ham kesishmaydigan ham
+        sortlangan tartibda.
+        """
+        ranges = []
         for b in self.seller_batches.all():
-            total += max(0, b.promo_to - b.promo_from + 1)
-        return total
+            lo, hi = b.promo_from, b.promo_to
+            if hi < lo:
+                continue
+            ranges.append((lo, hi))
+        if not ranges:
+            return []
+        # Sort by start, then merge overlapping
+        ranges.sort(key=lambda r: r[0])
+        merged = [ranges[0]]
+        for lo, hi in ranges[1:]:
+            last_lo, last_hi = merged[-1]
+            if lo <= last_hi + 1:  # adjacent yoki overlap
+                merged[-1] = (last_lo, max(last_hi, hi))
+            else:
+                merged.append((lo, hi))
+        return merged
+
+    def total_promos(self):
+        """Union (kesishmasiz) bo'yicha jami unique sequence raqamlar."""
+        return sum(hi - lo + 1 for lo, hi in self._merged_ranges())
 
     def total_points(self):
         return self.total_promos() * 50
 
     def activated_count(self):
-        total = 0
-        for b in self.seller_batches.all():
-            total += QRCode.objects.filter(
-                sequence_number__gte=b.promo_from,
-                sequence_number__lte=b.promo_to,
-                is_scanned=True,
-                is_deleted=False
-            ).count()
-        return total
+        """Union bo'yicha unique aktivlashtirilgan QRlar."""
+        merged = self._merged_ranges()
+        if not merged:
+            return 0
+        from django.db.models import Q
+        q = Q()
+        for lo, hi in merged:
+            q |= Q(sequence_number__gte=lo, sequence_number__lte=hi)
+        return QRCode.objects.filter(
+            q, is_scanned=True, is_deleted=False
+        ).values('sequence_number').distinct().count()
 
     def activation_percent(self):
         total = self.total_promos()
@@ -1886,6 +1911,45 @@ class SellerBatch(models.Model):
 
     def __str__(self):
         return f"{self.seller.name} — #{self.promo_from}–#{self.promo_to}"
+
+    def clean(self):
+        """Diapazon validatsiyasi:
+        - promo_from <= promo_to
+        - Bir xil sotuvchining boshqa partiyalari bilan kesishmasligi kerak
+        - Boshqa sotuvchilarning partiyalari bilan ham kesishmasligi kerak
+          (bitta promokod faqat bitta sotuvchiga tegishli)
+        """
+        from django.core.exceptions import ValidationError
+
+        if self.promo_from is None or self.promo_to is None:
+            return  # field-level validation handles it
+
+        if self.promo_from > self.promo_to:
+            raise ValidationError({
+                'promo_to': "'gacha' qiymati 'dan' qiymatidan katta yoki teng bo'lishi kerak."
+            })
+
+        # Kesishmalarni topish — barcha boshqa partiyalar bilan
+        qs = SellerBatch.objects.filter(
+            promo_from__lte=self.promo_to,
+            promo_to__gte=self.promo_from,
+        )
+        if self.pk:
+            qs = qs.exclude(pk=self.pk)
+
+        conflicts = list(qs.select_related('seller')[:5])
+        if conflicts:
+            details = []
+            for c in conflicts:
+                owner = c.seller.name if c.seller_id else '—'
+                details.append(f"#{c.promo_from}–#{c.promo_to} ({owner})")
+            raise ValidationError({
+                'promo_from': (
+                    f"Diapazon mavjud partiya(lar) bilan kesishadi: "
+                    f"{', '.join(details)}. "
+                    f"Boshqa diapazon kiriting (masalan {max(c.promo_to for c in conflicts) + 1} dan boshlang)."
+                )
+            })
 
     def total_count(self):
         return max(0, self.promo_to - self.promo_from + 1)
