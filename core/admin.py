@@ -737,12 +737,17 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                         )
                         return redirect('admin:core_regionmessagelog_changelist')
 
-                    # Большая рассылка — в фоне (нет таймаута админки, соблюдаются лимиты Telegram)
+                    # Большая рассылка — Celery worker bo'lmasa thread orqali fonda
+                    # (Railway'da Celery worker yo'q — sync ham ishlamaydi katta sonlar uchun)
                     if n > REGION_MESSAGE_ASYNC_THRESHOLD:
                         import os
                         import uuid
+                        import threading
+                        import logging as _bg_logging
                         from django.core.files.storage import default_storage
                         from django.core.files.base import ContentFile
+
+                        _bg_logger = _bg_logging.getLogger(__name__)
 
                         image_storage_path = ''
                         if image_file:
@@ -758,21 +763,71 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                             total=n,
                             status='running',
                             initiated_by=request.user,
-                        )
-                        send_region_message_task.delay(
-                            log_id=log.id,
-                            region_code=region_code,
                             message_text=message_text,
                             image_storage_path=image_storage_path,
-                            user_type_filter=user_type_filter,
-                            language_filter=language_filter,
                         )
-                        self.message_user(
-                            request,
-                            f'Рассылка по области запущена в фоне ({n} пользователей). '
-                            'Результаты — в разделе «Логи рассылок по областям».',
-                            messages.SUCCESS,
-                        )
+
+                        celery_ok = False
+                        try:
+                            send_region_message_task.delay(
+                                log_id=log.id,
+                                region_code=region_code,
+                                message_text=message_text,
+                                image_storage_path=image_storage_path,
+                                user_type_filter=user_type_filter,
+                                language_filter=language_filter,
+                            )
+                            celery_ok = True
+                            self.message_user(
+                                request,
+                                f'Рассылка по области запущена в фоне через Celery '
+                                f'({n} пользователей). Результаты — в разделе '
+                                f'«Логи рассылок по областям».',
+                                messages.SUCCESS,
+                            )
+                        except Exception as celery_exc:
+                            _bg_logger.warning(
+                                "Celery .delay failed (%s) — fallback to thread", celery_exc,
+                            )
+                            # Thread orqali fon rejimida bajaramiz
+                            def _bg_send(log_id, region_code, message_text, image_path, utf, lf):
+                                try:
+                                    from core.tasks import send_region_message_task as _task
+                                    # Celery shared_task.run() — bevosita chaqirish
+                                    _task.run(
+                                        log_id=log_id,
+                                        region_code=region_code,
+                                        message_text=message_text,
+                                        image_storage_path=image_path,
+                                        user_type_filter=utf,
+                                        language_filter=lf,
+                                    )
+                                except Exception as e:
+                                    _bg_logger.exception("background region send failed: %s", e)
+                                    from django.utils import timezone as _tz_bg
+                                    try:
+                                        RegionMessageLog.objects.filter(pk=log_id).update(
+                                            status='failed',
+                                            error_message=f'BG thread xato: {e}',
+                                            completed_at=_tz_bg.now(),
+                                        )
+                                    except Exception:
+                                        pass
+
+                            t = threading.Thread(
+                                target=_bg_send,
+                                args=(log.id, region_code, message_text, image_storage_path,
+                                      user_type_filter, language_filter),
+                                daemon=True,
+                            )
+                            t.start()
+                            self.message_user(
+                                request,
+                                f'⚠️ Celery worker yo\'q ({celery_exc.__class__.__name__}) — '
+                                f'thread orqali fonda yuborilmoqda ({n} foydalanuvchi). '
+                                f'Tarixda holatni kuzating.',
+                                messages.WARNING,
+                            )
                         return redirect('admin:core_regionmessagelog_changelist')
 
                     # Небольшая рассылка — сразу в этом запросе
