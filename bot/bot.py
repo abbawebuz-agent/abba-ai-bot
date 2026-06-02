@@ -1730,7 +1730,7 @@ async def handle_message(message: Message, state: FSMContext = None):
             @sync_to_async
             def save_inbox():
                 from core.models import ClaudeInbox
-                ClaudeInbox.objects.create(
+                obj = ClaudeInbox.objects.create(
                     chat_id=message.chat.id,
                     chat_title=message.chat.title or '',
                     message_id=message.message_id,
@@ -1739,9 +1739,18 @@ async def handle_message(message: Message, state: FSMContext = None):
                     sender_name=(message.from_user.full_name or '').strip(),
                     text=text,
                 )
+                return obj.id
             try:
-                await save_inbox()
-                logger.info(f"[claude_inbox] saved mention from {message.from_user.id} in chat {message.chat.id}")
+                inbox_id = await save_inbox()
+                logger.info(f"[claude_inbox] saved #{inbox_id} from {message.from_user.id}")
+                # Avtomatik tasdiqlash javob — Claude keyingi sessiyada javob beradi
+                try:
+                    await message.reply(
+                        f"📨 Savol qabul qilindi (#{inbox_id})\n"
+                        f"Claude keyingi safar bu xabarni o'qiydi va javob beradi."
+                    )
+                except Exception as reply_err:
+                    logger.warning(f"[claude_inbox] reply failed: {reply_err}")
             except Exception as e:
                 logger.exception(f"[claude_inbox] save failed: {e}")
         return  # Guruh xabarlarini boshqa logic'lar bilan ishlamaymiz
