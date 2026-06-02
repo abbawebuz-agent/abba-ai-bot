@@ -10,6 +10,8 @@ from .webapp_views import (
     get_promotions, register_qr_code, get_promotion_detail, get_privacy_policy, update_user_language,
     get_admin_contact, resend_registration_step,
     get_live_streams, get_live_stream_detail, get_top_users,
+    seller_webapp_view, seller_dashboard, seller_transactions, seller_batches,
+    seller_balance_history, seller_batch_qr_detail, seller_top_santexniks, seller_commission_calc,
 )
 
 router = DefaultRouter()
@@ -39,7 +41,14 @@ urlpatterns = [
     path('webapp/live-streams/', get_live_streams, name='webapp_live_streams'),
     path('webapp/live-streams/<int:stream_id>/', get_live_stream_detail, name='webapp_live_stream_detail'),
     path('webapp/top-users/', get_top_users, name='webapp_top_users'),
-    # Seller Web App — DEPRECATED. Sotuvchi endi admin paneldan boshqariladi.
-    # Eski URL'lar olib tashlandi — endi /webapp/seller/* → 404.
+    # Seller Web App — tiklandi (bot hali WebApp tugmasini ko'rsatadi)
+    path('webapp/seller/', seller_webapp_view, name='webapp_seller'),
+    path('webapp/seller/dashboard/', seller_dashboard, name='webapp_seller_dashboard'),
+    path('webapp/seller/transactions/', seller_transactions, name='webapp_seller_transactions'),
+    path('webapp/seller/batches/', seller_batches, name='webapp_seller_batches'),
+    path('webapp/seller/balance-history/', seller_balance_history, name='webapp_seller_balance_history'),
+    path('webapp/seller/batch/<int:batch_id>/qr/', seller_batch_qr_detail, name='webapp_seller_batch_qr'),
+    path('webapp/seller/top-santexniks/', seller_top_santexniks, name='webapp_seller_top_santexniks'),
+    path('webapp/seller/commission-calc/', seller_commission_calc, name='webapp_seller_commission_calc'),
 ]
 
