@@ -40,7 +40,7 @@ class GiftSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gift
         fields = [
-            'id', 'name', 'description', 'image',
+            'id', 'name', 'description', 'image', 'image_url',
             'points_cost', 'is_active', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']

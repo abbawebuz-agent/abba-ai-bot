@@ -1142,7 +1142,12 @@ class Gift(models.Model):
     name_ru = models.CharField(max_length=255, blank=True, verbose_name='Nomi (Ruscha)')
     description_uz_latin = models.TextField(blank=True, verbose_name='Tavsif (O\'zbek lotin)')
     description_ru = models.TextField(blank=True, verbose_name='Tavsif (Ruscha)')
-    image = models.ImageField(upload_to='gifts/', verbose_name='Rasm')
+    image = models.ImageField(upload_to='gifts/', blank=True, null=True, verbose_name='Rasm (fayl)')
+    image_url = models.URLField(
+        max_length=500, blank=True, default='',
+        verbose_name='Rasm (internet havola)',
+        help_text="Tashqi rasm URL'i. To'ldirilsa, yuklangan fayldan ustun turadi (media saqlanmaganda ham ishlaydi).",
+    )
     points_cost = models.IntegerField(
         validators=[MinValueValidator(1)],
         verbose_name='Ballar narxi'

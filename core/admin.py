@@ -1869,7 +1869,7 @@ class GiftAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name_uz_latin', 'name_ru', 'image', 'image_preview')
+            'fields': ('name_uz_latin', 'name_ru', 'image_url', 'image', 'image_preview')
         }),
         ('Описание', {
             'fields': ('description_uz_latin', 'description_ru')
