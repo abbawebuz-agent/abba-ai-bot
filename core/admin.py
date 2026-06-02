@@ -1122,34 +1122,19 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         return super().get_list_display_links(request, list_display)
 
     def get_fields(self, request, obj=None):
-        """Возвращает список полей для отображения, скрывая code и hash_code для неиспользованных QR-кодов."""
+        """Возвращает список полей для отображения.
+
+        Foydalanuvchi talabi: promokod kodi yashirilmaydi (avval xavfsizlik
+        uchun yashiringan edi). Endi admin'da har doim ko'rinadi.
+        """
         fields = list(super().get_fields(request, obj))
 
         # Всегда скрываем image_path
         if 'image_path' in fields:
             fields.remove('image_path')
 
-        # Скрываем code и hash_code для неиспользованных QR-кодов (безопасность)
-        if obj and not obj.is_scanned:
-            if 'code' in fields:
-                fields.remove('code')
-            if 'hash_code' in fields:
-                fields.remove('hash_code')
-            # Добавляем информационное поле вместо code
-            if 'security_notice' not in fields:
-                # JIP: code_type olib tashlandi — store yoki batch dan keyin qo'shamiz
-                anchor = None
-                for candidate in ('batch', 'store'):
-                    if candidate in fields:
-                        anchor = candidate
-                        break
-                if anchor is not None:
-                    fields.insert(fields.index(anchor) + 1, 'security_notice')
-                else:
-                    fields.insert(0, 'security_notice')
-
         # Если пользователь не имеет прав на просмотр деталей, заменяем code на masked_code_display
-        elif obj and not self.has_view_permission(request, obj):
+        if obj and not self.has_view_permission(request, obj):
             # Сохраняем индекс code перед удалением
             code_index = None
             if 'code' in fields:
@@ -1168,22 +1153,14 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         return fields
 
     def get_readonly_fields(self, request, obj=None):
-        """Возвращает список readonly полей, добавляя информационное поле для неиспользованных QR-кодов."""
+        """Возвращает список readonly полей.
+
+        Foydalanuvchi talabi: code yashirilmaydi — har doim ko'rinadi.
+        """
         readonly = list(super().get_readonly_fields(request, obj))
 
-        # Для неиспользованных QR-кодов добавляем информационное поле
-        if obj and not obj.is_scanned:
-            # Убираем code и hash_code из readonly, так как мы их скрываем
-            if 'code' in readonly:
-                readonly.remove('code')
-            if 'hash_code' in readonly:
-                readonly.remove('hash_code')
-            # Добавляем security_notice
-            if 'security_notice' not in readonly:
-                readonly.append('security_notice')
-
         # Если пользователь не имеет прав на просмотр деталей, маскируем код
-        elif obj and not self.has_view_permission(request, obj):
+        if obj and not self.has_view_permission(request, obj):
             # Убираем code из readonly, так как мы заменим его на masked_code
             if 'code' in readonly:
                 readonly.remove('code')
@@ -1269,13 +1246,16 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def qr_display(self, obj):
-        """Отображает QR-код с серийным номером."""
+        """Отображает QR-код с серийным номером.
+
+        Foydalanuvchi talabi: kod yashirilmaydi, to'liq ko'rsatiladi.
+        """
         return format_html(
             '<div style="line-height: 1.6;">'
             '<strong style="font-size: 16px;">📱 #{}</strong><br>'
-            '<span style="color: #718096; font-size: 12px; font-family: monospace;">{}</span>',
+            '<span style="color: #1d4ed8; font-size: 13px; font-family: monospace; font-weight: 700;">{}</span>',
             obj.serial_number,
-            self.masked_code(obj)
+            obj.code,
         )
 
     qr_display.short_description = 'QR-код'
