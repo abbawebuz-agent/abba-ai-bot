@@ -822,7 +822,10 @@ def admin_send_dev_update_view(request):
                 "(yoki URL ga &chat_id=GROUP_ID parametrini qo'shing)")
             return redirect('admin:index')
 
-    send_data = tg_call("sendMessage", {"chat_id": int(chat_id), "text": msg, "parse_mode": "HTML"})
+    # HTML parse_mode uchun matni escape qilamiz — aks holda < > & xato beradi
+    import html as _html
+    safe_msg = _html.escape(msg, quote=False)
+    send_data = tg_call("sendMessage", {"chat_id": int(chat_id), "text": safe_msg, "parse_mode": "HTML"})
 
     if send_data.get("ok"):
         dj_messages.success(request, f"✅ '{group_name}' ({chat_id}) guruhiga yuborildi")
