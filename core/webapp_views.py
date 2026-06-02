@@ -65,7 +65,7 @@ def webapp_view(request):
         'app_version': app_version,
     }
     
-    response = render(request, 'webapp/index.html', context)
+    response = render(request, 'webapp/index_v5.html', context)
     
     # Добавляем заголовки для отключения кеширования
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
