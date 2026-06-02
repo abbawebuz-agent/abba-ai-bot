@@ -45,5 +45,10 @@ python-dateutil==2.8.2
 # Monitoring / Error tracking
 sentry-sdk[django,aiohttp]==2.36.0
 
+# Media storage (Cloudinary) — Railway efemer FS uchun doimiy media saqlash
+# Faqat CLOUDINARY_URL env mavjud bo'lganda faollashadi (settings/base.py)
+cloudinary==1.41.0
+django-cloudinary-storage==0.3.0
+
 
 

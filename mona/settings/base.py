@@ -248,6 +248,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Media storage: Cloudinary (agar CLOUDINARY_URL env mavjud bo'lsa) — Railway fayl
+# tizimi efemer (har deploy'da yuklangan rasm/PDF yo'qoladi). Cloudinary CDN doimiy
+# saqlaydi. CLOUDINARY_URL formati: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+# Env yo'q bo'lsa — lokal FileSystemStorage (eski xatti-harakat), deploy crash bo'lmaydi.
+CLOUDINARY_URL = env('CLOUDINARY_URL', default='')
+if CLOUDINARY_URL:
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 # Настройки для загрузки больших файлов (видео инструкции)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB - файлы больше этого размера будут сохраняться на диск
 DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB - максимальный размер данных в запросе
