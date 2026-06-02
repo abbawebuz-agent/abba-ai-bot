@@ -148,14 +148,19 @@ body{
 .gift-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s;display:flex;flex-direction:column;}
 .gift-card:active{transform:scale(.97);}
 .gift-card:hover{border-color:var(--line-2);}
-.gift-img{height:108px;display:grid;place-items:center;position:relative;overflow:hidden;background:var(--panel-2);border-bottom:1px solid var(--line);}
+.gift-img{height:150px;display:grid;place-items:center;position:relative;overflow:hidden;background:var(--panel-2);border-bottom:1px solid var(--line);}
 .gift-img::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:18px 18px;opacity:.6;}
-.gift-img svg{width:42px;height:42px;color:var(--violet);position:relative;z-index:2;}
-.gift-img img{max-width:80%;max-height:90%;object-fit:contain;position:relative;z-index:2;}
-.gift-info{padding:12px 13px 14px;display:flex;flex-direction:column;gap:10px;flex:1;}
-.gift-name{font-size:13px;font-weight:600;line-height:1.25;letter-spacing:-.01em;}
-.gift-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;}
-.pts-badge{font-family:var(--mono);background:rgba(108,92,255,.14);color:var(--violet-l);font-size:11px;font-weight:600;padding:4px 9px;border-radius:7px;border:1px solid rgba(108,92,255,.28);}
+.gift-img svg{width:54px;height:54px;color:var(--violet);position:relative;z-index:2;}
+.gift-img img{max-width:86%;max-height:92%;object-fit:contain;position:relative;z-index:2;}
+.gift-info{padding:12px 13px 14px;display:flex;flex-direction:column;gap:9px;flex:1;}
+.gift-name{font-size:13px;font-weight:600;line-height:1.25;letter-spacing:-.01em;text-align:center;}
+.gift-prog{margin-top:auto;display:flex;flex-direction:column;gap:5px;}
+.gp-bar{height:6px;border-radius:99px;background:rgba(108,92,255,.14);overflow:hidden;}
+.gp-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--violet-l),var(--violet));transition:width .5s cubic-bezier(.32,.72,0,1);}
+.gp-pct{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--sub);text-align:center;}
+.gp-pct.full{color:var(--ok);}
+.gift-meta{display:flex;align-items:center;justify-content:center;gap:8px;}
+.pts-badge{font-family:var(--mono);background:rgba(108,92,255,.14);color:var(--violet-l);font-size:12px;font-weight:700;padding:5px 14px;border-radius:8px;border:1px solid rgba(108,92,255,.28);}
 .need-badge{font-family:var(--mono);color:var(--danger);font-size:10px;font-weight:600;}
 
 /* ---- sheet ---- */
@@ -199,6 +204,11 @@ body{
 .empty p{margin:0;font-size:13px;color:var(--sub);}
 
 /* ---- history list ---- */
+.hist-summary{display:flex;align-items:stretch;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 8px;margin-bottom:14px;}
+.hs-cell{flex:1;text-align:center;display:flex;flex-direction:column;gap:3px;}
+.hs-num{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--violet);letter-spacing:-.02em;}
+.hs-lbl{font-size:11px;color:var(--sub);font-weight:500;}
+.hs-div{width:1px;background:var(--line);margin:4px 0;}
 .hist-list{display:flex;flex-direction:column;gap:8px;}
 .hist-row{display:flex;align-items:center;gap:12px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;}
 .hist-ico{width:40px;height:40px;border-radius:11px;background:var(--raise);border:1px solid var(--line);color:var(--violet);display:grid;place-items:center;flex-shrink:0;}
@@ -263,6 +273,12 @@ body{
 .lang-btn.on{background:var(--violet);color:#fff;border:1px solid var(--violet);box-shadow:0 8px 20px -8px var(--glow);}
 .lang-btn.off{background:var(--panel);color:var(--sub);border:1px solid var(--line-2);}
 .lang-btn.off:active{transform:scale(.98);}
+.menu-row{display:flex;align-items:center;gap:13px;width:100%;background:none;border:none;border-top:1px solid var(--line);padding:15px 16px;cursor:pointer;text-align:left;color:var(--text);font-family:inherit;}
+.menu-row:first-child{border-top:none;}
+.menu-row:active{background:var(--raise);}
+.mr-label{flex:1;font-size:14px;font-weight:600;}
+.mr-chev{color:var(--dim);display:flex;align-items:center;}
+.mr-chev svg{width:20px;height:20px;}
 .brand-foot{text-align:center;padding:30px 0 12px;}
 .brand-foot img{height:26px;width:auto;opacity:.5;}
 .bf-txt{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--sub);margin-top:11px;letter-spacing:.14em;text-transform:uppercase;}
@@ -306,6 +322,8 @@ const I = {
   trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5a2 2 0 0 0 0 4H7M17 6h2.5a2 2 0 0 1 0 4H17M9 21h6M12 14v7"/>',
   spark:'<path d="M12 3v4M12 17v4M5 12H1M23 12h-4M6 6l2.5 2.5M18 6l-2.5 2.5M6 18l2.5-2.5M18 18l-2.5-2.5"/>',
   gift_sm:'<rect x="3" y="8" width="18" height="13" rx="1.5"/><path d="M3 12h18M12 8v13"/>',
+  shield:'<path d="M12 3l7 3v5c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3Z"/><path d="m9 12 2 2 4-4"/>',
+  coins:'<circle cx="9" cy="9" r="5"/><path d="M14.5 5.5a5 5 0 0 1 0 9M7 9h2.5M9 7v4"/>',
 };
 function svg(p,extra){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra||''}>${p}</svg>`;}
 
@@ -535,20 +553,33 @@ function giftsScreen(){
     `<div class="gift-grid">
       ${APP.gifts.map(g=>{
         const pts = g.points_cost || g.points_required || g.points || g.pts || 0;
-        const need = pts - APP.balance;
         const name = g.name_uz || g.name || g.title || 'Sovg\'a';
         const img = g.image_url || g.image || '';
+        const pct = pts > 0 ? Math.min(100, Math.round(APP.balance / pts * 100)) : 0;
+        const full = pct >= 100;
         return `<div class="gift-card" data-gift="${g.id}">
           <div class="gift-img">${img?`<img src="${img}" alt="${name}" onerror="giftImgError(this)"/>`:svg(I.gift_sm)}</div>
-          <div class="gift-info"><div class="gift-name">${name}</div>
-          <div class="gift-meta"><span class="pts-badge">${fmtNum(pts)} ball</span>${need>0?`<span class="need-badge">+${fmtNum(need)} kerak</span>`:''}</div></div>
+          <div class="gift-info">
+            <div class="gift-name">${name}</div>
+            <div class="gift-prog">
+              <div class="gp-bar"><i style="width:${pct}%"></i></div>
+              <div class="gp-pct ${full?'full':''}">${full?'✓ Yetarli':pct+'% yig\'ildi'}</div>
+            </div>
+            <div class="gift-meta"><span class="pts-badge">${fmtNum(pts)} ball</span></div>
+          </div>
         </div>`;
       }).join('')}
     </div>`}`;
 }
 
 function historyScreen(){
+  const promoCount = APP.history.length;
   return `<div class="page-head"><div class="eyebrow">Jurnal</div><div class="page-title">Tarix</div><div class="section-sub">Skanlangan promokodlaringiz</div></div>
+  <div class="hist-summary">
+    <div class="hs-cell"><div class="hs-num">${fmtNum(APP.balance)}</div><div class="hs-lbl">Jami ball</div></div>
+    <div class="hs-div"></div>
+    <div class="hs-cell"><div class="hs-num">${fmtNum(promoCount)}</div><div class="hs-lbl">Promokodlar</div></div>
+  </div>
   ${APP.history.length === 0 ?
     `<div class="empty"><div class="empty-ico">${svg(I.qr)}</div><h4>Tarix bo'sh</h4><p>Birinchi promokodingizni kiriting</p></div>` :
     `<div class="hist-list">
@@ -648,6 +679,13 @@ function profileScreen(){
       <button class="lang-btn ${APP.language === 'ru' ? 'on' : 'off'}" data-lang="ru">🇷🇺 Русский</button>
     </div>
   </div>
+  <div class="panel" style="margin-top:14px;">
+    <button class="menu-row" data-privacy>
+      <div class="ir-ico">${svg(I.shield)}</div>
+      <div class="mr-label">${APP.language === 'ru' ? 'Политика конфиденциальности' : 'Maxfiylik siyosati'}</div>
+      <span class="mr-chev">${svg(I.chev)}</span>
+    </button>
+  </div>
   <div class="brand-foot">
     <img src="{% static 'core_admin/img/logo.svg' %}" alt="JIP" onerror="this.style.display='none'"/>
     <div class="bf-txt">Jahon Invest Plast</div>
@@ -716,6 +754,7 @@ function wire(tab){
   content.querySelectorAll('[data-gift]').forEach(c => c.addEventListener('click', () => openSheet(+c.dataset.gift)));
   // Language toggle
   content.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => changeLanguage(b.dataset.lang)));
+  content.querySelectorAll('[data-privacy]').forEach(b => b.addEventListener('click', () => openPrivacy()));
   // Order actions
   content.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelOrder(b.dataset.cancel)));
   content.querySelectorAll('[data-confirm]').forEach(b => b.addEventListener('click', () => confirmOrder(b.dataset.confirm)));
@@ -756,9 +795,25 @@ async function changeLanguage(lang){
   } catch(e) { toast('Tilni o\'zgartirib bo\'lmadi', 'error'); }
 }
 
+async function openPrivacy(){
+  const ru = APP.language === 'ru';
+  try {
+    const d = await api('/webapp/privacy-policy/?lang=' + (ru ? 'ru' : 'uz_latin'));
+    const url = d && (d.pdf_url || d.url);
+    if (url) {
+      try { if (TG && TG.openLink) TG.openLink(url); else window.open(url, '_blank'); }
+      catch(e){ window.open(url, '_blank'); }
+    } else {
+      toast(ru ? 'Документ пока недоступен' : 'Hujjat hozircha mavjud emas', 'error');
+    }
+  } catch(e) {
+    toast(ru ? 'Ошибка загрузки' : 'Yuklab bo\'lmadi', 'error');
+  }
+}
+
 function openSheet(id){
   const g = APP.gifts.find(x => x.id === id || x.id === String(id)) || {};
-  const pts = g.points_required || g.points || g.pts || 0;
+  const pts = g.points_cost || g.points_required || g.points || g.pts || 0;
   const need = pts - APP.balance;
   const name = g.name_uz || g.name || 'Sovg\'a';
   const desc = g.description_uz || g.description || '';
