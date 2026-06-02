@@ -532,7 +532,7 @@ function giftsScreen(){
       ${APP.gifts.map(g=>{
         const pts = g.points_required || g.points || g.pts || 0;
         const need = pts - APP.balance;
-        const name = g.name_uz || g.name || g.title || 'Sovg\\'a';
+        const name = g.name_uz || g.name || g.title || 'Sovg\'a';
         const img = g.image_url || g.image || '';
         return `<div class="gift-card" data-gift="${g.id}">
           <div class="gift-img">${img?`<img src="${img}" alt="${name}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'${svg(I.gift_sm).replace(/'/g,"\\'")}'}).firstChild)"/>`:svg(I.gift_sm)}</div>
@@ -731,7 +731,7 @@ async function activatePromo(input, btn){
       await loadHistory();
       render('home');
     } else {
-      toast(res.error || res.message || 'Noto\\'g\\'ri kod', 'error');
+      toast(res.error || res.message || 'Noto\'g\'ri kod', 'error');
     }
   } catch (e) {
     const msg = e.message || 'Xato yuz berdi';
@@ -748,21 +748,21 @@ async function changeLanguage(lang){
     await api('/webapp/update-language/', {method:'POST', body:{language: lang}});
     document.documentElement.lang = lang.startsWith('uz') ? 'uz' : 'ru';
     render(currentTab);
-    toast('Til o\\'zgartirildi', 'success');
-  } catch(e) { toast('Tilni o\\'zgartirib bo\\'lmadi', 'error'); }
+    toast('Til o\'zgartirildi', 'success');
+  } catch(e) { toast('Tilni o\'zgartirib bo\'lmadi', 'error'); }
 }
 
 function openSheet(id){
   const g = APP.gifts.find(x => x.id === id || x.id === String(id)) || {};
   const pts = g.points_required || g.points || g.pts || 0;
   const need = pts - APP.balance;
-  const name = g.name_uz || g.name || 'Sovg\\'a';
+  const name = g.name_uz || g.name || 'Sovg\'a';
   const desc = g.description_uz || g.description || '';
   const img = g.image_url || g.image || '';
   sheet.innerHTML = `<div class="handle"></div>
     <div class="sheet-img">${img ? `<img src="${img}" alt=""/>` : svg(I.gift_sm)}</div>
     <div class="sheet-name">${name}</div>
-    ${desc ? `<div class="sheet-desc">${desc}</div>` : '<div class="sheet-desc">Bu sovg'ani buyurtma qilish uchun yetarli ball to'plang</div>'.replace(/'/g,'\\'')}
+    ${desc ? `<div class="sheet-desc">${desc}</div>` : '<div class="sheet-desc">Bu sovg\'ani buyurtma qilish uchun yetarli ball to\'plang</div>'}
     <div class="info-rows">
       <div class="info-row"><span class="ir-lbl">Sizning balansingiz</span><span class="ir-val">${fmtNum(APP.balance)} ball</span></div>
       <div class="info-row"><span class="ir-lbl">Sovg'ani buyurtma qilish</span><span class="ir-val red">−${fmtNum(pts)} ball</span></div>
@@ -787,7 +787,7 @@ async function requestGift(giftId, btn){
     renderTabs();
     render('orders');
   } catch (e) {
-    toast(e.message || 'Buyurtmani yuborib bo\\'lmadi', 'error');
+    toast(e.message || 'Buyurtmani yuborib bo\'lmadi', 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Almashtirish'; }
   }
 }
@@ -799,7 +799,7 @@ async function cancelOrder(id){
     toast('Bekor qilindi', 'success');
     await loadOrders(); await loadUser();
     renderTabs(); render('orders');
-  } catch(e) { toast(e.message || 'Bekor qilib bo\\'lmadi', 'error'); }
+  } catch(e) { toast(e.message || 'Bekor qilib bo\'lmadi', 'error'); }
 }
 async function confirmOrder(id){
   try {
@@ -807,7 +807,7 @@ async function confirmOrder(id){
     toast('Tasdiqlandi!', 'success');
     await loadOrders();
     renderTabs(); render('orders');
-  } catch(e) { toast(e.message || 'Tasdiqlab bo\\'lmadi', 'error'); }
+  } catch(e) { toast(e.message || 'Tasdiqlab bo\'lmadi', 'error'); }
 }
 
 overlay.addEventListener('click', closeSheet);
