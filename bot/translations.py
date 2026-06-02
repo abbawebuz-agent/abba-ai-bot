@@ -85,6 +85,14 @@ TRANSLATIONS = {
             "Ushbu kodni kiriting. Noto'g'ri kiritilsa qayta urinib ko'ring.\n"
             "Yangi kod <b>1 daqiqa</b>dan so'ng so'ralishi mumkin."
         ),
+        'VERIFY_CODE_SENT_GATEWAY': (
+            "📩 <b>Tasdiqlash kodi yuborildi!</b>\n\n"
+            "Kod Telegram'ning rasmiy xizmati orqali yuborildi "
+            "(<b>@VerificationCodes</b>). Telegram xabarlaringizni tekshiring "
+            "va kodni shu yerga kiriting.\n\n"
+            "Noto'g'ri kiritilsa qayta urinib ko'ring.\n"
+            "Yangi kod <b>1 daqiqa</b>dan so'ng so'ralishi mumkin."
+        ),
         'VERIFY_CODE_WRONG': "❌ Kod noto'g'ri. Qayta kiriting yoki yangi kod oling.",
         'VERIFY_CODE_CORRECT': "✅ Telefon raqami tasdiqlandi!",
         'VERIFY_CODE_COOLDOWN': "⏳ {seconds} soniya kuting, keyin yangi kod so'rang.",
@@ -438,6 +446,14 @@ TRANSLATIONS = {
             "📩 <b>Код подтверждения отправлен!</b>\n\n"
             "Код: <b>{code}</b>\n\n"
             "Введите этот код. При ошибке — попробуйте снова.\n"
+            "Новый код можно запросить через <b>1 минуту</b>."
+        ),
+        'VERIFY_CODE_SENT_GATEWAY': (
+            "📩 <b>Код подтверждения отправлен!</b>\n\n"
+            "Код отправлен через официальный сервис Telegram "
+            "(<b>@VerificationCodes</b>). Проверьте сообщения Telegram "
+            "и введите код здесь.\n\n"
+            "При ошибке — попробуйте снова.\n"
             "Новый код можно запросить через <b>1 минуту</b>."
         ),
         'VERIFY_CODE_WRONG': "❌ Неверный код. Попробуйте снова или запросите новый.",

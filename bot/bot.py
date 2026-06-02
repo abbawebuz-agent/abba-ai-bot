@@ -753,8 +753,40 @@ async def ask_phone(message: Message, user, state: FSMContext):
     await state.set_state(RegistrationStates.waiting_for_phone)
 
 
+async def _send_code_via_gateway(phone_number: str, code: str):
+    """Telegram Gateway (gateway.telegram.org) orqali tasdiqlash kodini yuboradi.
+
+    Kod foydalanuvchiga Telegram'ning rasmiy xizmati (@VerificationCodes) orqali
+    yetib boradi — bot chatida ko'rsatilmaydi.
+    Qaytaradi: (ok: bool, info: str). Token yo'q yoki xato bo'lsa ok=False.
+    """
+    token = getattr(settings, 'TELEGRAM_GATEWAY_TOKEN', '')
+    if not token or not phone_number:
+        return False, 'no_token_or_phone'
+    try:
+        import aiohttp
+        url = 'https://gatewayapi.telegram.org/sendVerificationMessage'
+        payload = {'phone_number': phone_number, 'code': str(code)}
+        headers = {'Authorization': f'Bearer {token}'}
+        timeout = aiohttp.ClientTimeout(total=15)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.post(url, data=payload, headers=headers) as resp:
+                data = await resp.json(content_type=None)
+        if data.get('ok'):
+            return True, (data.get('result') or {}).get('request_id', '')
+        return False, str(data.get('error', 'unknown'))
+    except Exception as e:
+        logger.warning(f"Telegram Gateway send failed: {e}")
+        return False, str(e)
+
+
 async def _send_verification_code(message: Message, user, state: FSMContext, is_resend: bool = False):
-    """Генерирует и отправляет 4-значный код подтверждения."""
+    """Генерирует и отправляет 4-значный код подтверждения.
+
+    Agar TELEGRAM_GATEWAY_TOKEN sozlangan bo'lsa, kod Telegram'ning rasmiy xizmati
+    (@VerificationCodes) orqali yuboriladi (bot chatida ko'rsatilmaydi).
+    Aks holda — eski usul: kod bot xabarida ko'rsatiladi.
+    """
     code = str(random.randint(1000, 9999))
     await state.update_data(vcode=code, vcode_sent_at=time.time(), vcode_attempts=0)
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
@@ -764,11 +796,17 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
         )
     ]])
     prefix = "🔄 " if is_resend else ""
-    await message.answer(
-        prefix + get_text(user, 'VERIFY_CODE_SENT', code=code),
-        reply_markup=keyboard,
-        parse_mode='HTML',
-    )
+
+    phone = getattr(user, 'phone_number', None)
+    gw_ok, _info = await _send_code_via_gateway(phone, code)
+    if gw_ok:
+        # Kod Telegram rasmiy xizmati orqali yuborildi — chatda ko'rsatmaymiz
+        text = prefix + get_text(user, 'VERIFY_CODE_SENT_GATEWAY')
+    else:
+        # Fallback: Gateway sozlanmagan yoki xato — eski usul (kod chatda)
+        text = prefix + get_text(user, 'VERIFY_CODE_SENT', code=code)
+
+    await message.answer(text, reply_markup=keyboard, parse_mode='HTML')
     await state.set_state(RegistrationStates.waiting_for_verification_code)
 
 

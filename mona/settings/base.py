@@ -269,6 +269,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
 TELEGRAM_BOT_USERNAME = env('TELEGRAM_BOT_USERNAME', default='')  # @username бота (без @)
 TELEGRAM_BOT_ADMIN_USERNAME = env('TELEGRAM_BOT_ADMIN_USERNAME', default='')  # @username администратора (без @)
+
+# Telegram Gateway (gateway.telegram.org) — tasdiqlash kodini Telegram'ning rasmiy
+# xizmati (@VerificationCodes) orqali yuborish uchun. Bo'sh bo'lsa, kod bot chatida
+# ko'rsatiladi (eski usul). Token: https://gateway.telegram.org → API
+TELEGRAM_GATEWAY_TOKEN = env('TELEGRAM_GATEWAY_TOKEN', default='')
 # Admin Telegram IDs — sotuvchi ro'yxatdan o'tganda bildirishnoma yuboriladi
 # Bir nechta ID vergul bilan: "123456789,987654321"
 ADMIN_TELEGRAM_IDS = [
