@@ -1208,9 +1208,10 @@ class Gift(models.Model):
 class ProjectPhoto(models.Model):
     """T11: Santexnik yuklagan loyiha (ish) rasmi — real ekanini tasdiqlash uchun.
 
-    Har bir santexnik maksimal MAX_PER_USER ta rasm yuklay oladi.
+    Umumiy son cheksiz, lekin kuniga MAX_PER_DAY ta yuklash mumkin. O'chirish —
+    soft-delete (usta galereyasidan yo'qoladi, admin "usta o'chirgan" deb ko'radi).
     """
-    MAX_PER_USER = 10
+    MAX_PER_DAY = 10
 
     user = models.ForeignKey(
         'TelegramUser',
@@ -1219,6 +1220,9 @@ class ProjectPhoto(models.Model):
         verbose_name='Santexnik',
     )
     image = models.ImageField(upload_to='projects/', verbose_name='Loyiha rasmi')
+    caption = models.CharField(max_length=80, blank=True, default='', verbose_name='Izoh')
+    is_deleted = models.BooleanField(default=False, db_index=True, verbose_name='Usta o\'chirgan')
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name='O\'chirilgan vaqt')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yuklangan vaqt')
 
     class Meta:
@@ -1229,6 +1233,14 @@ class ProjectPhoto(models.Model):
 
     def __str__(self):
         return f"Loyiha #{self.pk} — {self.user_id}"
+
+    @classmethod
+    def uploaded_today(cls, user):
+        """Bugun (Asia/Tashkent) yuklangan rasmlar soni — o'chirilganlarni ham
+        hisoblaydi (o'chirib qayta yuklab limitni aylanib o'tmaslik uchun)."""
+        from django.utils import timezone
+        today = timezone.localtime().date()
+        return cls.objects.filter(user=user, created_at__date=today).count()
 
 
 class GiftRedemption(models.Model):

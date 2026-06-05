@@ -65,7 +65,7 @@ def webapp_view(request):
         'app_version': app_version,
     }
     
-    response = render(request, 'webapp/index_v5.html', context)
+    response = render(request, 'webapp/index_v6.html', context)
     
     # Добавляем заголовки для отключения кеширования
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
@@ -1572,27 +1572,42 @@ def seller_commission_calc(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 @no_cache_response
-def get_projects(request):
-    """Santexnik yuklagan loyiha rasmlari ro'yxati (galereya)."""
-    telegram_id = request.GET.get('telegram_id') or request.GET.get('tg_id')
+def _project_user(request):
+    """telegram_id orqali userни topadi (GET yoki body)."""
+    telegram_id = (request.data.get('telegram_id') if request.method == 'POST' else None) \
+        or request.GET.get('telegram_id') or request.GET.get('tg_id')
     if not telegram_id:
-        return Response({'error': 'telegram_id required'}, status=status.HTTP_400_BAD_REQUEST)
+        return None, Response({'error': 'telegram_id required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        user = TelegramUser.objects.get(telegram_id=int(telegram_id))
+        return TelegramUser.objects.get(telegram_id=int(telegram_id)), None
     except (TelegramUser.DoesNotExist, ValueError, TypeError):
-        return Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
+        return None, Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    photos = ProjectPhoto.objects.filter(user=user)
-    data = [{
+
+def _project_dict(request, p):
+    return {
         'id': p.id,
         'image': request.build_absolute_uri(p.image.url) if p.image else None,
-        'created_at': p.created_at.isoformat(),
-    } for p in photos]
+        'caption': p.caption or '',
+        'date': p.created_at.strftime('%d.%m.%Y') if p.created_at else '',
+        'created_at': p.created_at.isoformat() if p.created_at else None,
+    }
+
+
+def get_projects(request):
+    """Santexnik yuklagan (o'chirilmagan) loyiha rasmlari + kunlik limit holati."""
+    user, err = _project_user(request)
+    if err:
+        return err
+    photos = ProjectPhoto.objects.filter(user=user, is_deleted=False)
+    data = [_project_dict(request, p) for p in photos]
+    uploaded_today = ProjectPhoto.uploaded_today(user)
     return Response({
         'photos': data,
         'count': len(data),
-        'max': ProjectPhoto.MAX_PER_USER,
-        'can_upload': len(data) < ProjectPhoto.MAX_PER_USER,
+        'max_per_day': ProjectPhoto.MAX_PER_DAY,
+        'uploaded_today': uploaded_today,
+        'can_upload': uploaded_today < ProjectPhoto.MAX_PER_DAY,
     })
 
 
@@ -1600,37 +1615,67 @@ def get_projects(request):
 @permission_classes([AllowAny])
 @no_cache_response
 def upload_project(request):
-    """Loyiha rasmi yuklash (multipart/form-data: photo). Max 10 ta."""
-    telegram_id = (request.data.get('telegram_id') or request.GET.get('telegram_id')
-                   or request.GET.get('tg_id'))
+    """Loyiha rasmi yuklash (multipart: photo, caption?). Kuniga max 10, fayl max 5 MB."""
+    user, err = _project_user(request)
+    if err:
+        return err
     photo = request.FILES.get('photo')
-    if not telegram_id or not photo:
-        return Response({'error': 'telegram_id va photo majburiy'}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        user = TelegramUser.objects.get(telegram_id=int(telegram_id))
-    except (TelegramUser.DoesNotExist, ValueError, TypeError):
-        return Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
-
+    if not photo:
+        return Response({'error': 'photo majburiy'}, status=status.HTTP_400_BAD_REQUEST)
     if user.user_type != 'santenik':
         return Response({'error': 'Faqat santexnik rasm yuklay oladi'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Faqat rasm fayllari
     ctype = getattr(photo, 'content_type', '') or ''
     if not ctype.startswith('image/'):
         return Response({'error': 'Faqat rasm fayl yuklash mumkin'}, status=status.HTTP_400_BAD_REQUEST)
-    if photo.size > 10 * 1024 * 1024:
-        return Response({'error': 'Rasm hajmi 10 MB dan oshmasligi kerak'}, status=status.HTTP_400_BAD_REQUEST)
+    if photo.size > 5 * 1024 * 1024:
+        return Response({'error': 'Rasm hajmi 5 MB dan oshmasligi kerak'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Limit: max 10 ta
-    if ProjectPhoto.objects.filter(user=user).count() >= ProjectPhoto.MAX_PER_USER:
+    # Kunlik limit: kuniga max 10 ta
+    if ProjectPhoto.uploaded_today(user) >= ProjectPhoto.MAX_PER_DAY:
         return Response(
-            {'error': f"Maksimal {ProjectPhoto.MAX_PER_USER} ta rasm yuklash mumkin", 'error_code': 'limit'},
+            {'error': f"Bugungi limit ({ProjectPhoto.MAX_PER_DAY}) tugadi. Ertaga davom eting.",
+             'error_code': 'daily_limit'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    p = ProjectPhoto.objects.create(user=user, image=photo)
-    return Response({
-        'id': p.id,
-        'image': request.build_absolute_uri(p.image.url) if p.image else None,
-        'created_at': p.created_at.isoformat(),
-    }, status=status.HTTP_201_CREATED)
+    caption = (request.data.get('caption') or '').strip()[:80]
+    p = ProjectPhoto.objects.create(user=user, image=photo, caption=caption)
+    return Response(_project_dict(request, p), status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@no_cache_response
+def delete_project(request):
+    """Loyiha rasmini o'chirish — soft-delete (admin "usta o'chirgan" deb ko'radi)."""
+    user, err = _project_user(request)
+    if err:
+        return err
+    pid = request.data.get('id') or request.data.get('photo_id')
+    try:
+        p = ProjectPhoto.objects.get(id=int(pid), user=user, is_deleted=False)
+    except (ProjectPhoto.DoesNotExist, ValueError, TypeError):
+        return Response({'error': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+    p.is_deleted = True
+    p.deleted_at = timezone.now()
+    p.save(update_fields=['is_deleted', 'deleted_at'])
+    return Response({'ok': True, 'id': p.id})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@no_cache_response
+def update_project_caption(request):
+    """Loyiha rasmiga izoh (caption) qo'shish/o'zgartirish."""
+    user, err = _project_user(request)
+    if err:
+        return err
+    pid = request.data.get('id') or request.data.get('photo_id')
+    try:
+        p = ProjectPhoto.objects.get(id=int(pid), user=user, is_deleted=False)
+    except (ProjectPhoto.DoesNotExist, ValueError, TypeError):
+        return Response({'error': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+    p.caption = (request.data.get('caption') or '').strip()[:80]
+    p.save(update_fields=['caption'])
+    return Response(_project_dict(request, p))

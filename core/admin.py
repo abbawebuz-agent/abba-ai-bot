@@ -3718,11 +3718,11 @@ class SellerAdmin(admin.ModelAdmin):
 @admin.register(ProjectPhoto)
 class ProjectPhotoAdmin(admin.ModelAdmin):
     """T11: santexniklar yuklagan loyiha rasmlari — tekshirish uchun (faqat ko'rish)."""
-    list_display = ['id', 'photo_preview', 'santexnik', 'created_at']
+    list_display = ['id', 'photo_preview', 'santexnik', 'caption', 'deleted_badge', 'created_at']
     list_display_links = ['id', 'photo_preview']
-    search_fields = ['user__first_name', 'user__username', 'user__telegram_id', 'user__phone_number']
-    list_filter = ['created_at']
-    readonly_fields = ['user', 'image', 'created_at', 'photo_large']
+    search_fields = ['user__first_name', 'user__username', 'user__telegram_id', 'user__phone_number', 'caption']
+    list_filter = ['is_deleted', 'created_at']
+    readonly_fields = ['user', 'image', 'caption', 'is_deleted', 'deleted_at', 'created_at', 'photo_large']
     list_select_related = ['user']
     ordering = ['-created_at']
     list_per_page = 40
@@ -3736,6 +3736,12 @@ class ProjectPhotoAdmin(admin.ModelAdmin):
         phone = f" · {u.phone_number}" if u.phone_number else ''
         return f"{name}{phone}"
     santexnik.short_description = 'Santexnik'
+
+    def deleted_badge(self, obj):
+        if obj.is_deleted:
+            return format_html('<span style="color:#dc2626;font-weight:700;">🗑 Usta o\'chirgan</span>')
+        return format_html('<span style="color:#16a34a;">● Faol</span>')
+    deleted_badge.short_description = 'Holat'
 
     def photo_preview(self, obj):
         if obj.image:

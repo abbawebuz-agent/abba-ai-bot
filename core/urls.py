@@ -12,7 +12,7 @@ from .webapp_views import (
     get_live_streams, get_live_stream_detail, get_top_users,
     seller_webapp_view, seller_dashboard, seller_transactions, seller_batches,
     seller_balance_history, seller_batch_qr_detail, seller_top_santexniks, seller_commission_calc,
-    get_projects, upload_project,
+    get_projects, upload_project, delete_project, update_project_caption,
 )
 
 router = DefaultRouter()
@@ -44,6 +44,8 @@ urlpatterns = [
     path('webapp/top-users/', get_top_users, name='webapp_top_users'),
     path('webapp/projects/', get_projects, name='webapp_projects'),
     path('webapp/projects/upload/', upload_project, name='webapp_projects_upload'),
+    path('webapp/projects/delete/', delete_project, name='webapp_projects_delete'),
+    path('webapp/projects/caption/', update_project_caption, name='webapp_projects_caption'),
     # Seller Web App — tiklandi (bot hali WebApp tugmasini ko'rsatadi)
     path('webapp/seller/', seller_webapp_view, name='webapp_seller'),
     path('webapp/seller/dashboard/', seller_dashboard, name='webapp_seller_dashboard'),

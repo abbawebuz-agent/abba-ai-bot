@@ -36,14 +36,22 @@ class GiftSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
-    
+    stock = serializers.SerializerMethodField()
+
     class Meta:
         model = Gift
         fields = [
             'id', 'name', 'description', 'image', 'image_url',
-            'points_cost', 'is_active', 'created_at'
+            'points_cost', 'stock', 'is_active', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_stock(self, obj):
+        """Zaxira: None (cheksiz) bo'lsa katta son qaytaramiz (doim mavjud)."""
+        q = obj.stock_quantity
+        if q is None:
+            return 9999
+        return max(0, q)
     
     def get_language(self):
         """Определяет язык пользователя."""
