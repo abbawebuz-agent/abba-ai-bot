@@ -951,6 +951,20 @@ class QRCode(models.Model):
                 batch=batch,
             )
 
+    def is_bound_to_seller(self):
+        """Promo kod biror sotuvchi partiyasiga (SellerBatch) bog'langanmi.
+
+        Bog'lanish — sequence_number biror SellerBatch diapazoniga
+        (promo_from..promo_to) kirishi orqali aniqlanadi. Bog'lanmagan
+        kodlar faollashtirilmaydi (T9).
+        """
+        if self.sequence_number is None:
+            return False
+        return SellerBatch.objects.filter(
+            promo_from__lte=self.sequence_number,
+            promo_to__gte=self.sequence_number,
+        ).exists()
+
 
 class MonthlyPromoTicket(models.Model):
     """

@@ -3,6 +3,7 @@ Admin configuration for core models.
 """
 import zipfile
 import os
+from django import forms
 from django.contrib import admin
 from rangefilter.filters import DateTimeRangeFilterBuilder, DateRangeFilterBuilder
 class NoDeleteAdminMixin:
@@ -3503,8 +3504,26 @@ class ActivityLogAdmin(admin.ModelAdmin):
 # Seller admin — Admin tomonidan qo'lda boshqariladigan Sotuvchilar
 # ════════════════════════════════════════════════════════════════════
 
+class SellerBatchInlineForm(forms.ModelForm):
+    """T8: partiya yaratilgandan keyin 'gacha' (promo_to) qiymati qulflanadi."""
+    class Meta:
+        model = SellerBatch
+        fields = ['promo_to']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Mavjud (saqlangan) partiya — promo_to tahrirlanmaydi (disabled => submit'da
+        # o'zgarish e'tiborga olinmaydi, initial qiymat saqlanadi).
+        if self.instance and self.instance.pk:
+            f = self.fields.get('promo_to')
+            if f is not None:
+                f.disabled = True
+                f.help_text = "Partiya yaratilgan — o'zgartirib bo'lmaydi."
+
+
 class SellerBatchInline(admin.TabularInline):
     model = SellerBatch
+    form = SellerBatchInlineForm
     extra = 1
     can_delete = True
     readonly_fields = [

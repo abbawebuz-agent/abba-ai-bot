@@ -697,6 +697,16 @@ def register_qr_code(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+            # JIP T9: promo sotuvchiga (partiyaga) bog'lanmaguncha faol emas
+            if not qr_code.is_bound_to_seller():
+                QRCodeScanAttempt.objects.create(user=user, qr_code=qr_code, is_successful=False)
+                user.register_invalid_promo_attempt(source='webapp', raw_code=qr_code_str)
+                error_message = get_text(user, 'PROMO_NOT_ACTIVE_YET')
+                return Response(
+                    {'error': error_message, 'error_code': 'not_active_yet'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             # Отмечаем QR-код как отсканированный
             qr_code.is_scanned = True
             qr_code.scanned_at = timezone.now()

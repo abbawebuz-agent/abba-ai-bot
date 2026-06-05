@@ -1555,6 +1555,12 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                     user.register_invalid_promo_attempt(source='bot', raw_code=qr_code_str)
                     return {'error': 'wrong_type'}
 
+                # JIP T9: promo sotuvchiga (partiyaga) bog'lanmaguncha faol emas
+                if not qr_code.is_bound_to_seller():
+                    QRCodeScanAttempt.objects.create(user=user, qr_code=qr_code, is_successful=False)
+                    user.register_invalid_promo_attempt(source='bot', raw_code=qr_code_str)
+                    return {'error': 'not_active_yet'}
+
                 # Отмечаем QR-код как отсканированный
                 qr_code.is_scanned = True
                 qr_code.scanned_at = timezone.now()
@@ -1622,6 +1628,12 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                 await show_main_menu(message, user)
             else:
                 # Если регистрация не завершена, продолжаем ожидать промокод
+                await ask_promo_code(message, user, state)
+        elif result.get('error') == 'not_active_yet':
+            await message.answer(get_text(user, 'PROMO_NOT_ACTIVE_YET'))
+            if registration_complete:
+                await show_main_menu(message, user)
+            else:
                 await ask_promo_code(message, user, state)
         elif result.get('success'):
             # Monthly chances line olib tashlandi — endi yo'q.
