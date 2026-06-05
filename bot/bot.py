@@ -198,6 +198,15 @@ def get_web_app_url():
     return None
 
 
+def get_projects_web_app_url():
+    """Webapp 'Loyihalar' sahifasiga to'g'ridan-to'g'ri URL (T12)."""
+    base = get_web_app_url()
+    if not base:
+        return None
+    sep = '&' if '?' in base else '?'
+    return f"{base}{sep}tab=projects"
+
+
 def format_number(number):
     """
     Форматирует число с разделителями тысяч (пробелами).
@@ -1306,7 +1315,7 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
                 try:
                     web_app_button = types.InlineKeyboardButton(
                         text=get_text(user, 'MY_GIFTS'),
-                        web_app=types.WebAppInfo(url=web_app_url)
+                        web_app=types.WebAppInfo(url=get_projects_web_app_url() or web_app_url)
                     )
                     inline_keyboard = types.InlineKeyboardMarkup(
                         inline_keyboard=[[web_app_button]]
@@ -1700,7 +1709,7 @@ async def show_santenik_menu(message: Message, user: TelegramUser):
             inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
                 types.InlineKeyboardButton(
                     text=get_text(user, 'MY_GIFTS'),
-                    web_app=types.WebAppInfo(url=web_app_url),
+                    web_app=types.WebAppInfo(url=get_projects_web_app_url() or web_app_url),
                 )
             ]])
             await message.answer(get_text(user, 'OPEN_WEB_APP'), reply_markup=inline_kb)
@@ -1930,7 +1939,7 @@ async def handle_message(message: Message, state: FSMContext = None):
         if web_app_url:
             try:
                 inline_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
-                    types.InlineKeyboardButton(text=get_text(user, 'MY_GIFTS'), web_app=types.WebAppInfo(url=web_app_url))
+                    types.InlineKeyboardButton(text=get_text(user, 'MY_GIFTS'), web_app=types.WebAppInfo(url=get_projects_web_app_url() or web_app_url))
                 ]])
             except Exception as e:
                 logger.warning(f"Web App inline button error: {e}")

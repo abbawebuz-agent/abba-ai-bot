@@ -1205,6 +1205,32 @@ class Gift(models.Model):
         return self.name_uz_latin or self.name_ru or ''
 
 
+class ProjectPhoto(models.Model):
+    """T11: Santexnik yuklagan loyiha (ish) rasmi — real ekanini tasdiqlash uchun.
+
+    Har bir santexnik maksimal MAX_PER_USER ta rasm yuklay oladi.
+    """
+    MAX_PER_USER = 10
+
+    user = models.ForeignKey(
+        'TelegramUser',
+        on_delete=models.CASCADE,
+        related_name='project_photos',
+        verbose_name='Santexnik',
+    )
+    image = models.ImageField(upload_to='projects/', verbose_name='Loyiha rasmi')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yuklangan vaqt')
+
+    class Meta:
+        verbose_name = 'Loyiha rasmi'
+        verbose_name_plural = 'Loyiha rasmlari'
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['user', '-created_at'])]
+
+    def __str__(self):
+        return f"Loyiha #{self.pk} — {self.user_id}"
+
+
 class GiftRedemption(models.Model):
     """Модель получения подарка пользователем."""
     STATUS_CHOICES = [

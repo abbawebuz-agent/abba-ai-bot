@@ -283,6 +283,26 @@ body{
 /* ---- loading ---- */
 .skel{background:linear-gradient(90deg,var(--raise) 0%,var(--panel-2) 50%,var(--raise) 100%);background-size:200% 100%;animation:skel 1.4s infinite;border-radius:8px;}
 @keyframes skel{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ---- projects (T11) ---- */
+.proj-head{display:flex;align-items:center;gap:12px;margin-top:6px;}
+.proj-back{width:40px;height:40px;flex-shrink:0;border:1px solid var(--line-2);background:var(--panel);border-radius:12px;display:grid;place-items:center;color:var(--text);cursor:pointer;transition:.15s;}
+.proj-back:active{transform:scale(.95);}
+.proj-back svg{width:20px;height:20px;}
+.proj-title{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em;}
+.proj-sub{font-size:12px;color:var(--sub);margin-top:2px;}
+.proj-upload{margin-top:16px;display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;transition:.15s;border:1px dashed var(--line-2);}
+.proj-upload:not(.off):active{transform:scale(.99);}
+.proj-upload:not(.off):hover{border-color:var(--violet);}
+.proj-upload.off{opacity:.6;cursor:default;}
+.pu-ico{width:48px;height:48px;border-radius:13px;flex-shrink:0;background:linear-gradient(150deg,var(--violet),var(--violet-d));display:grid;place-items:center;color:#fff;box-shadow:0 8px 20px -8px var(--glow);}
+.pu-txt{flex:1;min-width:0;}
+.pu-t{font-size:14px;font-weight:600;letter-spacing:-.01em;}
+.pu-s{font-size:11px;color:var(--sub);margin-top:2px;}
+.pu-btn{width:40px;height:40px;flex-shrink:0;border:none;border-radius:11px;background:var(--violet);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px -6px var(--glow);}
+.proj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;}
+.proj-cell{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--raise);border:1px solid var(--line);}
+.proj-cell img{width:100%;height:100%;object-fit:cover;display:block;}
 </style>
 </head>
 <body>
@@ -320,6 +340,10 @@ const I = {
   gift_sm:'<rect x="3" y="8" width="18" height="13" rx="1.5"/><path d="M3 12h18M12 8v13"/>',
   shield:'<path d="M12 3l7 3v5c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3Z"/><path d="m9 12 2 2 4-4"/>',
   coins:'<circle cx="9" cy="9" r="5"/><path d="M14.5 5.5a5 5 0 0 1 0 9M7 9h2.5M9 7v4"/>',
+  camera:'<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/>',
+  images:'<rect x="3" y="3" width="18" height="14" rx="2"/><path d="m3 14 4-4 4 4 3-3 3 3"/><circle cx="8" cy="8" r="1.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  back:'<path d="m15 6-6 6 6 6"/>',
 };
 function svg(p,extra){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra||''}>${p}</svg>`;}
 
@@ -357,6 +381,9 @@ const APP = {
   history: [],
   leaderboard: [],
   banners: [],
+  projects: [],
+  projectsMax: 10,
+  projectsCanUpload: true,
   adminContact: '@JIP_admin_support',
 };
 
@@ -429,6 +456,14 @@ async function loadUser(){
 async function loadGifts(){
   try { const d = await api('/webapp/gifts/'); APP.gifts = d.gifts || d.results || (Array.isArray(d)?d:[]); }
   catch(e){ APP.gifts = []; }
+}
+async function loadProjects(){
+  try {
+    const d = await api('/webapp/projects/');
+    APP.projects = d.photos || [];
+    if (typeof d.max === 'number') APP.projectsMax = d.max;
+    APP.projectsCanUpload = d.can_upload !== false;
+  } catch(e){ APP.projects = []; }
 }
 async function loadOrders(){
   try { const d = await api('/webapp/redemptions/'); APP.orders = d.redemptions || d.results || (Array.isArray(d)?d:[]); }
@@ -681,6 +716,13 @@ function profileScreen(){
     ${u.username ? `<div class="inforow"><div class="ir-ico">${svg(I.telegram)}</div><div class="iflex"><div class="if-lbl">Telegram</div><div class="if-val link">@${u.username}</div></div></div>` : ''}
   </div>
   <div class="panel" style="margin-top:14px;">
+    <button class="menu-row" data-goto="projects">
+      <div class="ir-ico">${svg(I.images)}</div>
+      <div class="mr-label">${APP.language === 'ru' ? 'Мои проекты' : 'Loyihalarim'}</div>
+      <span class="mr-chev">${svg(I.chev)}</span>
+    </button>
+  </div>
+  <div class="panel" style="margin-top:14px;">
     <div class="lang-head"><div class="ir-ico">${svg(I.globe)}</div><h3>Interfeys tili</h3></div>
     <div class="lang-btns">
       <button class="lang-btn ${APP.language === 'uz_latin' ? 'on' : 'off'}" data-lang="uz_latin">🇺🇿 O'zbek</button>
@@ -696,7 +738,49 @@ function profileScreen(){
   </div>`;
 }
 
-const SCREENS = {home:homeScreen, gifts:giftsScreen, history:historyScreen, orders:ordersScreen, profile:profileScreen};
+function projectsScreen(){
+  const ru = APP.language === 'ru';
+  const t = {
+    title: ru ? 'Мои проекты' : 'Loyihalarim',
+    sub: ru ? 'Загрузите фото своих работ' : "Ishlaringiz suratini yuklang",
+    shoot: ru ? 'Сфотографировать проект' : "Loyihani suratga oling",
+    shootSub: ru ? 'Камера или галерея' : 'Kamera yoki galereya',
+    gallery: ru ? 'Мои фото' : 'Mening suratlarim',
+    empty: ru ? 'Пока нет загруженных фото' : "Hali surat yuklanmagan",
+    limit: ru ? `Достигнут лимит (${APP.projectsMax})` : `Limitga yetdingiz (${APP.projectsMax})`,
+    count: ru ? 'фото' : 'ta surat',
+  };
+  const n = APP.projects.length;
+  const canUpload = APP.projectsCanUpload && n < APP.projectsMax;
+  return `
+  <div class="proj-head">
+    <button class="proj-back" data-goto="home">${svg(I.back)}</button>
+    <div><h2 class="proj-title">${t.title}</h2><div class="proj-sub">${t.sub}</div></div>
+  </div>
+
+  <div class="panel proj-upload ${canUpload?'':'off'}">
+    <input type="file" accept="image/*" capture="environment" data-proj-input hidden ${canUpload?'':'disabled'}/>
+    <div class="pu-ico">${svg(I.camera,'width="26" height="26"')}</div>
+    <div class="pu-txt">
+      <div class="pu-t">${canUpload? t.shoot : t.limit}</div>
+      <div class="pu-s">${canUpload? t.shootSub : ''}</div>
+    </div>
+    ${canUpload? `<button class="pu-btn" data-proj-pick>${svg(I.plus,'width="20" height="20"')}</button>`:''}
+  </div>
+
+  <div class="lb-head" style="margin-top:18px;">
+    <div class="blk-ico">${svg(I.images)}</div>
+    <div class="lb-t"><h3>${t.gallery}</h3><p>${n} / ${APP.projectsMax} ${t.count}</p></div>
+  </div>
+
+  ${n === 0
+    ? `<div class="empty"><div class="empty-ico">${svg(I.images)}</div><h4>${t.empty}</h4><p>${t.shootSub}</p></div>`
+    : `<div class="proj-grid">${APP.projects.map(p=>`
+        <div class="proj-cell"><img src="${p.image}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'"/></div>`).join('')}</div>`}
+  `;
+}
+
+const SCREENS = {home:homeScreen, gifts:giftsScreen, history:historyScreen, orders:ordersScreen, profile:profileScreen, projects:projectsScreen};
 
 /* ============ APP ============ */
 const content = document.querySelector('[data-content]');
@@ -741,6 +825,15 @@ function wire(tab){
   }
   // Goto buttons
   content.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => render(b.dataset.goto)));
+  // Projects upload
+  const projInput = content.querySelector('[data-proj-input]');
+  if (projInput) {
+    const projPanel = content.querySelector('.proj-upload');
+    if (projPanel && !projPanel.classList.contains('off')) {
+      projPanel.addEventListener('click', e => { if (e.target.tagName !== 'INPUT') projInput.click(); });
+    }
+    projInput.addEventListener('change', () => uploadProject(projInput));
+  }
   // Banner auto-slider
   const banner = content.querySelector('[data-banner]');
   if (banner) {
@@ -862,6 +955,37 @@ async function requestGift(giftId, btn){
   }
 }
 
+async function uploadProject(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const ru = APP.language === 'ru';
+  if (file.size > 10 * 1024 * 1024){
+    toast(ru ? 'Файл больше 10 МБ' : "Hajmi 10 MB dan katta", 'error');
+    input.value = '';
+    return;
+  }
+  toast(ru ? 'Загрузка…' : 'Yuklanmoqda…', 'spark', 1800, 'bottom');
+  try {
+    const fd = new FormData();
+    fd.append('photo', file);
+    if (APP.tgId){ fd.append('telegram_id', APP.tgId); fd.append('tg_id', APP.tgId); }
+    const q = APP.tgId ? `?tg_id=${APP.tgId}&telegram_id=${APP.tgId}` : '';
+    const r = await fetch(`/api/webapp/projects/upload/${q}`, {
+      method: 'POST', body: fd, cache: 'no-store',
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
+    });
+    const data = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    toast(ru ? 'Загружено!' : 'Yuklandi!', 'success', 2400, 'bottom');
+    await loadProjects();
+    render('projects');
+  } catch (e) {
+    toast(e.message || (ru ? 'Ошибка загрузки' : 'Yuklashda xato'), 'error');
+  } finally {
+    input.value = '';
+  }
+}
+
 async function cancelOrder(id){
   if (!confirm("So'rovni bekor qilasizmi?")) return;
   try {
@@ -902,9 +1026,13 @@ overlay.addEventListener('click', closeSheet);
     loadLeaderboard(),
     loadAdminContact(),
     loadBanners(),
+    loadProjects(),
   ]);
   renderTabs();
-  render('home');
+  // Deep-link: bot tugmasi ?tab=projects yoki start_param=projects bilan ochsa — Loyihalar
+  let startTab = '';
+  try { startTab = new URLSearchParams(location.search).get('tab') || (TG?.initDataUnsafe?.start_param) || ''; } catch(e){}
+  render(startTab === 'projects' ? 'projects' : 'home');
 })();
 </script>
 </body>

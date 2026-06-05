@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import translation
 from django.db import models
 from functools import wraps
-from .models import TelegramUser, Gift, GiftRedemption, QRCode, Promotion, PrivacyPolicy, AdminContactSettings, LiveStream, Store, QRCodeBatch, SellerPointsTransaction
+from .models import TelegramUser, Gift, GiftRedemption, QRCode, Promotion, PrivacyPolicy, AdminContactSettings, LiveStream, Store, QRCodeBatch, SellerPointsTransaction, ProjectPhoto
 from .serializers import GiftSerializer, GiftRedemptionSerializer
 from django.utils import timezone
 
@@ -1565,3 +1565,72 @@ def seller_commission_calc(request):
         'commission_amount': commission_amount,
         'store_name': user.first_name or 'Sotuvchi',
     })
+
+
+# ============ T11: LOYIHALAR (PROJECTS) ============
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
+def get_projects(request):
+    """Santexnik yuklagan loyiha rasmlari ro'yxati (galereya)."""
+    telegram_id = request.GET.get('telegram_id') or request.GET.get('tg_id')
+    if not telegram_id:
+        return Response({'error': 'telegram_id required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = TelegramUser.objects.get(telegram_id=int(telegram_id))
+    except (TelegramUser.DoesNotExist, ValueError, TypeError):
+        return Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    photos = ProjectPhoto.objects.filter(user=user)
+    data = [{
+        'id': p.id,
+        'image': request.build_absolute_uri(p.image.url) if p.image else None,
+        'created_at': p.created_at.isoformat(),
+    } for p in photos]
+    return Response({
+        'photos': data,
+        'count': len(data),
+        'max': ProjectPhoto.MAX_PER_USER,
+        'can_upload': len(data) < ProjectPhoto.MAX_PER_USER,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@no_cache_response
+def upload_project(request):
+    """Loyiha rasmi yuklash (multipart/form-data: photo). Max 10 ta."""
+    telegram_id = (request.data.get('telegram_id') or request.GET.get('telegram_id')
+                   or request.GET.get('tg_id'))
+    photo = request.FILES.get('photo')
+    if not telegram_id or not photo:
+        return Response({'error': 'telegram_id va photo majburiy'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = TelegramUser.objects.get(telegram_id=int(telegram_id))
+    except (TelegramUser.DoesNotExist, ValueError, TypeError):
+        return Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.user_type != 'santenik':
+        return Response({'error': 'Faqat santexnik rasm yuklay oladi'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Faqat rasm fayllari
+    ctype = getattr(photo, 'content_type', '') or ''
+    if not ctype.startswith('image/'):
+        return Response({'error': 'Faqat rasm fayl yuklash mumkin'}, status=status.HTTP_400_BAD_REQUEST)
+    if photo.size > 10 * 1024 * 1024:
+        return Response({'error': 'Rasm hajmi 10 MB dan oshmasligi kerak'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Limit: max 10 ta
+    if ProjectPhoto.objects.filter(user=user).count() >= ProjectPhoto.MAX_PER_USER:
+        return Response(
+            {'error': f"Maksimal {ProjectPhoto.MAX_PER_USER} ta rasm yuklash mumkin", 'error_code': 'limit'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    p = ProjectPhoto.objects.create(user=user, image=photo)
+    return Response({
+        'id': p.id,
+        'image': request.build_absolute_uri(p.image.url) if p.image else None,
+        'created_at': p.created_at.isoformat(),
+    }, status=status.HTTP_201_CREATED)

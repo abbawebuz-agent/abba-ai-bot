@@ -41,6 +41,7 @@ from .models import (
     PendingSellerRequest, SellerRegistrationCode,
     ActivityLog,
     Seller, SellerBatch,
+    ProjectPhoto,
 )
 from .utils import generate_qr_code_image, generate_qr_codes_batch
 
@@ -3712,3 +3713,44 @@ class SellerAdmin(admin.ModelAdmin):
             'opts': Seller._meta,
         }
         return TemplateResponse(request, 'admin/core/seller/batch_promos.html', context)
+
+
+@admin.register(ProjectPhoto)
+class ProjectPhotoAdmin(admin.ModelAdmin):
+    """T11: santexniklar yuklagan loyiha rasmlari — tekshirish uchun (faqat ko'rish)."""
+    list_display = ['id', 'photo_preview', 'santexnik', 'created_at']
+    list_display_links = ['id', 'photo_preview']
+    search_fields = ['user__first_name', 'user__username', 'user__telegram_id', 'user__phone_number']
+    list_filter = ['created_at']
+    readonly_fields = ['user', 'image', 'created_at', 'photo_large']
+    list_select_related = ['user']
+    ordering = ['-created_at']
+    list_per_page = 40
+
+    def has_add_permission(self, request):
+        return False
+
+    def santexnik(self, obj):
+        u = obj.user
+        name = (u.first_name or u.username or str(u.telegram_id))
+        phone = f" · {u.phone_number}" if u.phone_number else ''
+        return f"{name}{phone}"
+    santexnik.short_description = 'Santexnik'
+
+    def photo_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="height:54px;width:54px;object-fit:cover;border-radius:8px;" />',
+                obj.image.url,
+            )
+        return '—'
+    photo_preview.short_description = 'Rasm'
+
+    def photo_large(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-width:420px;max-height:420px;border-radius:12px;" />',
+                obj.image.url,
+            )
+        return '—'
+    photo_large.short_description = "Ko'rinish"
