@@ -1640,8 +1640,16 @@ def upload_project(request):
         )
 
     caption = (request.data.get('caption') or '').strip()[:80]
-    p = ProjectPhoto.objects.create(user=user, image=photo, caption=caption)
-    return Response(_project_dict(request, p), status=status.HTTP_201_CREATED)
+    try:
+        p = ProjectPhoto.objects.create(user=user, image=photo, caption=caption)
+        return Response(_project_dict(request, p), status=status.HTTP_201_CREATED)
+    except Exception as e:
+        import logging
+        logging.getLogger('jip.projects').exception('project upload failed')
+        return Response(
+            {'error': 'Rasmni saqlab bo\'lmadi', 'detail': str(e)[:400]},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @api_view(['POST'])
