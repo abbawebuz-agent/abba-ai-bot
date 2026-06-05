@@ -70,14 +70,17 @@ TRANSLATIONS = {
         # Telefon + tasdiqlash kodi
         'ASK_PHONE_TEMPLATE': (
             "📱 <b>Telefon raqamingizni kiriting:</b>\n\n"
-            "Namuna: <code>+998 90 123 45 67</code>\n\n"
-            "Yoki quyidagi tugma orqali avtomatik yuboring:"
+            "Namuna: <code>+998 90 123 45 67</code>"
         ),
         'PHONE_FORMAT_ERROR': (
             "❌ Noto'g'ri format.\n\n"
             "Iltimos, raqamni quyidagi shaklda kiriting:\n"
-            "<code>+998 XX XXX XX XX</code>\n\n"
-            "Yoki tugma orqali yuboring."
+            "<code>+998 XX XXX XX XX</code>"
+        ),
+        'PHONE_ALREADY_USED': (
+            "❌ Bu telefon raqami allaqachon ro'yxatdan o'tgan.\n\n"
+            "Har bir raqam faqat bitta foydalanuvchiga tegishli bo'ladi. "
+            "Iltimos, o'zingizning shaxsiy raqamingizni kiriting:"
         ),
         'VERIFY_CODE_SENT': (
             "📩 <b>Tasdiqlash kodi yuborildi!</b>\n\n"
@@ -433,14 +436,17 @@ TRANSLATIONS = {
         # Телефон + код подтверждения
         'ASK_PHONE_TEMPLATE': (
             "📱 <b>Введите ваш номер телефона:</b>\n\n"
-            "Пример: <code>+998 90 123 45 67</code>\n\n"
-            "Или отправьте автоматически кнопкой ниже:"
+            "Пример: <code>+998 90 123 45 67</code>"
         ),
         'PHONE_FORMAT_ERROR': (
             "❌ Неверный формат.\n\n"
             "Введите номер в формате:\n"
-            "<code>+998 XX XXX XX XX</code>\n\n"
-            "Или используйте кнопку."
+            "<code>+998 XX XXX XX XX</code>"
+        ),
+        'PHONE_ALREADY_USED': (
+            "❌ Этот номер телефона уже зарегистрирован.\n\n"
+            "Каждый номер может принадлежать только одному пользователю. "
+            "Пожалуйста, введите свой личный номер:"
         ),
         'VERIFY_CODE_SENT': (
             "📩 <b>Код подтверждения отправлен!</b>\n\n"

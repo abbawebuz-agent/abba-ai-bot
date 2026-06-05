@@ -391,6 +391,18 @@ async def process_phone(message: Message, state: FSMContext):
         return
 
     @sync_to_async
+    def phone_taken(ph):
+        return TelegramUser.objects.filter(
+            phone_number=ph,
+        ).exclude(telegram_id=message.from_user.id).exists()
+
+    # Bitta raqam — bitta user: boshqa santexnik shu raqamni kiritmasin
+    if await phone_taken(phone):
+        user = await get_user()
+        await message.answer(get_text(user, 'PHONE_ALREADY_USED'), parse_mode='HTML')
+        return
+
+    @sync_to_async
     def save_phone(ph):
         u = TelegramUser.objects.get(telegram_id=message.from_user.id)
         u.phone_number = ph
@@ -439,13 +451,8 @@ async def process_location(message: Message, state: FSMContext):
         if user.user_type == 'sotuvchi':
             await try_attach_seller_to_store(message, user, state)
         else:
-            # Santenik: next step is region selection
-            if not user.region_id:
-                await ask_region(message, user, state)
-            else:
-                await state.clear()
-                await show_main_menu(message, user)
-                await message.answer(get_text(user, 'SEND_PROMO_CODE'))
+            # Santenik: GPS'dan keyin HAR DOIM qo'lda viloyat tanlash (geokoder topsa ham)
+            await ask_region(message, user, state)
     else:
         @sync_to_async
         def get_user_for_location():
@@ -740,16 +747,12 @@ async def ask_privacy_acceptance(message: Message, user, state: FSMContext):
 
 
 async def ask_phone(message: Message, user, state: FSMContext):
-    """Спрашивает номер телефона с шаблоном +998 XX XXX XX XX."""
-    keyboard = types.ReplyKeyboardMarkup(
-        keyboard=[[types.KeyboardButton(
-            text=get_text(user, 'SEND_PHONE_BUTTON'),
-            request_contact=True,
-        )]],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+    """Спрашивает номер телефона — faqat qo'lda kiritiladi (avto tugma yo'q)."""
+    await message.answer(
+        get_text(user, 'ASK_PHONE_TEMPLATE'),
+        reply_markup=types.ReplyKeyboardRemove(),
+        parse_mode='HTML',
     )
-    await message.answer(get_text(user, 'ASK_PHONE_TEMPLATE'), reply_markup=keyboard, parse_mode='HTML')
     await state.set_state(RegistrationStates.waiting_for_phone)
 
 
