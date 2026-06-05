@@ -1,23 +1,25 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Deploy trigger: 2026-05-30 jazzmin-revert
-# Системные зависимости — минимальный набор для Railway
-# Playwright/Chrome paketlari olib tashlandi (browserlar o'rnatilmagan)
-# Tizim paketlari + postgresql-client-18 (pg_dump, backup uchun — DB PostgreSQL 18).
-# PGDG repo codename DINAMIK (trixie/bookworm) — aks holda libpq5 konflikti bo'ladi.
-# Avval curl/gnupg, keyin PGDG repo qo'shib, libpq-dev + postgresql-client-18 ni
-# BITTA apt-get bilan o'rnatamiz (versiyalar mos bo'lishi uchun).
+# Deploy trigger: 2026-06-05 docker build fix (libpq5 konflikt)
+# Tizim paketlari — MINIMAL. psycopg2-binary, Pillow, PyMuPDF, shapely hammasi
+# binary wheel bilan keladi → gcc/libpq-dev KERAK EMAS. Avval libpq-dev qo'shilgan
+# edi va u postgresql-client-18 (PGDG, libpq5>=18 talab qiladi) bilan KONFLIKT berib
+# barcha buildni sindirardi. Endi libpq-dev/gcc olib tashlandi.
+# postgresql-client-18 (pg_dump backup uchun, DB v18) PGDG'dan BEST-EFFORT o'rnatiladi:
+# o'rnatilmasa ham app deploy bo'laveradi (backup ikkilamchi, app birinchi).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl gnupg ca-certificates \
+      curl gnupg ca-certificates gettext \
     && install -d /usr/share/postgresql-common/pgdg \
     && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
     && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" \
        > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-      libpq-dev gcc gettext postgresql-client-18 \
+    && apt-get update \
+    && ( apt-get install -y --no-install-recommends postgresql-client-18 \
+         || apt-get install -y --no-install-recommends postgresql-client \
+         || echo "WARN: postgresql-client o'rnatilmadi — pg_dump backup ishlamasligi mumkin" ) \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
