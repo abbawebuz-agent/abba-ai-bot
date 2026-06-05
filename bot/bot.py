@@ -963,6 +963,8 @@ async def process_reg_region(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
     await state.clear()
+    # Ro'yxatdan o'tish yakunlandi — muvaffaqiyat xabari + balans menyu + umumiy webapp tugma
+    await callback.message.answer(get_text(user, 'REGISTRATION_SUCCESS'), parse_mode='HTML')
     await show_main_menu(callback.message, user)
     await callback.message.answer(get_text(user, 'SEND_PROMO_CODE'))
 
@@ -1315,7 +1317,7 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
                 try:
                     web_app_button = types.InlineKeyboardButton(
                         text=get_text(user, 'MY_GIFTS'),
-                        web_app=types.WebAppInfo(url=get_projects_web_app_url() or web_app_url)
+                        web_app=types.WebAppInfo(url=web_app_url)
                     )
                     inline_keyboard = types.InlineKeyboardMarkup(
                         inline_keyboard=[[web_app_button]]
@@ -1662,7 +1664,20 @@ async def handle_qr_code_scan(message: Message, user, qr_code_str: str, state: F
                 await state.set_state(RegistrationStates.waiting_for_phone)
             else:
                 await show_main_menu(message, user)
-        
+                # Promokoddan keyin — "Loyihalar" tugmasi (faqat shu yerda chiqadi)
+                projects_url = get_projects_web_app_url()
+                if projects_url:
+                    try:
+                        proj_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
+                            types.InlineKeyboardButton(
+                                text=get_text(user, 'PROJECTS_BTN'),
+                                web_app=types.WebAppInfo(url=projects_url),
+                            )
+                        ]])
+                        await message.answer(get_text(user, 'PROMO_SHARE_PROJECT'), reply_markup=proj_kb)
+                    except Exception as e:
+                        logger.warning(f"Projects inline button error: {e}")
+
     except Exception as e:
         logger.error(f"Error processing QR code scan: {e}")
         await message.answer(get_text(user, 'QR_ERROR'))
@@ -1709,7 +1724,7 @@ async def show_santenik_menu(message: Message, user: TelegramUser):
             inline_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
                 types.InlineKeyboardButton(
                     text=get_text(user, 'MY_GIFTS'),
-                    web_app=types.WebAppInfo(url=get_projects_web_app_url() or web_app_url),
+                    web_app=types.WebAppInfo(url=web_app_url),
                 )
             ]])
             await message.answer(get_text(user, 'OPEN_WEB_APP'), reply_markup=inline_kb)
@@ -1939,7 +1954,7 @@ async def handle_message(message: Message, state: FSMContext = None):
         if web_app_url:
             try:
                 inline_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
-                    types.InlineKeyboardButton(text=get_text(user, 'MY_GIFTS'), web_app=types.WebAppInfo(url=get_projects_web_app_url() or web_app_url))
+                    types.InlineKeyboardButton(text=get_text(user, 'MY_GIFTS'), web_app=types.WebAppInfo(url=web_app_url))
                 ]])
             except Exception as e:
                 logger.warning(f"Web App inline button error: {e}")

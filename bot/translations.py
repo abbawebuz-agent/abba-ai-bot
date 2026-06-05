@@ -111,7 +111,7 @@ TRANSLATIONS = {
         'SMARTUP_ID_NOT_FOUND': "ID topilmadi. Iltimos, boshqasini sinab ko'ring.",
         
         # QR-код сообщения
-        'QR_ACTIVATED': "✅ Promokod muvaffaqiyatli faollashtirildi!\n\n💰 Sizga {points} ball qo'shildi.\n📊 Joriy balansingiz: {total_points} ball.\n\n📸 Loyihangiz bilan bo'lishing — \"Loyihalar\" tugmasi orqali ish suratlaringizni yuklang.",
+        'QR_ACTIVATED': "✅ Promokod muvaffaqiyatli faollashtirildi!\n\n💰 Sizga {points} ball qo'shildi.\n📊 Joriy balansingiz: {total_points} ball.",
         'QR_MAX_ATTEMPTS': "❌ Siz bugun {max_attempts} marta noto'g'ri promokod kiritdingiz.\n\n⏰ Keyingi urinishlar ertaga (00:00) qayta ochiladi.\n\nIltimos, keyinroq urinib ko'ring yoki administrator bilan bog'laning.",
         'QR_NOT_FOUND': "❌ Promokod topilmadi. Kod to'g'riligini tekshiring.",
         'QR_ALREADY_SCANNED': "❌ Bu promokod allaqachon boshqa foydalanuvchi tomonidan ishlatilgan.",
@@ -124,7 +124,13 @@ TRANSLATIONS = {
         
         # Главное меню
         'MAIN_MENU': "👋 Asosiy menyu\n\n💰 Balansingiz: {points} ball\n\nHarakatni tanlang:",
-        'MY_GIFTS': "📸 Loyihalar",
+        'MY_GIFTS': "📱 Ilovani ochish",
+        'PROJECTS_BTN': "📸 Loyihalarim",
+        'PROMO_SHARE_PROJECT': "📸 Loyihangiz bilan bo'lishing — ish suratlaringizni \"Loyihalar\" bo'limiga yuklang.",
+        'REGISTRATION_SUCCESS': (
+            "✅ <b>Ro'yxatdan o'tish muvaffaqiyatli yakunlandi!</b>\n\n"
+            "Endi promokodlarni kiritib ball to'plang va sovg'alarga almashtiring."
+        ),
         'OPEN_WEB_APP': "📱 Web ilovani ochish uchun quyidagi tugmani bosing:",
         'GIFTS': "🎁 Sovg'alar",
         'MY_BALANCE': "📊 Mening balansim",
@@ -503,7 +509,7 @@ TRANSLATIONS = {
         'SMARTUP_ID_NOT_FOUND': "ID не найден. Пожалуйста, попробуйте другой.",
         
         # QR-код сообщения
-        'QR_ACTIVATED': "✅ Промокод успешно активирован!\n\n💰 Вам начислено {points} баллов.\n📊 Ваш текущий баланс: {total_points} баллов.\n\n📸 Поделитесь своим проектом — загрузите фото работ через кнопку «Проекты».",
+        'QR_ACTIVATED': "✅ Промокод успешно активирован!\n\n💰 Вам начислено {points} баллов.\n📊 Ваш текущий баланс: {total_points} баллов.",
         'QR_MAX_ATTEMPTS': "❌ Вы сегодня {max_attempts} раз ввели неверный Promokod.\n\n⏰ Следующие попытки откроются завтра (00:00).\n\nПожалуйста, попробуйте позже или свяжитесь с администратором.",
         'QR_NOT_FOUND': "❌ Промокод не найден. Проверьте правильность кода.",
         'QR_ALREADY_SCANNED': "❌ Этот Промокод уже был использован другим пользователем.",
@@ -516,7 +522,13 @@ TRANSLATIONS = {
         
         # Главное меню
         'MAIN_MENU': "👋 Главное меню\n\n💰 Ваш баланс: {points} баллов\n\nВыберите действие:",
-        'MY_GIFTS': "📸 Проекты",
+        'MY_GIFTS': "📱 Открыть приложение",
+        'PROJECTS_BTN': "📸 Мои проекты",
+        'PROMO_SHARE_PROJECT': "📸 Поделитесь своим проектом — загрузите фото работ в раздел «Проекты».",
+        'REGISTRATION_SUCCESS': (
+            "✅ <b>Регистрация успешно завершена!</b>\n\n"
+            "Теперь вводите промокоды, копите баллы и обменивайте их на награды."
+        ),
         'OPEN_WEB_APP': "📱 Нажмите кнопку ниже, чтобы открыть веб-приложение:",
         'GIFTS': "🎁 Подарки",
         'MY_BALANCE': "📊 Мой баланс",
