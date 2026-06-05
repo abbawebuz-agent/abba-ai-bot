@@ -125,6 +125,14 @@ class UzDistrictAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_select_related = ['region']
     ordering = ['region__code', 'code']
 
+    def get_search_results(self, request, queryset, search_term):
+        """T10 cascade: agar so'rovda `region` bo'lsa, faqat shu viloyat tumanlari."""
+        queryset, may_dup = super().get_search_results(request, queryset, search_term)
+        region = request.GET.get('region')
+        if region:
+            queryset = queryset.filter(region_id=region)
+        return queryset, may_dup
+
 
 @admin.register(TelegramUser)
 class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
@@ -158,7 +166,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     class Media:
         css = {'all': ('core_admin/css/changelist_filters.css',)}
-        js = ('core_admin/js/changelist_filters.js',)
+        js = ('core_admin/js/changelist_filters.js', 'core_admin/js/region_district_chain.js')
 
     def get_queryset(self, request):
         """Sotuvchi (user_type='sotuvchi') foydalanuvchilarini menyu/ro'yxatdan yashiramiz.
@@ -2723,6 +2731,9 @@ class StoreAdmin(SimpleHistoryAdmin):
     readonly_fields = ['created_at', 'updated_at', 'store_statistics']
     list_per_page = 50
 
+    class Media:
+        js = ('core_admin/js/region_district_chain.js',)
+
     def has_module_permission(self, request):
         return False
     inlines = [QRCodeBatchInline]
@@ -3612,6 +3623,9 @@ class SellerAdmin(admin.ModelAdmin):
     inlines = [SellerBatchInline]
     readonly_fields = ['created_at', 'total_promos_col', 'total_points_col', 'activation_col']
     list_per_page = 50
+
+    class Media:
+        js = ('core_admin/js/region_district_chain.js',)
 
     fieldsets = (
         ("Asosiy ma'lumot", {
