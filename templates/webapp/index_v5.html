@@ -76,7 +76,7 @@ body{
 .bp-lbl{font-family:var(--mono);font-size:8px;font-weight:600;letter-spacing:.18em;color:rgba(255,255,255,.82);margin-top:4px;}
 
 /* ---- banner ---- */
-.banner{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;height:160px;margin-top:14px;background:var(--panel);}
+.banner{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;height:184px;margin-top:14px;background:var(--panel);}
 .banner-track{display:flex;height:100%;transition:transform .55s cubic-bezier(.32,.72,0,1);}
 .slide{flex:0 0 100%;height:100%;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
 .slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--violet);box-shadow:0 0 14px var(--glow);}
@@ -87,7 +87,7 @@ body{
 .slide-img{padding:0;cursor:pointer;}
 .slide-img::before{display:none;}
 .slide-img img{width:100%;height:100%;object-fit:cover;display:block;}
-.banner-img{height:160px;}
+.banner-img{height:184px;}
 .dots{position:absolute;bottom:12px;right:18px;display:flex;gap:5px;z-index:3;}
 .dots i{width:5px;height:5px;border-radius:999px;background:rgba(20,22,40,.18);transition:all .3s;}
 .dots i.on{width:18px;background:var(--violet);box-shadow:0 0 8px var(--glow);}
@@ -186,6 +186,8 @@ body{
 /* ---- toast ---- */
 .toast{position:fixed;top:calc(20px + var(--sat));left:50%;transform:translateX(-50%) translateY(-120%);background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:12px 18px;box-shadow:0 12px 32px -8px rgba(0,0,0,.2);z-index:40;transition:transform .3s;display:flex;align-items:center;gap:10px;max-width:90%;}
 .toast.show{transform:translateX(-50%) translateY(0);}
+.toast.bottom{top:auto;bottom:calc(100px + var(--sab));transform:translateX(-50%) translateY(140%);}
+.toast.bottom.show{transform:translateX(-50%) translateY(0);}
 .toast.success{border-color:var(--ok);}
 .toast.error{border-color:var(--danger);}
 .toast-ico{width:24px;height:24px;flex-shrink:0;display:grid;place-items:center;}
@@ -277,10 +279,6 @@ body{
 .mr-label{flex:1;font-size:14px;font-weight:600;}
 .mr-chev{color:var(--dim);display:flex;align-items:center;}
 .mr-chev svg{width:20px;height:20px;}
-.brand-foot{text-align:center;padding:30px 0 12px;}
-.brand-foot img{height:26px;width:auto;opacity:.5;}
-.bf-txt{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--sub);margin-top:11px;letter-spacing:.14em;text-transform:uppercase;}
-.bf-sub{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:4px;letter-spacing:.06em;}
 
 /* ---- loading ---- */
 .skel{background:linear-gradient(90deg,var(--raise) 0%,var(--panel-2) 50%,var(--raise) 100%);background-size:200% 100%;animation:skel 1.4s infinite;border-radius:8px;}
@@ -387,10 +385,10 @@ function fmtDate(iso){
   if (isNaN(d)) return '';
   return d.toLocaleDateString('ru-RU') + ' · ' + d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 }
-function toast(msg, kind='success', ms=2400){
+function toast(msg, kind='success', ms=2400, pos='top'){
   const t = document.querySelector('[data-toast]');
   const ico = kind==='success'?I.check:(kind==='error'?I.cross:I.spark);
-  t.className = `toast ${kind}`;
+  t.className = `toast ${kind}${pos==='bottom'?' bottom':''}`;
   t.innerHTML = `<span class="toast-ico">${svg(ico,'width="20" height="20"')}</span><span class="toast-msg">${msg}</span>`;
   requestAnimationFrame(()=>t.classList.add('show'));
   setTimeout(()=>t.classList.remove('show'), ms);
@@ -404,7 +402,7 @@ async function api(path, opts={}){
     headers: {'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest'},
     cache: 'no-store',
   };
-  if (opts.body) init.body = JSON.stringify(opts.body);
+  if (opts.body) init.body = JSON.stringify(APP.tgId ? {telegram_id: APP.tgId, tg_id: APP.tgId, ...opts.body} : opts.body);
   const sep = url.includes('?') ? '&' : '?';
   const final = `${url}${APP.tgId ? sep+'tg_id='+APP.tgId+'&telegram_id='+APP.tgId : ''}`;
   try {
@@ -695,11 +693,6 @@ function profileScreen(){
       <div class="mr-label">${APP.language === 'ru' ? 'Политика конфиденциальности' : 'Maxfiylik siyosati'}</div>
       <span class="mr-chev">${svg(I.chev)}</span>
     </button>
-  </div>
-  <div class="brand-foot">
-    <img src="{% static 'core_admin/img/logo.svg' %}" alt="JIP" onerror="this.style.display='none'"/>
-    <div class="bf-txt">Jahon Invest Plast</div>
-    <div class="bf-sub">SODIQLIK DASTURI · v5.0</div>
   </div>`;
 }
 
@@ -783,7 +776,7 @@ async function activatePromo(input, btn){
   if (!code) return;
   input.disabled = true; btn.disabled = true;
   try {
-    const res = await api('/webapp/register-qr/', {method:'POST', body:{code}});
+    const res = await api('/webapp/register-qr/', {method:'POST', body:{qr_code: code}});
     if (res.success || res.points) {
       const pts = res.points || res.points_earned || 0;
       toast(`+${fmtNum(pts)} ball qo'shildi!`, 'success', 2800);
@@ -857,7 +850,7 @@ async function requestGift(giftId, btn){
   if (btn) { btn.disabled = true; btn.textContent = 'Yuborilmoqda...'; }
   try {
     await api('/webapp/request-gift/', {method:'POST', body:{gift_id: giftId}});
-    toast('Buyurtma qabul qilindi!', 'success');
+    toast(APP.language === 'ru' ? 'Успешно обменено!' : "Muvaffaqiyatli almashtirildi!", 'success', 3200, 'bottom');
     closeSheet();
     await loadUser();
     await loadOrders();
