@@ -1594,6 +1594,9 @@ def _project_dict(request, p):
     }
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@no_cache_response
 def get_projects(request):
     """Santexnik yuklagan (o'chirilmagan) loyiha rasmlari + kunlik limit holati."""
     user, err = _project_user(request)
