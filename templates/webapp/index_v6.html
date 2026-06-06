@@ -1861,7 +1861,7 @@ function App() {
   };
   const confirmDelivery = async (id) => {
     setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: "delivered", cancelable: false } : o));
-    try { await api("/webapp/confirm-delivery/", { method: "POST", body: { redemption_id: id } }); }
+    try { await api("/webapp/confirm-delivery/", { method: "POST", body: { redemption_id: id, confirmed: true } }); }
     catch (e) { flash(e.message || "Xato", "error"); }
   };
 

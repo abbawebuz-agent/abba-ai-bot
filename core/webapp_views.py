@@ -275,6 +275,11 @@ def request_gift(request):
             {'error': 'Gift not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid telegram_id or gift_id'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(['POST'])
@@ -336,6 +341,11 @@ def cancel_order(request):
             {'error': 'Redemption not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid redemption_id or telegram_id'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(['POST'])
@@ -380,6 +390,11 @@ def confirm_delivery(request):
         return Response(
             {'error': 'Redemption not found'},
             status=status.HTTP_404_NOT_FOUND
+        )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid redemption_id'},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -939,6 +954,7 @@ def _resend_step_for_user(user: TelegramUser) -> str:
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@no_cache_response
 def resend_registration_step(request):
     """
     Определяет текущий шаг регистрации пользователя и отправляет ему

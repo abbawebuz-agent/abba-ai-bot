@@ -475,11 +475,11 @@ async def ask_language(message: Message, user, state: FSMContext):
     logger.info(f"[ask_language] Вызывается для пользователя {user.telegram_id}, текущий язык: {user.language}")
     
     # Показываем приветствие на всех языках
-    welcome_text = "Assalomu alaykum!\n«JIP» dasturiga xush kelibsiz.\nIltimos, qulay bo’lgan tilni tanlang:\n\nДобрый день!\nДобро пожаловать в программу «JIP».\nПожалуйста, выберите удобный для вас язык:"
+    welcome_text = "Assalomu alaykum!\n«JIP» dasturiga xush kelibsiz.\nIltimos, qulay bo'lgan tilni tanlang:\n\nДобрый день!\nДобро пожаловать в программу «JIP».\nПожалуйста, выберите удобный для вас язык:"
     
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(
-            text="🇺🇿 O‘zbekcha ",
+            text="🇺🇿 O'zbekcha ",
             callback_data='lang_uz_latin'
         )],
         [types.InlineKeyboardButton(
