@@ -66,12 +66,16 @@ async def eskiz_login() -> str | None:
         if not token:
             logger.error("Eskiz login: javobda token yo'q: %s", data)
             return None
-        await _cache_set(_TOKEN_CACHE_KEY, token, _TOKEN_TTL)
-        logger.info("Eskiz login OK, token cache'landi")
-        return token
     except Exception as e:
         logger.warning("Eskiz login exception: %s", e)
         return None
+    # Cache'ga yozish — xato bo'lsa ham token qaytadi (cache ikkilamchi).
+    try:
+        await _cache_set(_TOKEN_CACHE_KEY, token, _TOKEN_TTL)
+    except Exception as e:
+        logger.warning("Eskiz token cache'lanmadi (zarar yo'q): %s", e)
+    logger.info("Eskiz login OK")
+    return token
 
 
 async def eskiz_send_sms(phone: str, message: str) -> tuple[bool, str]:
@@ -86,7 +90,11 @@ async def eskiz_send_sms(phone: str, message: str) -> tuple[bool, str]:
         logger.warning("Eskiz: noto'g'ri telefon %r -> %r", phone, digits)
         return False, "invalid_phone"
 
-    token = await _cache_get(_TOKEN_CACHE_KEY)
+    try:
+        token = await _cache_get(_TOKEN_CACHE_KEY)
+    except Exception as e:
+        logger.warning("Eskiz cache get xato: %s", e)
+        token = None
     if not token:
         token = await eskiz_login()
         if not token:

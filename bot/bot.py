@@ -824,8 +824,16 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
     prefix = "🔄 " if is_resend else ""
 
     phone = getattr(user, 'phone_number', None)
-    ok, info = await eskiz_send_sms(phone, _build_otp_sms(user, code))
     dev_show = getattr(settings, 'ESKIZ_DEV_SHOW_CODE', False)
+
+    # SMS yuborishni HECH QACHON yiqilmaydigan qilamiz — har holatда foydalanuvchi
+    # javob olsin (aks holda handler exception bilan to'xtab, hech narsa ko'rsatmaydi).
+    ok, info = False, 'init'
+    try:
+        ok, info = await eskiz_send_sms(phone, _build_otp_sms(user, code))
+    except Exception as e:  # noqa: BLE001
+        info = f'exception:{e}'
+        logger.exception("eskiz_send_sms crashed")
 
     if ok:
         text = prefix + get_text(user, 'VERIFY_CODE_SENT_SMS')
@@ -840,6 +848,7 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
         if dev_show:
             # Test rejimi: Eskiz haqiqiy OTP matnini yetkazmaydi — QA davom etishi uchun
             text += "\n\n" + get_text(user, 'VERIFY_DEV_CODE', code=code)
+            text += f"\n<code>{info}</code>"  # dev: aniq sababni ko'rsatamiz
 
     # Har holatda: kod FSM'da turadi, resend (60s cooldown) ishlaydi.
     await message.answer(text, reply_markup=keyboard, parse_mode='HTML')
