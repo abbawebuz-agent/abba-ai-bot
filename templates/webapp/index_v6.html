@@ -327,13 +327,15 @@ function RewardThumb({ icon, size, locked, image }) {
 
 function StatusBadge({ status }) {
   const lang = useLang();
-  const meta = STATUS[status];
+  const meta = STATUS[status] || { label: { uz: status, ru: status } };
+  const muted = { bg: "transparent", fg: "var(--ink-3)", line: "var(--line)", dot: "var(--ink-3)" };
   const styleByStatus = {
     delivered: { bg: "var(--accent)", fg: "#fff", line: "transparent", dot: "#fff" },
     shipping:  { bg: "transparent", fg: "var(--ink)", line: "var(--ink)", dot: "var(--ink)" },
     approved:  { bg: "var(--surface)", fg: "var(--ink)", line: "transparent", dot: "var(--ink-2)" },
     pending:   { bg: "transparent", fg: "var(--ink-2)", line: "var(--line)", dot: "var(--ink-3)" },
-  }[status];
+    cancelled: muted, rejected: muted, not_received: muted,
+  }[status] || muted;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 26, whiteSpace: "nowrap",
       padding: "0 11px", borderRadius: 13, fontSize: 12.5, fontWeight: 600, letterSpacing: "-0.01em", flexShrink: 0,
@@ -886,7 +888,9 @@ function OrderStepper({ step }) {
 function OrderCard({ o, i, onCancel, onConfirm }) {
   const t = useT();
   const lang = useLang();
-  const step = STATUS[o.status].step;
+  const meta = STATUS[o.status] || {};
+  const step = meta.step || 0;
+  const terminal = !!meta.terminal;
   const canCancel = o.cancelable && o.status === "pending";
   const canConfirm = o.status === "shipping";
   return (
@@ -903,7 +907,7 @@ function OrderCard({ o, i, onCancel, onConfirm }) {
         </div>
         <StatusBadge status={o.status} />
       </div>
-      <OrderStepper step={step} />
+      {!terminal && <OrderStepper step={step} />}
       {(canCancel || canConfirm) && (
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
           {canConfirm && (
@@ -928,6 +932,8 @@ function OrderCard({ o, i, onCancel, onConfirm }) {
 function OrdersScreen({ orders, empty, onCancel, onConfirm, onNav }) {
   const t = useT();
   const list = empty ? [] : orders;
+  const active = list.filter((o) => !o.history);
+  const history = list.filter((o) => o.history);
   return (
     <div className="screen-pad">
       <div style={{ paddingTop: 4 }}>
@@ -942,9 +948,22 @@ function OrdersScreen({ orders, empty, onCancel, onConfirm, onNav }) {
             cta={t("Sovg'alarga o'tish", "К наградам")} onCta={() => onNav("rewards")} />
         </Card>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 18 }}>
-          {list.map((o, i) => <OrderCard key={o.id} o={o} i={i} onCancel={onCancel} onConfirm={onConfirm} />)}
-        </div>
+        <>
+          {active.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 18 }}>
+              {active.map((o, i) => <OrderCard key={o.id} o={o} i={i} onCancel={onCancel} onConfirm={onConfirm} />)}
+            </div>
+          )}
+          {history.length > 0 && (
+            <div style={{ marginTop: active.length > 0 ? 22 : 18 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 650, color: "var(--ink-3)", margin: "0 4px 10px",
+                textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Tarix", "История")}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {history.map((o, i) => <OrderCard key={o.id} o={o} i={i} onCancel={onCancel} onConfirm={onConfirm} />)}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -1631,7 +1650,7 @@ function buildActivity(hist, reds) {
   return groups;
 }
 
-const STATUS_MAP = { pending: 'pending', approved: 'approved', sent: 'shipping', completed: 'delivered' };
+const STATUS_MAP = { pending: 'pending', approved: 'approved', sent: 'shipping', completed: 'delivered', cancelled_by_user: 'cancelled', rejected: 'rejected', not_received: 'not_received' };
 
 async function loadData() {
   const [u, gifts, reds, top, hist, admin, promos, proj] = await Promise.all([
@@ -1671,6 +1690,9 @@ async function loadData() {
     approved: { label: { uz: 'Tasdiqlandi', ru: 'Подтверждён' }, step: 2 },
     shipping: { label: { uz: "Yo'lda", ru: 'В пути' }, step: 3 },
     delivered: { label: { uz: 'Yetkazildi', ru: 'Доставлен' }, step: 4 },
+    cancelled: { label: { uz: 'Bekor qilindi', ru: 'Отменён' }, step: 0, terminal: true },
+    rejected: { label: { uz: 'Rad etildi', ru: 'Отклонён' }, step: 0, terminal: true },
+    not_received: { label: { uz: 'Olinmadi', ru: 'Не получен' }, step: 0, terminal: true },
   };
 
   window.REWARDS = giftsList.map((g) => ({
@@ -1688,6 +1710,7 @@ async function loadData() {
       image: g.image || g.image_url || null, cost: g.points_cost || g.cost || 0,
       date: (function () { const d = parseDate(r.requested_at); return relDate(d); })(),
       status: st, cancelable: st === 'pending', user_confirmed: !!r.user_confirmed,
+      history: ['cancelled', 'rejected', 'not_received'].indexOf(st) !== -1,
     };
   }).filter(Boolean);
 
@@ -1883,9 +1906,15 @@ function App() {
 
   const cancelOrder = async (id) => {
     const prev = orders;
+    // faol ro'yxatdan darrov olib tashlaymiz (keyin tarixда qayta paydo bo'ladi)
     setOrders((p) => p.filter((o) => o.id !== id));
-    try { await api("/webapp/cancel-order/", { method: "POST", body: { redemption_id: id } }); }
-    catch (e) { setOrders(prev); flash(e.message || "Xato", "error"); }
+    try {
+      const res = await api("/webapp/cancel-order/", { method: "POST", body: { redemption_id: id } });
+      // ball qaytdi — darrov ko'rsatamiz
+      if (res && res.new_points != null) setPoints(res.new_points);
+      // backenddan qayta yuklaymiz: bekor qilinган buyurtma "Tarix"да ko'rinadi + ball aniq
+      await loadData(); setOrders(ORDERS); setPoints(USER.points);
+    } catch (e) { setOrders(prev); flash(e.message || "Xato", "error"); }
   };
   const confirmDelivery = async (id) => {
     setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: "delivered", cancelable: false } : o));
