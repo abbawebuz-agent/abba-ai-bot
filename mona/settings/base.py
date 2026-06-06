@@ -274,6 +274,16 @@ TELEGRAM_BOT_ADMIN_USERNAME = env('TELEGRAM_BOT_ADMIN_USERNAME', default='')  # 
 # xizmati (@VerificationCodes) orqali yuborish uchun. Bo'sh bo'lsa, kod bot chatida
 # ko'rsatiladi (eski usul). Token: https://gateway.telegram.org → API
 TELEGRAM_GATEWAY_TOKEN = env('TELEGRAM_GATEWAY_TOKEN', default='')
+
+# Eskiz.uz SMS (notify.eskiz.uz) — ro'yxatdan o'tishda OTP kodini real SMS qilib
+# yuborish uchun birlamchi kanal. Kirish ma'lumotlarini Railway env'ga qo'ying.
+ESKIZ_EMAIL = env('ESKIZ_EMAIL', default='')
+ESKIZ_PASSWORD = env('ESKIZ_PASSWORD', default='')
+ESKIZ_FROM = env('ESKIZ_FROM', default='4546')  # jo'natuvchi nik (alfa-name)
+# True bo'lsa kod bot chatida HAM ko'rsatiladi — FAQAT test rejimi uchun.
+# Productionda HAR DOIM False bo'lishi shart (kod oshkor bo'lmasin).
+ESKIZ_DEV_SHOW_CODE = env.bool('ESKIZ_DEV_SHOW_CODE', default=False)
+
 # Admin Telegram IDs — sotuvchi ro'yxatdan o'tganda bildirishnoma yuboriladi
 # Bir nechta ID vergul bilan: "123456789,987654321"
 ADMIN_TELEGRAM_IDS = [

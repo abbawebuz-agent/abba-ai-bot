@@ -100,6 +100,18 @@ TRANSLATIONS = {
         'VERIFY_CODE_CORRECT': "✅ Telefon raqami tasdiqlandi!",
         'VERIFY_CODE_COOLDOWN': "⏳ {seconds} soniya kuting, keyin yangi kod so'rang.",
         'VERIFY_CODE_RESEND_BTN': "🔄 Yangi kod olish",
+        'VERIFY_CODE_SENT_SMS': (
+            "📩 <b>Tasdiqlash kodi yuborildi!</b>\n\n"
+            "Kod telefon raqamingizga <b>SMS</b> orqali yuborildi. "
+            "SMS xabaringizni tekshiring va kodni shu yerga kiriting.\n\n"
+            "Noto'g'ri kiritilsa qayta urinib ko'ring.\n"
+            "Yangi kod <b>1 daqiqa</b>dan so'ng so'ralishi mumkin."
+        ),
+        'VERIFY_SMS_FAILED': (
+            "⚠️ SMS yuborib bo'lmadi. Iltimos, biroz kutib, "
+            "<b>«Yangi kod olish»</b> tugmasi orqali qayta urinib ko'ring."
+        ),
+        'VERIFY_DEV_CODE': "🧪 (TEST rejimi) Kodingiz: <b>{code}</b>",
         # Viloyat tanlash
         'CHOOSE_REGION': "📍 Yashash viloyatingizni tanlang:",
         'REGION_SAVED': "✅ Viloyat saqlandi: <b>{region}</b>",
@@ -473,6 +485,18 @@ TRANSLATIONS = {
         'VERIFY_CODE_CORRECT': "✅ Номер телефона подтверждён!",
         'VERIFY_CODE_COOLDOWN': "⏳ Подождите {seconds} секунд перед запросом нового кода.",
         'VERIFY_CODE_RESEND_BTN': "🔄 Получить новый код",
+        'VERIFY_CODE_SENT_SMS': (
+            "📩 <b>Код подтверждения отправлен!</b>\n\n"
+            "Код отправлен на ваш номер по <b>SMS</b>. "
+            "Проверьте сообщения и введите код здесь.\n\n"
+            "При ошибке попробуйте снова.\n"
+            "Новый код можно запросить через <b>1 минуту</b>."
+        ),
+        'VERIFY_SMS_FAILED': (
+            "⚠️ Не удалось отправить SMS. Подождите немного и "
+            "повторите через кнопку <b>«Получить новый код»</b>."
+        ),
+        'VERIFY_DEV_CODE': "🧪 (ТЕСТ-режим) Ваш код: <b>{code}</b>",
         # Выбор региона
         'CHOOSE_REGION': "📍 Выберите ваш регион:",
         'REGION_SAVED': "✅ Регион сохранён: <b>{region}</b>",

@@ -26,6 +26,7 @@ from django.utils import timezone
 from core.models import TelegramUser, QRCode, QRCodeScanAttempt, Gift, GiftRedemption, VideoInstruction, UzRegion, UzDistrict
 from core.utils import generate_qr_code_image
 from core.regions import UZBEKISTAN_REGIONS
+from core.sms import eskiz_send_sms
 from .translations import get_text, TRANSLATIONS
 from .location_picker import (
     build_region_keyboard,
@@ -792,12 +793,25 @@ async def _send_code_via_gateway(phone_number: str, code: str):
         return False, str(e)
 
 
-async def _send_verification_code(message: Message, user, state: FSMContext, is_resend: bool = False):
-    """Генерирует и отправляет 4-значный код подтверждения.
+# OTP SMS matni — Eskiz moderatsiyasidan o'tgan shablon bilan AYNAN mos bo'lishi shart.
+# UI tarjimasidan ajratib turamiz (tasodifan o'zgartirib qo'ymaslik uchun).
+_OTP_SMS_TEXT = {
+    'uz_latin': "JIP: tasdiqlash kodi {code}. Hech kimga bermang.",
+    'ru':       "JIP: код подтверждения {code}. Никому не сообщайте.",
+}
 
-    Agar TELEGRAM_GATEWAY_TOKEN sozlangan bo'lsa, kod Telegram'ning rasmiy xizmati
-    (@VerificationCodes) orqali yuboriladi (bot chatida ko'rsatilmaydi).
-    Aks holda — eski usul: kod bot xabarida ko'rsatiladi.
+
+def _build_otp_sms(user, code: str) -> str:
+    lang = getattr(user, 'language', 'uz_latin') or 'uz_latin'
+    tpl = _OTP_SMS_TEXT.get(lang, _OTP_SMS_TEXT['uz_latin'])
+    return tpl.format(code=code)
+
+
+async def _send_verification_code(message: Message, user, state: FSMContext, is_resend: bool = False):
+    """4 xonali tasdiqlash kodini yaratadi va Eskiz orqali SMS qilib yuboradi.
+
+    Faqat-SMS rejimi: kod bot chatida KO'RSATILMAYDI. Agar ESKIZ_DEV_SHOW_CODE=True
+    bo'lsa (faqat test rejimi uchun), kod chatда ham ko'rsatiladi.
     """
     code = str(random.randint(1000, 9999))
     await state.update_data(vcode=code, vcode_sent_at=time.time(), vcode_attempts=0)
@@ -810,14 +824,24 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
     prefix = "🔄 " if is_resend else ""
 
     phone = getattr(user, 'phone_number', None)
-    gw_ok, _info = await _send_code_via_gateway(phone, code)
-    if gw_ok:
-        # Kod Telegram rasmiy xizmati orqali yuborildi — chatda ko'rsatmaymiz
-        text = prefix + get_text(user, 'VERIFY_CODE_SENT_GATEWAY')
-    else:
-        # Fallback: Gateway sozlanmagan yoki xato — eski usul (kod chatda)
-        text = prefix + get_text(user, 'VERIFY_CODE_SENT', code=code)
+    ok, info = await eskiz_send_sms(phone, _build_otp_sms(user, code))
+    dev_show = getattr(settings, 'ESKIZ_DEV_SHOW_CODE', False)
 
+    if ok:
+        text = prefix + get_text(user, 'VERIFY_CODE_SENT_SMS')
+        if dev_show:
+            text += "\n\n" + get_text(user, 'VERIFY_DEV_CODE', code=code)
+    else:
+        logger.warning(
+            "OTP SMS yuborilmadi user=%s sabab=%s",
+            getattr(user, 'telegram_id', '?'), info,
+        )
+        text = prefix + get_text(user, 'VERIFY_SMS_FAILED')
+        if dev_show:
+            # Test rejimi: Eskiz haqiqiy OTP matnini yetkazmaydi — QA davom etishi uchun
+            text += "\n\n" + get_text(user, 'VERIFY_DEV_CODE', code=code)
+
+    # Har holatda: kod FSM'da turadi, resend (60s cooldown) ishlaydi.
     await message.answer(text, reply_markup=keyboard, parse_mode='HTML')
     await state.set_state(RegistrationStates.waiting_for_verification_code)
 
