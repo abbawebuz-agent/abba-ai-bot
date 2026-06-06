@@ -835,20 +835,21 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
         info = f'exception:{e}'
         logger.exception("eskiz_send_sms crashed")
 
-    if ok:
-        text = prefix + get_text(user, 'VERIFY_CODE_SENT_SMS')
-        if dev_show:
-            text += "\n\n" + get_text(user, 'VERIFY_DEV_CODE', code=code)
-    else:
+    if not ok:
         logger.warning(
             "OTP SMS yuborilmadi user=%s sabab=%s",
             getattr(user, 'telegram_id', '?'), info,
         )
+
+    if dev_show:
+        # O'tish davri (Eskiz hali test rejimida): kodni eski usulда bot chatида
+        # ko'rsatamiz. Eskiz fonда baribir urinib ko'radi — integratsiya o'chmaydi.
+        # Eskiz production + shablon tayyor bo'lгач ESKIZ_DEV_SHOW_CODE=False qilинадi.
+        text = prefix + get_text(user, 'VERIFY_CODE_SENT', code=code)
+    elif ok:
+        text = prefix + get_text(user, 'VERIFY_CODE_SENT_SMS')
+    else:
         text = prefix + get_text(user, 'VERIFY_SMS_FAILED')
-        if dev_show:
-            # Test rejimi: Eskiz haqiqiy OTP matnini yetkazmaydi — QA davom etishi uchun
-            text += "\n\n" + get_text(user, 'VERIFY_DEV_CODE', code=code)
-            text += f"\n<code>{info}</code>"  # dev: aniq sababni ko'rsatamiz
 
     # Har holatda: kod FSM'da turadi, resend (60s cooldown) ishlaydi.
     await message.answer(text, reply_markup=keyboard, parse_mode='HTML')
