@@ -634,6 +634,11 @@ def update_user_language(request):
             {'error': 'User not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid telegram_id'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(['POST'])
