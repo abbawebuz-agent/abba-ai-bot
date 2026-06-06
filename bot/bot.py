@@ -997,8 +997,24 @@ async def process_reg_region(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
     await state.clear()
-    # Ro'yxatdan o'tish yakunlandi — muvaffaqiyat xabari + balans menyu + umumiy webapp tugma
-    await callback.message.answer(get_text(user, 'REGISTRATION_SUCCESS'), parse_mode='HTML')
+    # Ro'yxatdan o'tish yakunlandi — muvaffaqiyat xabari (webapp tugmasi bilan) + balans menyu
+    web_app_url = get_web_app_url()
+    success_kb = None
+    if web_app_url:
+        try:
+            success_kb = types.InlineKeyboardMarkup(inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text=get_text(user, 'MY_GIFTS'),
+                    web_app=types.WebAppInfo(url=web_app_url),
+                )
+            ]])
+        except Exception as e:
+            logger.warning(f"REGISTRATION_SUCCESS webapp tugmasi yaratilmadi: {e}")
+    await callback.message.answer(
+        get_text(user, 'REGISTRATION_SUCCESS'),
+        parse_mode='HTML',
+        reply_markup=success_kb,
+    )
     await show_main_menu(callback.message, user)
     await callback.message.answer(get_text(user, 'SEND_PROMO_CODE'))
 

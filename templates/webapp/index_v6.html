@@ -576,23 +576,44 @@ function TopRating() {
 
 function AdminContact() {
   const t = useT();
-  const lang = useLang();
-  const href = "https://t.me/" + ADMIN.handle.replace(/^@/, "");
+  const [open, setOpen] = useStateH(false);
+  const tgUrl = ADMIN.url;
+  const phone = ADMIN.phone;
+  const btnBase = { flex: 1, textDecoration: "none", borderRadius: 14, padding: "13px 12px",
+    fontSize: 14.5, fontWeight: 640, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="card btn-press anim"
-      style={{ "--anim": "fadeUp .5s ease .16s both", textDecoration: "none", color: "inherit",
-        background: "var(--surface-2)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)",
-        padding: 16, display: "flex", alignItems: "center", gap: 14 }}>
-      <div style={{ width: 46, height: 46, borderRadius: 14, background: "var(--accent)", flexShrink: 0,
-        display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon name="send" size={22} stroke={1.9} color="#fff" />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15.5, fontWeight: 640, letterSpacing: "-0.02em" }}>{t("Admin bilan bog'lanish", "Связаться с админом")}</div>
-        <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 2 }}>{pick(ADMIN.note, lang)} · {ADMIN.handle}</div>
-      </div>
-      <Icon name="chevronR" size={18} stroke={2} color="var(--ink-3)" />
-    </a>
+    <div className="anim" style={{ "--anim": "fadeUp .5s ease .16s both" }}>
+      <button onClick={() => setOpen((v) => !v)} className="card btn-press"
+        style={{ width: "100%", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+          background: "var(--surface-2)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)",
+          padding: 16, display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 46, height: 46, borderRadius: 14, background: "var(--accent)", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Icon name="send" size={22} stroke={1.9} color="var(--on-accent)" />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 15.5, fontWeight: 640, letterSpacing: "-0.02em" }}>
+          {t("Admin bilan bog'lanish", "Связаться с админом")}
+        </div>
+        <Icon name="chevronR" size={18} stroke={2} color="var(--ink-3)"
+          style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform .25s ease" }} />
+      </button>
+      {open && (
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          {phone && (
+            <a href={"tel:" + phone} className="btn-press"
+              style={{ ...btnBase, background: "var(--accent)", color: "var(--on-accent)" }}>
+              <Icon name="phone" size={18} stroke={2} color="var(--on-accent)" /> {t("Qo'ng'iroq", "Позвонить")}
+            </a>
+          )}
+          {tgUrl && (
+            <a href={tgUrl} target="_blank" rel="noopener noreferrer" className="btn-press"
+              style={{ ...btnBase, background: "var(--accent-soft)", color: "var(--accent)" }}>
+              <Icon name="send" size={18} stroke={2} color="var(--accent)" /> {t("Yozish", "Написать")}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1676,11 +1697,18 @@ async function loadData() {
 
   window.ACTIVITY = buildActivity(hist, redsList);
 
-  const acVal = admin.contact_value || (asList(admin, 'contacts')[0] || {}).contact_value || '@jip_support';
+  const acList = asList(admin, 'contacts');
+  const findC = (type) => acList.find((c) => c.contact_type === type)
+    || (admin.contact_type === type ? { contact_value: admin.contact_value, contact_url: admin.contact_url } : null);
+  const tgC = findC('telegram');
+  const phC = findC('phone');
+  const tgVal = tgC ? String(tgC.contact_value || '') : '';
+  const acVal = tgVal || admin.contact_value || (acList[0] || {}).contact_value || '@jip_support';
   window.ADMIN = {
     name: 'JIP GROUP',
     handle: String(acVal).startsWith('@') ? acVal : ('@' + String(acVal).replace(/^@/, '')),
-    url: admin.contact_url || ('https://t.me/' + String(acVal).replace(/^@/, '')),
+    url: (tgC && tgC.contact_url) || admin.contact_url || ('https://t.me/' + String(acVal).replace(/^@/, '')),
+    phone: phC ? String(phC.contact_value || '').replace(/[^0-9+]/g, '') : null,
     note: { uz: "Savol bo'lsa — yozing", ru: 'Есть вопрос — напишите' },
   };
 
