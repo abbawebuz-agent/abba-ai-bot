@@ -1569,11 +1569,10 @@ def seller_commission_calc(request):
 
 # ============ T11: LOYIHALAR (PROJECTS) ============
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-@no_cache_response
 def _project_user(request):
-    """telegram_id orqali userни topadi (GET yoki body)."""
+    """telegram_id orqali userни topadi (GET yoki body).
+    DIQQAT: bu oddiy HELPER, view EMAS — (user, err_response) tuple qaytaradi.
+    Bunga @api_view qo'ymang: tuple'ni render qilolmay 500 beradi."""
     telegram_id = (request.data.get('telegram_id') if request.method == 'POST' else None) \
         or request.GET.get('telegram_id') or request.GET.get('tg_id')
     if not telegram_id:
