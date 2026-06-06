@@ -126,6 +126,11 @@ def get_user_data(request):
             {'error': 'User not found', 'is_registered': False},
             status=status.HTTP_404_NOT_FOUND
         )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid telegram_id', 'is_registered': False},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(['GET'])
@@ -158,7 +163,7 @@ def get_gifts(request):
             try:
                 user = TelegramUser.objects.get(telegram_id=int(telegram_id))
                 language = user.language or 'uz_latin'
-            except TelegramUser.DoesNotExist:
+            except (TelegramUser.DoesNotExist, ValueError, TypeError):
                 pass
 
         gifts = gifts_query.order_by('order', 'points_cost')
@@ -197,6 +202,11 @@ def get_user_redemptions(request):
         return Response(
             {'error': 'User not found'},
             status=status.HTTP_404_NOT_FOUND
+        )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid telegram_id'},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -445,6 +455,11 @@ def get_qr_history(request):
             {'error': 'User not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid telegram_id'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(['GET'])
@@ -646,7 +661,12 @@ def register_qr_code(request):
             {'error': 'User not found'},
             status=status.HTTP_404_NOT_FOUND
         )
-    
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid telegram_id'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     from django.db import transaction
     from bot.translations import get_text
     
@@ -966,11 +986,17 @@ def resend_registration_step(request):
                         status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        user = TelegramUser.objects.get(telegram_id=int(telegram_id))
+        tg_int = int(telegram_id)
+    except (ValueError, TypeError):
+        return Response({'error': 'Invalid telegram_id'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = TelegramUser.objects.get(telegram_id=tg_int)
     except TelegramUser.DoesNotExist:
         # Пользователь совсем новый — отправляем стартовое сообщение
         _tg_api('sendMessage', {
-            'chat_id': int(telegram_id),
+            'chat_id': tg_int,
             'text': (
                 "Assalomu alaykum!\n«JIP» dasturiga xush kelibsiz.\n"
                 "Iltimos, qulay bo'lgan tilni tanlang:\n\n"
