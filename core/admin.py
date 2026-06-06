@@ -135,10 +135,43 @@ class UzDistrictAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
         return queryset, may_dup
 
 
+class ProjectPhotoInline(admin.TabularInline):
+    """Инлайн: пользователь загрузил фото работ (проекты, readonly).
+    Foydalanuvchi yuklagan barcha obyekt rasmlari shu yerda ko'rinadi."""
+    model = ProjectPhoto
+    fk_name = 'user'
+    extra = 0
+    can_delete = False
+    max_num = 0
+    readonly_fields = ['thumb', 'caption', 'status_badge', 'created_at']
+    fields = ['thumb', 'caption', 'status_badge', 'created_at']
+    ordering = ['-created_at']
+    verbose_name = 'Loyiha rasmi'
+    verbose_name_plural = 'Проекты (loyiha rasmlari)'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def thumb(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="height:60px;width:60px;object-fit:cover;border-radius:8px;" />',
+                obj.image.url,
+            )
+        return '—'
+    thumb.short_description = 'Rasm'
+
+    def status_badge(self, obj):
+        if obj.is_deleted:
+            return format_html('<span style="color:#dc2626;font-weight:700;">🗑 Usta o\'chirgan</span>')
+        return format_html('<span style="color:#16a34a;">● Faol</span>')
+    status_badge.short_description = 'Holat'
+
+
 @admin.register(TelegramUser)
 class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     """Админка для пользователей Telegram."""
-    inlines = [ScannedQRCodeInline, PromoCodeAttemptInline]
+    inlines = [ScannedQRCodeInline, PromoCodeAttemptInline, ProjectPhotoInline]
     list_display = [
         'user_display', 'phone_number', 'region_display', 'district_display',
         'points_display', 'language_badge',

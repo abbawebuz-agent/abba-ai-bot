@@ -1681,7 +1681,7 @@ async function loadData() {
     phone: u.phone_number || '',
     points: u.points || 0,
     scans: u.qr_scan_count || 0,
-    giftsCount: redsList.length,
+    giftsCount: redsList.filter((r) => ['cancelled_by_user', 'rejected', 'not_received'].indexOf(r.status) === -1).length,
     rank: me ? me.position : 0,
   };
 
