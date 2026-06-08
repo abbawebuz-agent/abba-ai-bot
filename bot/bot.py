@@ -412,14 +412,11 @@ async def process_phone(message: Message, state: FSMContext):
         await message.answer(get_text(user, 'PHONE_ALREADY_USED'), parse_mode='HTML')
         return
 
-    @sync_to_async
-    def save_phone(ph):
-        u = TelegramUser.objects.get(telegram_id=message.from_user.id)
-        u.phone_number = ph
-        u.save(update_fields=['phone_number'])
-        return u
-
-    user = await save_phone(phone)
+    # ⚠️ Telefonni hali DB'ga SAQLAMAYMIZ — avval SMS kod tasdiqlansin. Aks holda
+    # tasdiqlanmagan raqam saqlanib qoladi va qayta /start'da cmd_start uni "bor"
+    # deb verifikatsiyani o'tkazib yuboradi (tasdiqsiz ro'yxatdan o'tish bug'i).
+    await state.update_data(pending_phone=phone)
+    user = await get_user()
     await _send_verification_code(message, user, state)
 
 
@@ -826,7 +823,9 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
     ]])
     prefix = "🔄 " if is_resend else ""
 
-    phone = getattr(user, 'phone_number', None)
+    # Telefon hali DB'ga saqlanmagan (kod tasdiqlangach saqlanadi) — state'dan olamiz.
+    _vdata = await state.get_data()
+    phone = _vdata.get('pending_phone') or getattr(user, 'phone_number', None)
 
     # SMS yuborishni HECH QACHON yiqilmaydigan qilamiz — har holatда foydalanuvchi
     # javob olsin (aks holda handler exception bilan to'xtab, hech narsa ko'rsatmaydi).
@@ -875,6 +874,15 @@ async def process_verification_code(message: Message, state: FSMContext):
     entered = (message.text or '').strip()
 
     if entered == stored:
+        # Kod to'g'ri — ENDI telefonni DB'ga saqlaymiz (tasdiqlangan).
+        pending_phone = data.get('pending_phone')
+        if pending_phone:
+            @sync_to_async
+            def commit_phone():
+                u = TelegramUser.objects.get(telegram_id=message.from_user.id)
+                u.phone_number = pending_phone
+                u.save(update_fields=['phone_number'])
+            await commit_phone()
         await message.answer(get_text(user, 'VERIFY_CODE_CORRECT'), reply_markup=types.ReplyKeyboardRemove())
         await ask_location(message, user, state)
     else:
