@@ -12,6 +12,7 @@ from django.core.validators import MinValueValidator
 from simple_history.models import HistoricalRecords
 from datetime import timedelta
 from datetime import date
+from core.storages import raw_storage, video_storage
 
 
 class UzRegion(models.Model):
@@ -678,6 +679,7 @@ class QRCodeBatch(models.Model):
     )
     zip_file = models.FileField(
         upload_to='batches/', null=True, blank=True, verbose_name='ZIP fayl',
+        storage=raw_storage,
     )
     error_message = models.TextField(blank=True, verbose_name='Xato xabari')
 
@@ -1481,8 +1483,8 @@ class Promotion(models.Model):
 
 class PrivacyPolicy(models.Model):
     """Модель для политики конфиденциальности."""
-    pdf_uz_latin = models.FileField(blank=True, null=True, upload_to='privacy_policy/', verbose_name='PDF файл (O\'zbek lotin)', help_text='PDF файл политики конфиденциальности для узбекского языка (латиница)')
-    pdf_ru = models.FileField(blank=True, null=True, upload_to='privacy_policy/', verbose_name='PDF файл (Ruscha)', help_text='PDF файл политики конфиденциальности для русского языка')
+    pdf_uz_latin = models.FileField(blank=True, null=True, upload_to='privacy_policy/', storage=raw_storage, verbose_name='PDF файл (O\'zbek lotin)', help_text='PDF файл политики конфиденциальности для узбекского языка (латиница)')
+    pdf_ru = models.FileField(blank=True, null=True, upload_to='privacy_policy/', storage=raw_storage, verbose_name='PDF файл (Ruscha)', help_text='PDF файл политики конфиденциальности для русского языка')
     is_active = models.BooleanField(default=True, verbose_name='Faol')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Yangilangan')
@@ -1617,12 +1619,14 @@ class VideoInstruction(models.Model):
     video_electrician_uz = models.FileField(
         upload_to='video_instructions/',
         null=True, blank=True,
+        storage=video_storage,
         verbose_name='Video — Elektrik (O\'zbek)',
         help_text='Video fayl elektriklar uchun o\'zbek tilida'
     )
     video_electrician_ru = models.FileField(
         upload_to='video_instructions/',
         null=True, blank=True,
+        storage=video_storage,
         verbose_name='Video — Elektrik (Ruscha)',
         help_text='Video fayl elektriklar uchun rus tilida'
     )
@@ -1642,12 +1646,14 @@ class VideoInstruction(models.Model):
     video_seller_uz = models.FileField(
         upload_to='video_instructions/',
         null=True, blank=True,
+        storage=video_storage,
         verbose_name='Video — Tadbirkor (O\'zbek)',
         help_text='Video fayl tadbirkorlar uchun o\'zbek tilida'
     )
     video_seller_ru = models.FileField(
         upload_to='video_instructions/',
         null=True, blank=True,
+        storage=video_storage,
         verbose_name='Video — Tadbirkor (Ruscha)',
         help_text='Video fayl tadbirkorlar uchun rus tilida'
     )
