@@ -813,8 +813,8 @@ def _build_otp_sms(user, code: str) -> str:
 async def _send_verification_code(message: Message, user, state: FSMContext, is_resend: bool = False):
     """4 xonali tasdiqlash kodini yaratadi va Eskiz orqali SMS qilib yuboradi.
 
-    Faqat-SMS rejimi: kod bot chatida KO'RSATILMAYDI. Agar ESKIZ_DEV_SHOW_CODE=True
-    bo'lsa (faqat test rejimi uchun), kod chatда ham ko'rsatiladi.
+    Faqat-SMS rejimi (production): kod bot chatida HECH QACHON ko'rsatilmaydi,
+    faqat real SMS (Eskiz) orqali yuboriladi. Shablon moderatsiyadan o'tgan.
     """
     code = str(random.randint(1000, 9999))
     await state.update_data(vcode=code, vcode_sent_at=time.time(), vcode_attempts=0)
@@ -827,7 +827,6 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
     prefix = "🔄 " if is_resend else ""
 
     phone = getattr(user, 'phone_number', None)
-    dev_show = getattr(settings, 'ESKIZ_DEV_SHOW_CODE', False)
 
     # SMS yuborishni HECH QACHON yiqilmaydigan qilamiz — har holatда foydalanuvchi
     # javob olsin (aks holda handler exception bilan to'xtab, hech narsa ko'rsatmaydi).
@@ -844,12 +843,8 @@ async def _send_verification_code(message: Message, user, state: FSMContext, is_
             getattr(user, 'telegram_id', '?'), info,
         )
 
-    if dev_show:
-        # O'tish davri (Eskiz hali test rejimida): kodni eski usulда bot chatида
-        # ko'rsatamiz. Eskiz fonда baribir urinib ko'radi — integratsiya o'chmaydi.
-        # Eskiz production + shablon tayyor bo'lгач ESKIZ_DEV_SHOW_CODE=False qilинадi.
-        text = prefix + get_text(user, 'VERIFY_CODE_SENT', code=code)
-    elif ok:
+    # Production: kod FAQAT real SMS orqali. Bot chatида HECH QACHON ko'rsatilmaydi.
+    if ok:
         text = prefix + get_text(user, 'VERIFY_CODE_SENT_SMS')
     else:
         text = prefix + get_text(user, 'VERIFY_SMS_FAILED')

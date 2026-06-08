@@ -920,6 +920,80 @@ def admin_qr_diag_view(request):
     return JsonResponse(result, json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
 
+def admin_eskiz_diag_view(request):
+    """Eskiz SMS diagnostika: login + balans + (ixtiyoriy) test-send — xom javoblar.
+
+    Foydalanish:
+      /admin/eskiz-diag/                     -> login + balans
+      /admin/eskiz-diag/?phone=998901234567  -> + shu raqamga REAL test SMS yuboradi
+    """
+    import json, urllib.request, urllib.error, urllib.parse, re
+    from django.conf import settings
+    from django.http import JsonResponse
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    BASE = "https://notify.eskiz.uz/api"
+    out = {}
+
+    def call(method, url, data=None, headers=None):
+        body = urllib.parse.urlencode(data).encode() if data else None
+        req = urllib.request.Request(url, data=body, headers=headers or {}, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as r:
+                raw = r.read().decode()
+                try:
+                    return r.status, json.loads(raw)
+                except Exception:
+                    return r.status, raw
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode()
+            try:
+                return e.code, json.loads(raw)
+            except Exception:
+                return e.code, raw
+        except Exception as e:
+            return None, f"{type(e).__name__}: {e}"
+
+    email = getattr(settings, "ESKIZ_EMAIL", "")
+    password = getattr(settings, "ESKIZ_PASSWORD", "")
+    sender = getattr(settings, "ESKIZ_FROM", "4546")
+    out['creds'] = {
+        'ESKIZ_EMAIL_set': bool(email),
+        'ESKIZ_PASSWORD_set': bool(password),
+        'ESKIZ_FROM': sender,
+        'ESKIZ_DEV_SHOW_CODE': getattr(settings, 'ESKIZ_DEV_SHOW_CODE', None),
+    }
+    if not email or not password:
+        out['error'] = "ESKIZ_EMAIL / ESKIZ_PASSWORD env yo'q"
+        return JsonResponse(out, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+    # 1) Login
+    st, body = call("POST", f"{BASE}/auth/login", data={"email": email, "password": password})
+    token = (body.get("data") or {}).get("token") if isinstance(body, dict) else None
+    out['login'] = {'status': st, 'token_olindi': bool(token), 'body': body if not token else 'OK (token yashirildi)'}
+    if not token:
+        return JsonResponse(out, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+    hdr = {"Authorization": f"Bearer {token}"}
+    # 2) Balans / limit
+    st, body = call("GET", f"{BASE}/user/get-limit", headers=hdr)
+    out['balance'] = {'status': st, 'body': body}
+
+    # 3) Ixtiyoriy: test SMS yuborish
+    phone = request.GET.get('phone', '').strip()
+    if phone:
+        digits = re.sub(r"\D", "", phone)
+        msg = "Код подтверждения для регистрации в приложении JIP 1234"
+        st, body = call("POST", f"{BASE}/message/sms/send",
+                        data={"mobile_phone": digits, "message": msg, "from": sender}, headers=hdr)
+        out['test_send'] = {'phone': digits, 'message': msg, 'status': st, 'body': body}
+
+    return JsonResponse(out, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+
 def admin_bot_diag_view(request):
     """Bot diagnostika: getMe, getWebhookInfo, getChat — guruh nimani ko'ra olishini tekshirish."""
     import json, urllib.request, urllib.error, urllib.parse
@@ -1163,6 +1237,7 @@ urlpatterns = [
     path('admin/claude-inbox/', admin.site.admin_view(admin_claude_inbox_view), name='admin_claude_inbox'),
     path('admin/bot-diag/', admin.site.admin_view(admin_bot_diag_view), name='admin_bot_diag'),
     path('admin/qr-diag/', admin.site.admin_view(admin_qr_diag_view), name='admin_qr_diag'),
+    path('admin/eskiz-diag/', admin.site.admin_view(admin_eskiz_diag_view), name='admin_eskiz_diag'),
     path('admin/qrcodebatch/<int:batch_id>/xlsx/', admin.site.admin_view(admin_batch_xlsx_view), name='admin_batch_xlsx'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
