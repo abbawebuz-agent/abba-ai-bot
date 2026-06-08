@@ -796,8 +796,8 @@ async def _send_code_via_gateway(phone_number: str, code: str):
 # OTP SMS matni — Eskiz moderatsiyasidan o'tgan shablon bilan AYNAN mos bo'lishi shart.
 # UI tarjimasidan ajratib turamiz (tasodifan o'zgartirib qo'ymaslik uchun).
 _OTP_SMS_TEXT = {
-    'uz_latin': "JIP: ro'yxatdan o'tish uchun tasdiqlash kodi {code}. Hech kimga bermang.",
-    'ru':       "JIP: код подтверждения для регистрации {code}. Никому не сообщайте.",
+    'uz_latin': "JIP ilovasida ro'yxatdan o'tish uchun tasdiqlash kodi: {code}. Hech kimga bermang.",
+    'ru':       "Код подтверждения для регистрации в приложении JIP: {code}.",
 }
 
 
