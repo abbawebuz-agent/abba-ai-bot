@@ -45,10 +45,10 @@ def _build_main_menu_keyboard(lang: str | None) -> types.ReplyKeyboardMarkup:
             [
                 types.KeyboardButton(text=_t(lang, "MY_BALANCE")),
                 types.KeyboardButton(text=_t(lang, "TOP_LEADERS")),
-                types.KeyboardButton(text=_t(lang, "TOP_LEADERS_MONTH")),
             ],
             [types.KeyboardButton(text=_t(lang, "ENTER_PROMO_CODE"))],
             [types.KeyboardButton(text=_t(lang, "LANGUAGE"))],
+            [types.KeyboardButton(text=_t(lang, "SELLER_CONTACT_ADMIN"))],
         ],
         resize_keyboard=True,
     )

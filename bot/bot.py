@@ -1356,10 +1356,10 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
                 [
                     types.KeyboardButton(text=get_text(user, 'MY_BALANCE')),
                     types.KeyboardButton(text=get_text(user, 'TOP_LEADERS')),
-                    types.KeyboardButton(text=get_text(user, 'TOP_LEADERS_MONTH')),
                 ],
                 [types.KeyboardButton(text=get_text(user, 'ENTER_PROMO_CODE'))],
                 [types.KeyboardButton(text=get_text(user, 'LANGUAGE'))],
+                [types.KeyboardButton(text=get_text(user, 'SELLER_CONTACT_ADMIN'))],
             ])
             
             keyboard = types.ReplyKeyboardMarkup(
@@ -1762,10 +1762,10 @@ async def show_santenik_menu(message: Message, user: TelegramUser):
             [
                 types.KeyboardButton(text=get_text(user, 'MY_BALANCE')),
                 types.KeyboardButton(text=get_text(user, 'TOP_LEADERS')),
-                types.KeyboardButton(text=get_text(user, 'TOP_LEADERS_MONTH')),
             ],
             [types.KeyboardButton(text=get_text(user, 'ENTER_PROMO_CODE'))],
             [types.KeyboardButton(text=get_text(user, 'LANGUAGE'))],
+            [types.KeyboardButton(text=get_text(user, 'SELLER_CONTACT_ADMIN'))],
         ],
         resize_keyboard=True,
     )
