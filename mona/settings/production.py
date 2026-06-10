@@ -33,6 +33,21 @@ if 'healthcheck.railway.app' not in _allowed:
 
 ALLOWED_HOSTS = _allowed or ['*']
 
+# CSRF — ruxsat etilgan barcha domenlar (custom domen ham) trusted origin bo'lsin.
+# base.py faqat RAILWAY_PUBLIC_DOMAIN ni qo'shadi; custom domen ALLOWED_HOSTS orqali
+# keladi, shuning uchun har bir hostni https origin sifatida qo'shamiz.
+for _h in _allowed:
+    if _h in ('*', 'healthcheck.railway.app'):
+        continue
+    _origin = f'https://{_h}'
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+
+# Qo'shimcha: CSRF_TRUSTED_ORIGINS env (vergul bilan, to'liq URL) — qo'lda boshqarish uchun
+for _origin in env.list('CSRF_TRUSTED_ORIGINS', default=[]):
+    if _origin and _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+
 # Security settings для production
 if not DEBUG:
     # Настройки для работы за прокси (nginx)
