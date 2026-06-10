@@ -1257,3 +1257,13 @@ if settings.DEBUG:
     urlpatterns += staticfiles_urlpatterns()
     # Для media файлов используем стандартный способ
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif not getattr(settings, 'CLOUDINARY_URL', ''):
+    # Production + Cloudinary YO'Q → media fayllar lokal diskda (Railway Volume /app/media).
+    # WhiteNoise faqat STATIC serve qiladi, media EMAS; DEBUG=False da Django ham media
+    # bermaydi → rasm 404 bo'lardi. Shuning uchun media uchun aniq serve route qo'shamiz.
+    # (Cloudinary o'rnatilsa image.url absolyut CDN URL bo'ladi, bu route ishlatilmaydi.)
+    from django.urls import re_path as _re_path
+    from django.views.static import serve as _media_serve
+    urlpatterns += [
+        _re_path(r'^media/(?P<path>.*)$', _media_serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
