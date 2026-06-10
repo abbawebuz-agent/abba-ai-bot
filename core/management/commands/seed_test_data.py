@@ -44,7 +44,9 @@ class Command(BaseCommand):
         batches = self._create_batches(stores)
         qrcodes = self._create_qrcodes(batches, santeniklar)
         self._create_seller_txns(sotuvchilar, stores)
-        self._create_gifts()
+        # Sovg'alar endi faqat admin panel orqali boshqariladi —
+        # test sovg'alar har deployда qayta yaralmasin (real katalog uchun).
+        # self._create_gifts()
         self._create_redemptions(santeniklar)
 
         self.stdout.write(self.style.SUCCESS(
