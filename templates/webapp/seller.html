@@ -39,7 +39,7 @@
   button, [role="button"] { -webkit-tap-highlight-color: transparent; }
 </style>
 </head>
-<body data-lang="{{ user_language|default:'uz_latin' }}">
+<body data-lang="{{ user_language|default:'uz_latin' }}" data-bot="{{ bot_username|default:'santexnik_JIP_bot' }}">
 <div id="root"></div>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
@@ -1101,8 +1101,9 @@ function openBotChat() {
   if (tg && typeof tg.close === 'function') {
     tg.close();
   } else {
-    // Fallback — agar Telegram WebApp emas brauzer bo'lsa
-    window.location.href = 'https://t.me/santexnik_JIP_bot';
+    // Fallback — agar Telegram WebApp emas brauzer bo'lsa (bot nik body data-bot'dan)
+    var botUn = (document.body && document.body.dataset && document.body.dataset.bot) || 'santexnik_JIP_bot';
+    window.location.href = 'https://t.me/' + botUn;
   }
 }
 

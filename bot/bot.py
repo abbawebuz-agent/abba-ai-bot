@@ -1870,6 +1870,9 @@ async def handle_message(message: Message, state: FSMContext = None):
     if chat_type in ('group', 'supergroup'):
         text = message.text or message.caption or ''
         mentioned = False
+        # Bot @username — env'dan (TELEGRAM_BOT_USERNAME), nik o'zgarsa kod buzilmaydi
+        _un = (getattr(settings, 'TELEGRAM_BOT_USERNAME', '') or '').lstrip('@')
+        bot_mention = f'@{_un}'.lower() if _un else '@santexnik_jip_bot'
         # Aiogram entity'lari orqali — eng aniq usul
         try:
             entities = (message.entities or []) + (message.caption_entities or [])
@@ -1878,13 +1881,13 @@ async def handle_message(message: Message, state: FSMContext = None):
                 if ent.type in ('mention', 'text_mention'):
                     mention_text = text[ent.offset:ent.offset + ent.length] if text else ''
                     logger.info(f"[handle_message] mention found: {mention_text!r}")
-                    if mention_text.lower() == '@santexnik_jip_bot':
+                    if mention_text.lower() == bot_mention:
                         mentioned = True
                         break
         except Exception as e:
             logger.exception(f"[handle_message] entity parse error: {e}")
         # Reserve: oddiy matn ichida (case-insensitive)
-        if not mentioned and '@santexnik_jip_bot' in text.lower():
+        if not mentioned and bot_mention in text.lower():
             mentioned = True
             logger.info("[handle_message] mention found in text (fallback)")
 

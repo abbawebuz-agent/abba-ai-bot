@@ -1336,9 +1336,11 @@ def _get_seller_user(request):
 def seller_webapp_view(request):
     """Sotuvchi uchun Telegram Mini App sahifasi."""
     import time
+    from django.conf import settings
     context = {
         'user_language': 'uz_latin',
         'app_version': str(int(time.time())),
+        'bot_username': (getattr(settings, 'TELEGRAM_BOT_USERNAME', '') or '').lstrip('@'),
     }
     response = render(request, 'webapp/seller.html', context)
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
