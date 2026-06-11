@@ -15,6 +15,13 @@ from datetime import date
 from core.storages import raw_storage, video_storage
 
 
+def get_welcome_bonus_points():
+    """Ro'yxatdan o'tgan santexnikka beriladigan xush kelibsiz boni (ball).
+    settings.WELCOME_BONUS_POINTS orqali sozlanadi, default 30."""
+    from django.conf import settings
+    return getattr(settings, 'WELCOME_BONUS_POINTS', 30)
+
+
 class UzRegion(models.Model):
     """Справочник вилоятов Узбекистана (код совпадает с region_filter рассылок)."""
     code = models.CharField(max_length=50, unique=True, db_index=True)
@@ -188,6 +195,11 @@ class TelegramUser(models.Model):
         blank=True
     )
     points = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    welcome_bonus_awarded = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Xush kelibsiz boni berilgan (+30 ball)',
+    )
     is_active = models.BooleanField(default=True, verbose_name='Faol', db_index=True)
     language = models.CharField(
         max_length=15,
@@ -403,6 +415,10 @@ class TelegramUser(models.Model):
             total_earned = QRCode.objects.filter(
                 scanned_by=self, is_scanned=True, is_deleted=False,
             ).aggregate(total=models.Sum('points'))['total'] or 0
+
+            # Ro'yxatdan o'tganda berilgan xush kelibsiz boni (+30 ball)
+            if self.welcome_bonus_awarded:
+                total_earned += get_welcome_bonus_points()
 
             total_spent = GiftRedemption.objects.filter(
                 user=self

@@ -284,6 +284,10 @@ ESKIZ_FROM = env('ESKIZ_FROM', default='4546')  # jo'natuvchi nik (alfa-name)
 # Productionda HAR DOIM False bo'lishi shart (kod oshkor bo'lmasin).
 ESKIZ_DEV_SHOW_CODE = env.bool('ESKIZ_DEV_SHOW_CODE', default=False)
 
+# Ro'yxatdan o'tib bo'lgan santexnikka beriladigan xush kelibsiz boni (ball).
+# 0 bo'lsa — bonus berilmaydi.
+WELCOME_BONUS_POINTS = env.int('WELCOME_BONUS_POINTS', default=30)
+
 # Admin Telegram IDs — sotuvchi ro'yxatdan o'tganda bildirishnoma yuboriladi
 # Bir nechta ID vergul bilan: "123456789,987654321"
 ADMIN_TELEGRAM_IDS = [

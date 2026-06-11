@@ -255,6 +255,25 @@ async def is_registration_complete(user):
     )
 
 
+@sync_to_async
+def award_welcome_bonus(telegram_id):
+    """Ro'yxatdan o'tib bo'lgan santexnikka +30 ball xush kelibsiz boni.
+    Bir martagina beriladi (idempotent). Berilgan ball miqdorini qaytaradi
+    (0 — agar oldin berilgan bo'lsa yoki bonus o'chiq bo'lsa)."""
+    from core.models import get_welcome_bonus_points
+    bonus = get_welcome_bonus_points()
+    if bonus <= 0:
+        return 0
+    u = TelegramUser.objects.filter(telegram_id=telegram_id).first()
+    if not u or u.welcome_bonus_awarded:
+        return 0
+    u.welcome_bonus_awarded = True
+    u.save(update_fields=['welcome_bonus_awarded'])
+    u.invalidate_points_cache()
+    u.calculate_points(force=True)
+    return bonus
+
+
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     """Обработчик команды /start."""
@@ -1003,6 +1022,10 @@ async def process_reg_region(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
     await state.clear()
+
+    # Xush kelibsiz boni (+30 ball) — bir martagina, idempotent
+    bonus_points = await award_welcome_bonus(callback.from_user.id)
+
     # Ro'yxatdan o'tish yakunlandi — muvaffaqiyat xabari (webapp tugmasi bilan) + balans menyu
     web_app_url = get_web_app_url()
     success_kb = None
@@ -1021,6 +1044,12 @@ async def process_reg_region(callback: CallbackQuery, state: FSMContext):
         parse_mode='HTML',
         reply_markup=success_kb,
     )
+    # Xush kelibsiz boni tabrigi (+30 ball berilgan bo'lsa)
+    if bonus_points:
+        await callback.message.answer(
+            get_text(user, 'WELCOME_BONUS', points=bonus_points),
+            parse_mode='HTML',
+        )
     await show_main_menu(callback.message, user)
     await callback.message.answer(get_text(user, 'SEND_PROMO_CODE'))
 

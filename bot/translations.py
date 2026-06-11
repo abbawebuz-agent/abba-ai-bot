@@ -143,6 +143,11 @@ TRANSLATIONS = {
             "✅ <b>Ro'yxatdan o'tish muvaffaqiyatli yakunlandi!</b>\n\n"
             "Endi promokodlarni kiritib ball to'plang va sovg'alarga almashtiring."
         ),
+        'WELCOME_BONUS': (
+            "🎁 <b>Tabriklaymiz!</b>\n\n"
+            "Ro'yxatdan o'tganingiz uchun sovg'a sifatida <b>+{points} ball</b> hisobingizga "
+            "qo'shildi. Endi 30 ballik sovg'aga ega bo'lishingiz mumkin! 🎉"
+        ),
         'OPEN_WEB_APP': "📱 Web ilovani ochish uchun quyidagi tugmani bosing:",
         'GIFTS': "🎁 Sovg'alar",
         'MY_BALANCE': "📊 Mening balansim",
@@ -552,6 +557,11 @@ TRANSLATIONS = {
         'REGISTRATION_SUCCESS': (
             "✅ <b>Регистрация успешно завершена!</b>\n\n"
             "Теперь вводите промокоды, копите баллы и обменивайте их на награды."
+        ),
+        'WELCOME_BONUS': (
+            "🎁 <b>Поздравляем!</b>\n\n"
+            "За регистрацию мы начислили вам <b>+{points} баллов</b> в подарок. "
+            "Теперь вы можете получить награду за 30 баллов! 🎉"
         ),
         'OPEN_WEB_APP': "📱 Нажмите кнопку ниже, чтобы открыть веб-приложение:",
         'GIFTS': "🎁 Подарки",
