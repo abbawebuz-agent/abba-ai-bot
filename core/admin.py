@@ -3533,8 +3533,13 @@ class ActivityLogAdmin(admin.ModelAdmin):
         return False  # Tahrir qilinmaydi
 
     def has_delete_permission(self, request, obj=None):
-        # Faqat superuser eski loglarni o'chirishi mumkin
-        return request.user.is_superuser
+        # Audit log HECH KIM tomonidan o'chirilmaydi — superuser ham (immutable jurnal)
+        return False
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        actions.pop('delete_selected', None)
+        return actions
 
     def timestamp_short(self, obj):
         return obj.timestamp.strftime('%d.%m.%Y %H:%M:%S')
