@@ -22,47 +22,46 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         report = {}
 
-        def _del(qs, label):
+        def _del(qs_factory, label):
+            # Har bir o'chirish ALOHIDA atomic — biri xato bersa, boshqasi
+            # buzilmaydi (Django "transaction is aborted" gotcha'sidan qochish).
             try:
-                n = qs.count()
-                if n:
-                    qs.delete()
+                with transaction.atomic():
+                    qs = qs_factory()
+                    n = qs.count()
+                    if n:
+                        qs.delete()
                 report[label] = n
             except Exception as e:
                 report[label] = f'xato: {e}'
 
-        with transaction.atomic():
-            test_stores = Store.objects.filter(name__startswith='[TEST]')
-            test_batches = QRCodeBatch.objects.filter(name__startswith='[TEST]')
-            test_users = TelegramUser.objects.filter(username__startswith='testuser')
+        # Tartib MUHIM: QRCode.batch = PROTECT, shuning uchun avval QR kodlar.
+        # 1) Test redemption'lar (testuser yoki seed izohi)
+        _del(lambda: GiftRedemption.objects.filter(admin_notes='Test ariza — seed_test_data'),
+             'gift_redemptions(seed)')
+        _del(lambda: GiftRedemption.objects.filter(user__username__startswith='testuser'),
+             'gift_redemptions(testuser)')
 
-            # Tartib MUHIM: QRCode.batch = PROTECT, shuning uchun avval QR kodlar.
-            # 1) Test redemption'lar (testuser yoki seed izohi)
-            _del(GiftRedemption.objects.filter(admin_notes='Test ariza — seed_test_data'),
-                 'gift_redemptions(seed)')
-            _del(GiftRedemption.objects.filter(user__username__startswith='testuser'),
-                 'gift_redemptions(testuser)')
+        # 2) Sotuvchi ball tranzaksiyalari (test do'kon yoki test sotuvchi bo'yicha)
+        _del(lambda: SellerPointsTransaction.objects.filter(store__name__startswith='[TEST]'),
+             'seller_txns(store)')
+        _del(lambda: SellerPointsTransaction.objects.filter(seller__username__startswith='testuser'),
+             'seller_txns(seller)')
 
-            # 2) Sotuvchi ball tranzaksiyalari (test do'kon bo'yicha)
-            _del(SellerPointsTransaction.objects.filter(store__name__startswith='[TEST]'),
-                 'seller_txns(store)')
-            _del(SellerPointsTransaction.objects.filter(seller__username__startswith='testuser'),
-                 'seller_txns(seller)')
+        # 3) QR kodlar (test batch yoki test do'kon) — batch'dan OLDIN (PROTECT)
+        _del(lambda: QRCode.objects.filter(batch__name__startswith='[TEST]'),
+             'qrcodes(batch)')
+        _del(lambda: QRCode.objects.filter(store__name__startswith='[TEST]'),
+             'qrcodes(store)')
 
-            # 3) QR kodlar (test batch yoki test do'kon) — batch'dan OLDIN (PROTECT)
-            _del(QRCode.objects.filter(batch__name__startswith='[TEST]'),
-                 'qrcodes(batch)')
-            _del(QRCode.objects.filter(store__name__startswith='[TEST]'),
-                 'qrcodes(store)')
+        # 4) Partiyalar (Promokod yaratish tarixi)
+        _del(lambda: QRCodeBatch.objects.filter(name__startswith='[TEST]'), 'batches')
 
-            # 4) Partiyalar (Promokod yaratish tarixi)
-            _del(test_batches, 'batches')
+        # 5) Test do'konlar
+        _del(lambda: Store.objects.filter(name__startswith='[TEST]'), 'stores')
 
-            # 5) Test do'konlar
-            _del(test_stores, 'stores')
-
-            # 6) Test foydalanuvchilar (testuser*)
-            _del(test_users, 'users(testuser)')
+        # 6) Test foydalanuvchilar (testuser*)
+        _del(lambda: TelegramUser.objects.filter(username__startswith='testuser'), 'users(testuser)')
 
         self.stdout.write(self.style.SUCCESS(
             'Test ma\'lumotlari tozalandi: ' + ', '.join(f'{k}={v}' for k, v in report.items())
