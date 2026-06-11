@@ -1271,8 +1271,8 @@ class GiftRedemption(models.Model):
     STATUS_CHOICES = [
         ('pending', _('So\'rov qabul qilindi')),
         ('approved', _('Mahsulot tayyorlash bosqichida')),
-        ('sent', _('Mahsulot yetkazib berish xizmatiga topshirildi')),
-        ('completed', _('Mahsulotni qabul qilganingizni tasdiqlang')),
+        ('sent', _('Berishga tayyor — har kvartalda (3 oyda) beriladi')),
+        ('completed', _('Topshirildi — qabul qilinganini tasdiqlang')),
         ('rejected', _('So\'rov bekor qilindi (administrator bilan bog\'laning)')),
         ('not_received', _('Sovg\'a berilmagan (foydalanuvchi olmadi)')),
         ('cancelled_by_user', _('Foydalanuvchi tomonidan bekor qilindi')),

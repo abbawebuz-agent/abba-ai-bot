@@ -435,6 +435,55 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
         return readonly
 
+    @staticmethod
+    def _start_bulk_send_in_background(telegram_ids, message_text, parse_mode):
+        """Tanlangan foydalanuvchilarga fon thread'da xabar yuboradi.
+
+        So'rovni bloklamaydi (timeout bo'lmaydi) va xabarlar orasida kechikish
+        bilan Telegram rate-limit (429) ga tushmaydi. Xato logga yoziladi.
+        """
+        import threading
+        import logging as _logging
+        _lg = _logging.getLogger(__name__)
+
+        def _bg():
+            import asyncio
+            from aiogram import Bot
+            from core.messaging import send_personal_message, TELEGRAM_MESSAGE_DELAY
+            try:
+                async def _run():
+                    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+                    sent = failed = 0
+                    try:
+                        for i, tg_id in enumerate(telegram_ids):
+                            try:
+                                ok, _err = await send_personal_message(
+                                    bot=bot, telegram_id=tg_id,
+                                    text=message_text, parse_mode=parse_mode,
+                                )
+                                sent += 1 if ok else 0
+                                failed += 0 if ok else 1
+                            except Exception as _e:
+                                failed += 1
+                                _lg.warning("bulk send to %s failed: %s", tg_id, _e)
+                            if i < len(telegram_ids) - 1:
+                                await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
+                    finally:
+                        await bot.session.close()
+                    _lg.info("bulk send done: sent=%s failed=%s total=%s", sent, failed, len(telegram_ids))
+
+                asyncio.run(_run())
+            except Exception as e:
+                _lg.exception("background bulk send failed: %s", e)
+            finally:
+                try:
+                    from django.db import connections
+                    connections.close_all()
+                except Exception:
+                    pass
+
+        threading.Thread(target=_bg, daemon=True).start()
+
     def send_personal_message_action(self, request, queryset):
         """Действие для отправки персонального сообщения."""
         from django.shortcuts import render
@@ -454,37 +503,15 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 message_text = form.cleaned_data['message']
                 parse_mode = form.cleaned_data['parse_mode'] or None
 
-                from asgiref.sync import async_to_sync
-                from django.conf import settings
-                from aiogram import Bot
-                from core.messaging import send_personal_message
-
-                async def send_messages():
-                    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
-                    try:
-                        sent = 0
-                        failed = 0
-                        for user in queryset:
-                            success, error = await send_personal_message(
-                                bot=bot,
-                                telegram_id=user.telegram_id,
-                                text=message_text,
-                                parse_mode=parse_mode
-                            )
-                            if success:
-                                sent += 1
-                            else:
-                                failed += 1
-                        return sent, failed
-                    finally:
-                        await bot.session.close()
-
-                # ASGI (uvicorn) ostida asyncio.run() deadlock beradi — async_to_sync xavfsiz
-                sent, failed = async_to_sync(send_messages)()
+                # Tanlangan foydalanuvchilarga fon thread'da yuboramiz —
+                # so'rov bloklanmaydi (timeout yo'q), rate-limit hisobga olinadi.
+                telegram_ids = list(queryset.values_list('telegram_id', flat=True))
+                self._start_bulk_send_in_background(telegram_ids, message_text, parse_mode)
                 self.message_user(
                     request,
-                    f'Отправлено: {sent}, Ошибок: {failed}',
-                    level=messages.SUCCESS if failed == 0 else messages.WARNING
+                    f'Отправка запущена в фоне ({len(telegram_ids)} пользователей). '
+                    f'Доставка займёт некоторое время.',
+                    level=messages.SUCCESS
                 )
                 return redirect('admin:core_telegramuser_changelist')
         else:
@@ -2344,10 +2371,57 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         ]
         return custom_urls + urls
 
+    @staticmethod
+    def _start_broadcast_in_background(broadcast_id):
+        """Rassilkani fon thread'da ishonchli yuboradi (fragile subprocess.Popen o'rniga).
+
+        Celery worker bo'lmasa ham, ASGI (uvicorn) ostida ham ishlaydi. Xato bo'lsa
+        BroadcastMessage status='failed' qilinadi va logga yoziladi (jim qolmaydi).
+        """
+        import threading
+        import logging as _logging
+        _lg = _logging.getLogger(__name__)
+
+        def _bg():
+            import asyncio
+            from aiogram import Bot
+            from core.models import BroadcastMessage as _BC
+            from core.messaging import send_broadcast_message
+            try:
+                bc = _BC.objects.get(pk=broadcast_id)
+
+                async def _run():
+                    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+                    try:
+                        return await send_broadcast_message(
+                            broadcast=bc, bot=bot, user_type_filter=bc.user_type_filter,
+                        )
+                    finally:
+                        await bot.session.close()
+
+                # Yangi thread — ichida ishlaydigan event loop yo'q, asyncio.run xavfsiz
+                asyncio.run(_run())
+            except Exception as e:
+                _lg.exception("background broadcast %s failed: %s", broadcast_id, e)
+                try:
+                    from django.utils import timezone as _tz
+                    _BC.objects.filter(pk=broadcast_id).update(
+                        status='failed', completed_at=_tz.now(),
+                    )
+                except Exception:
+                    pass
+            finally:
+                # Thread DB ulanishini yopamiz (ulanish sızıb qolmasin)
+                try:
+                    from django.db import connections
+                    connections.close_all()
+                except Exception:
+                    pass
+
+        threading.Thread(target=_bg, daemon=True).start()
+
     def send_single_broadcast_view(self, request, broadcast_id):
         """Отправка конкретной рассылки."""
-        import subprocess
-
         try:
             broadcast = BroadcastMessage.objects.get(pk=broadcast_id)
         except BroadcastMessage.DoesNotExist:
@@ -2374,13 +2448,17 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                                   f'Рассылка "{broadcast.title}" запущена через Celery ({estimated_users} пользователей)',
                                   messages.SUCCESS)
             except Exception as e:
-                self.message_user(request, f'Ошибка: {e}', messages.ERROR)
+                # Celery/broker yo'q — fon thread orqali yuboramiz
+                import logging as _logging
+                _logging.getLogger(__name__).warning("send_single_broadcast Celery failed (%s) — thread fallback", e)
+                self._start_broadcast_in_background(broadcast.id)
+                self.message_user(request,
+                                  f'Рассылка "{broadcast.title}" запущена в фоне ({estimated_users} пользователей)',
+                                  messages.SUCCESS)
         else:
-            try:
-                subprocess.Popen(['python', 'manage.py', 'send_broadcast', str(broadcast.id)])
-                self.message_user(request, f'Рассылка "{broadcast.title}" запущена', messages.SUCCESS)
-            except Exception as e:
-                self.message_user(request, f'Ошибка: {e}', messages.ERROR)
+            # Kichik rassilka — ishonchli fon thread (fragile subprocess o'rniga)
+            self._start_broadcast_in_background(broadcast.id)
+            self.message_user(request, f'Рассылка "{broadcast.title}" запущена', messages.SUCCESS)
 
         return redirect('admin:core_broadcastmessage_changelist')
 
@@ -2398,7 +2476,6 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     def send_broadcast_action(self, request, queryset):
         """Действие для отправки рассылки."""
-        import subprocess
         from django.contrib import messages
 
         for broadcast in queryset:
@@ -2432,28 +2509,23 @@ class BroadcastMessageAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                         level=messages.SUCCESS
                     )
                 except Exception as e:
+                    # Celery/broker yo'q — fon thread orqali yuboramiz
+                    import logging as _logging
+                    _logging.getLogger(__name__).warning("send_broadcast_action Celery failed (%s) — thread fallback", e)
+                    self._start_broadcast_in_background(broadcast.id)
                     self.message_user(
                         request,
-                        f'Ошибка при запуске рассылки через Celery: {e}',
-                        level=messages.ERROR
-                    )
-            else:
-                # Для небольших рассылок используем обычную команду
-                try:
-                    subprocess.Popen([
-                        'python', 'manage.py', 'send_broadcast', str(broadcast.id)
-                    ])
-                    self.message_user(
-                        request,
-                        f'Рассылка "{broadcast.title}" запущена',
+                        f'Рассылка "{broadcast.title}" запущена в фоне ({estimated_users} пользователей)',
                         level=messages.SUCCESS
                     )
-                except Exception as e:
-                    self.message_user(
-                        request,
-                        f'Ошибка при запуске рассылки: {e}',
-                        level=messages.ERROR
-                    )
+            else:
+                # Kichik rassilka — ishonchli fon thread (fragile subprocess o'rniga)
+                self._start_broadcast_in_background(broadcast.id)
+                self.message_user(
+                    request,
+                    f'Рассылка "{broadcast.title}" запущена',
+                    level=messages.SUCCESS
+                )
 
     send_broadcast_action.short_description = 'Отправить выбранные рассылки'
 
