@@ -440,6 +440,12 @@ JAZZMIN_SETTINGS = {
                 "icon": "fas fa-cloud-upload-alt",
                 "permissions": ["auth.add_user"],
             },
+            {
+                "name": "📊 Excel → Telegram",
+                "url": "/admin/backup-excel-now/",
+                "icon": "fas fa-file-excel",
+                "permissions": ["auth.add_user"],
+            },
         ]
     },
 

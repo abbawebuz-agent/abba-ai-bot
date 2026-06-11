@@ -1199,6 +1199,37 @@ def admin_backup_now_view(request):
     return redirect('admin:index')
 
 
+def admin_backup_excel_now_view(request):
+    """Admin tugma: barcha ma'lumotlarni Excel jadval qilib Telegram kanalga yuborish."""
+    import io, logging, traceback
+    from django.contrib import messages
+    from django.conf import settings
+    from django.core.management import call_command
+    from django.http import HttpResponseForbidden
+
+    logger = logging.getLogger(__name__)
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    chat_id = getattr(settings, 'BACKUP_CHANNEL_ID', '') or os.environ.get('BACKUP_CHANNEL_ID', '')
+    if not chat_id:
+        messages.error(request, "❌ BACKUP_CHANNEL_ID sozlanmagan. Railway Variables'da qo'shing.")
+        return redirect('admin:index')
+
+    out, err = io.StringIO(), io.StringIO()
+    try:
+        call_command('backup_excel', stdout=out, stderr=err)
+        log = out.getvalue() or err.getvalue()
+        logger.info("admin_backup_excel_now OK:\n%s", log)
+        last_lines = '\n'.join(log.strip().splitlines()[-4:])
+        messages.success(request, f"✅ Excel backup yuborildi! Telegram kanalni tekshiring.\n\n{last_lines}")
+    except Exception as exc:
+        tb = traceback.format_exc()
+        logger.error("admin_backup_excel_now FAILED:\n%s", tb)
+        messages.error(request, f"❌ Excel backup xato:\n\n{type(exc).__name__}: {str(exc)[:500]}")
+    return redirect('admin:index')
+
+
 def jip_admin_spa_view(request, **kwargs):
     """JIP Admin SPA — serves the React admin panel with real DB stats injected."""
     if not request.user.is_authenticated or not request.user.is_staff:
@@ -1240,6 +1271,7 @@ urlpatterns = [
     path('admin/eskiz-diag/', admin.site.admin_view(admin_eskiz_diag_view), name='admin_eskiz_diag'),
     path('admin/qrcodebatch/<int:batch_id>/xlsx/', admin.site.admin_view(admin_batch_xlsx_view), name='admin_batch_xlsx'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
+    path('admin/backup-excel-now/', admin.site.admin_view(admin_backup_excel_now_view), name='admin_backup_excel_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),

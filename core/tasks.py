@@ -771,10 +771,24 @@ def daily_db_backup(self):
 
     out = io.StringIO()
     err = io.StringIO()
+    results = {}
+    # 1) SQL dump (pg_dump → Telegram)
     try:
         call_command('backup_db', stdout=out, stderr=err)
-        logger.info("daily_db_backup OK: %s", out.getvalue())
-        return {'status': 'ok'}
+        logger.info("daily_db_backup (sql) OK: %s", out.getvalue())
+        results['sql'] = 'ok'
     except Exception as exc:
-        logger.exception("daily_db_backup failed")
-        return {'status': 'error', 'error': str(exc)}
+        logger.exception("daily_db_backup (sql) failed")
+        results['sql'] = f'error: {exc}'
+    # 2) Excel data export (barcha jadvallar → Telegram)
+    xout = io.StringIO()
+    xerr = io.StringIO()
+    try:
+        call_command('backup_excel', stdout=xout, stderr=xerr)
+        logger.info("daily_db_backup (excel) OK: %s", xout.getvalue())
+        results['excel'] = 'ok'
+    except Exception as exc:
+        logger.exception("daily_db_backup (excel) failed")
+        results['excel'] = f'error: {exc}'
+    status = 'ok' if all(v == 'ok' for v in results.values()) else 'partial'
+    return {'status': status, **results}
