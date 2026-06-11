@@ -850,46 +850,10 @@ window.rewardState = rewardState;
 </script>
 <script type="text/babel" data-presets="react">
 // screen-orders.jsx
-function OrderStepper({ step }) {
-  const t = useT();
-  const STEPS = [
-    t("Qabul", "Принят"),
-    t("Tasdiq", "Подтв."),
-    t("Yo'lda", "В пути"),
-    t("Yetkazildi", "Доставлен"),
-  ];
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", marginTop: 16 }}>
-      {STEPS.map((label, i) => {
-        const done = i + 1 <= step;
-        const current = i + 1 === step;
-        return (
-          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
-            {i > 0 && (
-              <div style={{ position: "absolute", top: 9, right: "50%", width: "100%", height: 2,
-                background: i + 1 <= step ? "var(--accent)" : "var(--line)" }} />
-            )}
-            <div style={{ width: 19, height: 19, borderRadius: "50%", position: "relative", zIndex: 1,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: done ? "var(--accent)" : "var(--surface-2)",
-              boxShadow: done ? "none" : "inset 0 0 0 2px var(--line)",
-              transform: current ? "scale(1.0)" : "scale(.86)", transition: "all .3s ease" }}>
-              {done && <Icon name="check" size={11} stroke={3} color="#fff" />}
-            </div>
-            <span style={{ fontSize: 10.5, fontWeight: done ? 650 : 500, marginTop: 7, textAlign: "center",
-              color: done ? "var(--ink)" : "var(--ink-3)", letterSpacing: "-0.01em" }}>{label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function OrderCard({ o, i, onCancel, onConfirm }) {
   const t = useT();
   const lang = useLang();
   const meta = STATUS[o.status] || {};
-  const step = meta.step || 0;
   const terminal = !!meta.terminal;
   const canCancel = o.cancelable && o.status === "pending";
   const canConfirm = o.status === "shipping";
@@ -907,12 +871,11 @@ function OrderCard({ o, i, onCancel, onConfirm }) {
         </div>
         <StatusBadge status={o.status} />
       </div>
-      {!terminal && <OrderStepper step={step} />}
       {(canCancel || canConfirm) && (
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
           {canConfirm && (
             <Button full size="sm" icon="check" onClick={() => onConfirm(o.id)}>
-              {t("Yetkazilganini tasdiqlash", "Подтвердить доставку")}
+              {t("Qabul qilganimni tasdiqlash", "Подтвердить получение")}
             </Button>
           )}
           {canCancel && (
@@ -940,11 +903,17 @@ function OrdersScreen({ orders, empty, onCancel, onConfirm, onNav }) {
         <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.035em", margin: 0 }}>{t("Buyurtmalar", "Заказы")}</h1>
         <div style={{ fontSize: 14, color: "var(--ink-2)", marginTop: 3 }}>{t("Sovg'a buyurtmalari holati", "Статус заказов наград")}</div>
       </div>
+      <Card style={{ marginTop: 16, background: "linear-gradient(135deg,#eef4ff,#f4ecff)", border: "1px solid #d9e2ff" }}>
+        <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "#3a4a6b", fontWeight: 500 }}>
+          {t("🎁 Sovg'alar har kvartalda (3 oyda bir marta) tarqatiladi. Sovg'angiz tayyor bo'lganda JIP adminlari siz bilan bog'lanadi.",
+             "🎁 Подарки выдаются раз в квартал (каждые 3 месяца). Когда подарок будет готов, администраторы JIP свяжутся с вами.")}
+        </div>
+      </Card>
       {list.length === 0 ? (
         <Card pad={4} style={{ marginTop: 18 }}>
           <EmptyState icon="inbox" title={t("Buyurtmalar yo'q", "Заказов пока нет")}
             text={t("Katalogdan birinchi sovg'ani oling \u2014 u shu yerda holati bilan ko'rinadi.",
-              "Получите первую награду из каталога \u2014 она появится здесь со статусом доставки.")}
+              "Получите первую награду из каталога \u2014 она появится здесь со своим статусом.")}
             cta={t("Sovg'alarga o'tish", "К наградам")} onCta={() => onNav("rewards")} />
         </Card>
       ) : (
@@ -1505,8 +1474,8 @@ function SuccessOverlay({ data, points, onClose, onGoOrders }) {
           {isEarn
             ? t("Ajoyib! Xaridlaringiz uchun ball to'plashda davom eting.",
                 "Так держать! Продолжайте копить баллы за покупки.")
-            : t("Yetkazib berishni kelishish uchun siz bilan bog'lanamiz. Holatni «Buyurtmalar» bo'limida kuzating.",
-                "Мы свяжемся с вами для согласования доставки. Следите за статусом в разделе «Заказы».")}
+            : t("Sovg'alar har kvartalda (3 oyda bir marta) tarqatiladi. Tayyor bo'lganda JIP adminlari siz bilan bog'lanadi. Holatni «Buyurtmalar» bo'limida kuzating.",
+                "Подарки выдаются раз в квартал (каждые 3 месяца). Когда подарок будет готов, администраторы JIP свяжутся с вами. Следите за статусом в разделе «Заказы».")}
         </div>
       </div>
 
@@ -1688,8 +1657,8 @@ async function loadData() {
   window.STATUS = {
     pending: { label: { uz: 'Qabul qilindi', ru: 'Принят' }, step: 1 },
     approved: { label: { uz: 'Tasdiqlandi', ru: 'Подтверждён' }, step: 2 },
-    shipping: { label: { uz: "Yo'lda", ru: 'В пути' }, step: 3 },
-    delivered: { label: { uz: 'Yetkazildi', ru: 'Доставлен' }, step: 4 },
+    shipping: { label: { uz: 'Berishga tayyor', ru: 'Готов к выдаче' }, step: 3 },
+    delivered: { label: { uz: 'Olindi', ru: 'Получен' }, step: 4 },
     cancelled: { label: { uz: 'Bekor qilindi', ru: 'Отменён' }, step: 0, terminal: true },
     rejected: { label: { uz: 'Rad etildi', ru: 'Отклонён' }, step: 0, terminal: true },
     not_received: { label: { uz: 'Olinmadi', ru: 'Не получен' }, step: 0, terminal: true },
@@ -2002,7 +1971,7 @@ function DeviceStage() {
   }
   try { await loadData(); } catch (e) {
     window.USER = window.USER || { tgId: TGID || 0, name: "Usta", fullName: "Usta", initials: "U", username: "", phone: "", points: 0, scans: 0, giftsCount: 0, rank: 0 };
-    window.STATUS = window.STATUS || { pending: { label: { uz: "Qabul qilindi", ru: "Принят" }, step: 1 }, approved: { label: { uz: "Tasdiqlandi", ru: "Подтверждён" }, step: 2 }, shipping: { label: { uz: "Yo'lda", ru: "В пути" }, step: 3 }, delivered: { label: { uz: "Yetkazildi", ru: "Доставлен" }, step: 4 } };
+    window.STATUS = window.STATUS || { pending: { label: { uz: "Qabul qilindi", ru: "Принят" }, step: 1 }, approved: { label: { uz: "Tasdiqlandi", ru: "Подтверждён" }, step: 2 }, shipping: { label: { uz: "Berishga tayyor", ru: "Готов к выдаче" }, step: 3 }, delivered: { label: { uz: "Olindi", ru: "Получен" }, step: 4 } };
     window.REWARDS = window.REWARDS || []; window.ORDERS = window.ORDERS || []; window.TOP_USERS = window.TOP_USERS || [];
     window.ACTIVITY = window.ACTIVITY || []; window.BANNERS = window.BANNERS || []; window.ADMIN = window.ADMIN || { handle: "@jip_support", url: "https://t.me/jip_support", note: { uz: "", ru: "" } };
     window.__projectsInit = window.__projectsInit || []; window.__projectsMeta = window.__projectsMeta || { canUpload: true, uploadedToday: 0, maxPerDay: 10 };
