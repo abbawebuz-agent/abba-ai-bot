@@ -1857,7 +1857,7 @@ class GiftAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         ('created_at', DateTimeRangeFilterBuilder(title='Дата создания (диапазон)')),
     ]
     search_fields = ['name_uz_latin', 'name_ru', 'description_uz_latin', 'description_ru']
-    readonly_fields = ['created_at', 'updated_at', 'image_preview']
+    readonly_fields = ['created_at', 'updated_at']
     list_editable = ['order']
     list_per_page = 25
 
@@ -1912,7 +1912,7 @@ class GiftAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name_uz_latin', 'name_ru', 'image_url', 'image', 'image_preview')
+            'fields': ('name_uz_latin', 'name_ru', 'image', 'image_url')
         }),
         ('Описание', {
             'fields': ('description_uz_latin', 'description_ru')
