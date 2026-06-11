@@ -127,10 +127,15 @@ class Command(BaseCommand):
 
     @staticmethod
     def _cell_value(obj, field):
-        """FK -> str, tz-aware datetime -> naive local, bool/raw -> o'zi."""
+        """FK -> str, FieldFile -> fayl nomi, tz-aware datetime -> naive local, bool/raw -> o'zi."""
         val = getattr(obj, field.name, None)
         if val is None:
             return ''
+        # ImageField/FileField — bo'sh bo'lsa ham FieldFile obyekti (None emas),
+        # uni to'g'ridan-to'g'ri Excelga yozib bo'lmaydi → fayl nomi/yo'li (yoki '')
+        from django.db.models.fields.files import FieldFile
+        if isinstance(val, FieldFile):
+            return val.name or ''
         if field.is_relation:
             related = getattr(obj, field.name, None)
             return str(related) if related is not None else ''
