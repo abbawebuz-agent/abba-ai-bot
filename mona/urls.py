@@ -1199,6 +1199,109 @@ def admin_backup_now_view(request):
     return redirect('admin:index')
 
 
+def admin_reset_test_data_view(request):
+    """VAQTINCHALIK: test datani tozalash (server ichida, internal DB bilan).
+
+    GET  — dry-run: nima o'chishini sanab ko'rsatadi + tasdiq formasi.
+    POST — 'RESET' yozilsa: avval backup → reset_for_launch --confirm →
+           o'chirilgan jadvallarning ID ketma-ketligini 1 dan boshlaydi.
+
+    ⚠️ Ish tugagach bu view va URL OLIB TASHLANADI.
+    """
+    import io, traceback, html as _html
+    from django.http import HttpResponse, HttpResponseForbidden
+    from django.core.management import call_command
+    from django.db import connection
+    from django.middleware.csrf import get_token
+
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    # reset_for_launch DELETE_ORDER jadvallari (ID reset uchun)
+    SEQ_TABLES = [
+        'core_monthlypromoticket', 'core_qrcodescanattempt', 'core_promocodeattempt',
+        'core_giftredemption', 'core_sellerpointstransaction', 'core_livestreamwinner',
+        'core_qrcode', 'core_sellerbatch', 'core_qrcodebatch', 'core_store',
+        'core_seller', 'core_regionmessagelog', 'core_activitylog', 'core_telegramuser',
+    ]
+
+    def page(body):
+        return HttpResponse(
+            "<html><head><meta charset='utf-8'><title>Test data tozalash</title>"
+            "<style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:680px;"
+            "margin:40px auto;padding:0 16px;color:#1c1c28}pre{background:#0f1117;color:#d7dae0;"
+            "padding:14px;border-radius:10px;overflow:auto;font-size:12.5px;line-height:1.5}"
+            "h2{margin-bottom:4px}.danger{background:#dc2626;color:#fff;border:none;padding:12px 20px;"
+            "border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}.danger:hover{background:#b91c1c}"
+            "input[type=text]{padding:11px 14px;font-size:15px;border:2px solid #d1d5db;border-radius:10px;"
+            "width:200px}a{color:#2563eb}.ok{color:#16a34a;font-weight:700}</style></head><body>"
+            + body + "</body></html>"
+        )
+
+    if request.method == 'POST':
+        if request.POST.get('confirm_text', '').strip() != 'RESET':
+            return page("<h2>❌ Tasdiq xato</h2><p>Tasdiqlash uchun katta harflar bilan "
+                        "<b>RESET</b> deb yozish kerak edi.</p><p><a href=''>← Qaytish</a></p>")
+        out, err = io.StringIO(), io.StringIO()
+        steps = []
+        # 1) Avval backup
+        try:
+            bout = io.StringIO()
+            call_command('backup_db', stdout=bout, stderr=bout)
+            steps.append("✅ Backup olindi (Telegram kanal):\n" +
+                         '\n'.join(bout.getvalue().strip().splitlines()[-3:]))
+        except Exception as exc:
+            return page("<h2>❌ Backup muvaffaqiyatsiz — HECH NARSA O'CHIRILMADI</h2>"
+                        "<p>Xavfsizlik uchun backup'siz o'chirmadik.</p><pre>" +
+                        _html.escape(traceback.format_exc()[-1500:]) + "</pre>"
+                        "<p><a href=''>← Qaytish</a></p>")
+        # 2) Tozalash
+        try:
+            call_command('reset_for_launch', confirm=True, stdout=out, stderr=err)
+            steps.append("✅ Tozalandi:\n" + out.getvalue().strip())
+        except Exception:
+            return page("<h2>❌ Tozalashda xato</h2><pre>" +
+                        _html.escape(traceback.format_exc()[-2000:]) + "</pre>")
+        # 3) ID ketma-ketliklarni 1 dan boshlash
+        try:
+            with connection.cursor() as cur:
+                reset_seqs = []
+                for t in SEQ_TABLES:
+                    cur.execute("SELECT pg_get_serial_sequence(%s, 'id')", [t])
+                    seq = cur.fetchone()[0]
+                    if seq:
+                        cur.execute("ALTER SEQUENCE %s RESTART WITH 1" % seq)
+                        reset_seqs.append(t)
+            steps.append("✅ ID ketma-ketligi 1 dan boshlandi: %d ta jadval" % len(reset_seqs))
+        except Exception:
+            steps.append("⚠️ ID reset xato (data o'chdi, lekin ketma-ketlik eski):\n" +
+                         traceback.format_exc()[-800:])
+        return page("<h2 class='ok'>✅ Bajarildi</h2><pre>" +
+                    _html.escape('\n\n'.join(steps)) + "</pre>"
+                    "<p>Sovg'alar (Gift) saqlandi. Endi botda ID'lar 1 dan boshlanadi.</p>")
+
+    # GET — dry-run preview
+    out = io.StringIO()
+    try:
+        call_command('reset_for_launch', stdout=out, stderr=out)
+        preview = out.getvalue()
+    except Exception:
+        preview = traceback.format_exc()
+    return page(
+        "<h2>⚠️ Test datani tozalash</h2>"
+        "<p>Quyidagilar <b>o'chiriladi</b> (sovg'alar/Gift, viloyatlar, bannerlar SAQLANADI). "
+        "O'chirishdan oldin avtomatik backup olinadi.</p>"
+        "<pre>" + _html.escape(preview) + "</pre>"
+        "<form method='post'>"
+        "<input type='hidden' name='csrfmiddlewaretoken' value='" +
+        _html.escape(get_token(request)) + "'>"
+        "<p>Tasdiqlash uchun <b>RESET</b> deb yozing:</p>"
+        "<input type='text' name='confirm_text' placeholder='RESET' autocomplete='off'> "
+        "<button class='danger' type='submit'>🗑 Hammasini o'chirish</button>"
+        "</form>"
+    )
+
+
 def jip_admin_spa_view(request, **kwargs):
     """JIP Admin SPA — serves the React admin panel with real DB stats injected."""
     if not request.user.is_authenticated or not request.user.is_staff:
@@ -1239,6 +1342,7 @@ urlpatterns = [
     path('admin/qr-diag/', admin.site.admin_view(admin_qr_diag_view), name='admin_qr_diag'),
     path('admin/eskiz-diag/', admin.site.admin_view(admin_eskiz_diag_view), name='admin_eskiz_diag'),
     path('admin/qrcodebatch/<int:batch_id>/xlsx/', admin.site.admin_view(admin_batch_xlsx_view), name='admin_batch_xlsx'),
+    path('admin/reset-test-data/', admin.site.admin_view(admin_reset_test_data_view), name='admin_reset_test_data'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
