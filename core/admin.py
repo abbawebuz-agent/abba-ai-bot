@@ -454,7 +454,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 message_text = form.cleaned_data['message']
                 parse_mode = form.cleaned_data['parse_mode'] or None
 
-                import asyncio
+                from asgiref.sync import async_to_sync
                 from django.conf import settings
                 from aiogram import Bot
                 from core.messaging import send_personal_message
@@ -479,7 +479,8 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                     finally:
                         await bot.session.close()
 
-                sent, failed = asyncio.run(send_messages())
+                # ASGI (uvicorn) ostida asyncio.run() deadlock beradi — async_to_sync xavfsiz
+                sent, failed = async_to_sync(send_messages)()
                 self.message_user(
                     request,
                     f'Отправлено: {sent}, Ошибок: {failed}',
@@ -621,7 +622,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 message_text = form.cleaned_data['message']
                 parse_mode = form.cleaned_data['parse_mode'] or None
 
-                import asyncio
+                from asgiref.sync import async_to_sync
                 from core.messaging import send_personal_message
 
                 async def send():
@@ -633,7 +634,8 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                     finally:
                         await bot.session.close()
 
-                success, error = asyncio.run(send())
+                # ASGI (uvicorn) ostida asyncio.run() deadlock beradi — async_to_sync xavfsiz
+                success, error = async_to_sync(send)()
                 if success:
                     self.message_user(request, f'Сообщение отправлено пользователю {user}', messages.SUCCESS)
                 else:
@@ -1088,7 +1090,9 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 await bot.session.close()
 
         try:
-            ok, err = asyncio.run(_send())
+            # ASGI (uvicorn) ostida asyncio.run() deadlock beradi — async_to_sync xavfsiz
+            from asgiref.sync import async_to_sync
+            ok, err = async_to_sync(_send)()
         except Exception as exc:
             ok, err = False, str(exc)
         finally:

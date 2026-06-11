@@ -26,8 +26,9 @@ from django.utils import timezone
 from core.models import TelegramUser, QRCode, QRCodeScanAttempt, Gift, GiftRedemption, VideoInstruction, UzRegion, UzDistrict
 from core.utils import generate_qr_code_image
 from core.regions import UZBEKISTAN_REGIONS
+from core.uz_districts_data import UZ_DISTRICTS_DATA
 from core.sms import eskiz_send_sms
-from .translations import get_text, TRANSLATIONS
+from .translations import get_text, get_text_lang, TRANSLATIONS
 from .location_picker import (
     build_region_keyboard,
     build_district_keyboard,
@@ -152,9 +153,13 @@ class RegistrationStates(StatesGroup):
     waiting_for_verification_code = State()
     waiting_for_location = State()
     waiting_for_region = State()
+    waiting_for_district = State()           # tuman tanlash (viloyatdan keyin)
+    waiting_for_district_custom = State()    # "Boshqa" — tumanni qo'lda kiritish
     waiting_for_promo_code = State()
-    # Legacy states (kept for compatibility, not used in new flow)
+    # Ism/familiya — ro'yxatdan o'tishda so'raladi (tildan keyin)
     waiting_for_name = State()
+    waiting_for_last_name = State()
+    # Legacy states (kept for compatibility, not used in new flow)
     waiting_for_user_type = State()
     waiting_for_seller_id = State()
     waiting_for_store_confirmation = State()
@@ -223,19 +228,18 @@ def format_number(number):
 @sync_to_async
 def get_or_create_user(telegram_id: int, username: str = None, first_name: str = None, last_name: str = None):
     """Получает или создает пользователя Telegram."""
+    # Ism/familiya Telegram profilidan AVTOMATIK olinmaydi — ro'yxatdan
+    # o'tishda foydalanuvchidan alohida so'raladi (ASK_NAME / ASK_LAST_NAME).
     user, created = TelegramUser.objects.get_or_create(
         telegram_id=telegram_id,
         defaults={
             'username': username,
-            'first_name': first_name or '',
             'user_type': 'santenik',
         }
     )
     updates = {}
     if username and user.username != username:
         updates['username'] = username
-    if first_name and not user.first_name:
-        updates['first_name'] = first_name
     if not user.user_type:
         updates['user_type'] = 'santenik'
     if updates:
@@ -342,7 +346,17 @@ async def cmd_start(message: Message, state: FSMContext):
         await ask_language(message, user, state)
         return
 
-    # Шаг 2: Политика конфиденциальности
+    # Шаг 2: Имя
+    if not user.first_name:
+        await ask_name(message, user, state)
+        return
+
+    # Шаг 3: Фамилия
+    if not user.last_name:
+        await ask_last_name(message, user, state)
+        return
+
+    # Шаг 4: Политика конфиденциальности
     if not user.privacy_accepted:
         await ask_privacy_acceptance(message, user, state)
         return
@@ -556,9 +570,58 @@ async def process_name(message: Message, state: FSMContext):
     
     user = await update_name()
     await message.answer(get_text(user, 'NAME_SAVED'))
-    
-    # Переходим к следующему шагу - выбор типа пользователя
-    await ask_user_type(message, user, state)
+
+    # Keyingi qadam — familiyani so'rash
+    await ask_last_name(message, user, state)
+
+
+async def ask_last_name(message: Message, user, state: FSMContext):
+    """So'raydi foydalanuvchining familiyasini."""
+    await message.answer(get_text(user, 'ASK_LAST_NAME'))
+    await state.set_state(RegistrationStates.waiting_for_last_name)
+
+
+@dp.message(RegistrationStates.waiting_for_last_name)
+async def process_last_name(message: Message, state: FSMContext):
+    """Обработчик получения фамилии пользователя."""
+    # Игнорируем сообщения от ботов
+    if message.from_user.is_bot:
+        return
+
+    # Command (/start va h.k.) — state ni clear va cmd_start
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
+
+    last_name = message.text.strip() if message.text else ""
+    if not last_name:
+        return
+
+    if len(last_name) < 2:
+        @sync_to_async
+        def get_user():
+            return TelegramUser.objects.get(telegram_id=message.from_user.id)
+        user = await get_user()
+        await message.answer(get_text(user, 'LAST_NAME_TOO_SHORT'))
+        return
+
+    if len(last_name) > 255:
+        last_name = last_name[:255]
+
+    @sync_to_async
+    def update_last_name():
+        user = TelegramUser.objects.get(telegram_id=message.from_user.id)
+        user.last_name = last_name
+        user.save(update_fields=['last_name'])
+        return user
+
+    user = await update_last_name()
+    await message.answer(get_text(user, 'LAST_NAME_SAVED'))
+
+    # Keyingi qadam — maxfiylik siyosati
+    await ask_privacy_acceptance(message, user, state)
 
 
 async def ask_user_type(message: Message, user, state: FSMContext):
@@ -956,6 +1019,8 @@ async def ask_location(message: Message, user, state: FSMContext):
 
 
 CALLBACK_REG_REGION = 'reg_region:'
+CALLBACK_REG_DISTRICT = 'reg_district:'          # reg_district:{region}:{district_code}
+CALLBACK_REG_DISTRICT_OTHER = 'reg_district_other:'  # reg_district_other:{region}
 
 
 def _build_reg_region_keyboard(language: str) -> types.InlineKeyboardMarkup:
@@ -974,11 +1039,40 @@ def _build_reg_region_keyboard(language: str) -> types.InlineKeyboardMarkup:
     return types.InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _build_reg_district_keyboard(region_code: str, language: str) -> types.InlineKeyboardMarkup:
+    """Tanlangan viloyatdagi tumanlar + "Boshqa" tugmasi. 2 ta qatorda."""
+    rows, row = [], []
+    for d in UZ_DISTRICTS_DATA.get(region_code, []):
+        name = d.get('name_ru' if language == 'ru' else 'name_uz') or d.get('code')
+        row.append(types.InlineKeyboardButton(
+            text=name,
+            callback_data=f'{CALLBACK_REG_DISTRICT}{region_code}:{d["code"]}',
+        ))
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    # "Boshqa" — ro'yxatda yo'q tuman uchun
+    rows.append([types.InlineKeyboardButton(
+        text=get_text_lang(language, 'DISTRICT_OTHER'),
+        callback_data=f'{CALLBACK_REG_DISTRICT_OTHER}{region_code}',
+    )])
+    return types.InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 async def ask_region(message: Message, user, state: FSMContext):
     """Просит выбрать вилоят (шаг 6 регистрации)."""
     keyboard = _build_reg_region_keyboard(user.language or 'uz_latin')
     await message.answer(get_text(user, 'CHOOSE_REGION'), reply_markup=keyboard, parse_mode='HTML')
     await state.set_state(RegistrationStates.waiting_for_region)
+
+
+async def ask_district(message: Message, user, state: FSMContext, region_code: str):
+    """Просит выбрать туман (после выбора виловята)."""
+    keyboard = _build_reg_district_keyboard(region_code, user.language or 'uz_latin')
+    await message.answer(get_text(user, 'CHOOSE_DISTRICT'), reply_markup=keyboard, parse_mode='HTML')
+    await state.set_state(RegistrationStates.waiting_for_district)
 
 
 @dp.callback_query(lambda c: c.data and c.data.startswith(CALLBACK_REG_REGION))
@@ -1021,10 +1115,21 @@ async def process_reg_region(callback: CallbackQuery, state: FSMContext):
         )
     await callback.answer()
 
+    # Viloyatdan keyin — tuman tanlash bosqichi
+    await ask_district(callback.message, user, state, region_code)
+
+
+@sync_to_async
+def _get_user_sync(telegram_id):
+    return TelegramUser.objects.filter(telegram_id=telegram_id).first()
+
+
+async def finish_registration(message: Message, user, state: FSMContext):
+    """Ro'yxatdan o'tishni yakunlaydi: bonus + muvaffaqiyat xabari + menyu + promokod."""
     await state.clear()
 
     # Xush kelibsiz boni (+30 ball) — bir martagina, idempotent
-    bonus_points = await award_welcome_bonus(callback.from_user.id)
+    bonus_points = await award_welcome_bonus(user.telegram_id)
 
     # Ro'yxatdan o'tish yakunlandi — muvaffaqiyat xabari (webapp tugmasi bilan) + balans menyu
     web_app_url = get_web_app_url()
@@ -1039,19 +1144,126 @@ async def process_reg_region(callback: CallbackQuery, state: FSMContext):
             ]])
         except Exception as e:
             logger.warning(f"REGISTRATION_SUCCESS webapp tugmasi yaratilmadi: {e}")
-    await callback.message.answer(
+    await message.answer(
         get_text(user, 'REGISTRATION_SUCCESS'),
         parse_mode='HTML',
         reply_markup=success_kb,
     )
     # Xush kelibsiz boni tabrigi (+30 ball berilgan bo'lsa)
     if bonus_points:
-        await callback.message.answer(
+        await message.answer(
             get_text(user, 'WELCOME_BONUS', points=bonus_points),
             parse_mode='HTML',
         )
-    await show_main_menu(callback.message, user)
-    await callback.message.answer(get_text(user, 'SEND_PROMO_CODE'))
+    await show_main_menu(message, user)
+    await message.answer(get_text(user, 'SEND_PROMO_CODE'))
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith(CALLBACK_REG_DISTRICT_OTHER))
+async def process_reg_district_other(callback: CallbackQuery, state: FSMContext):
+    """Пользователь выбрал "Boshqa" — tumanni qo'lda kiritishni so'raymiz."""
+    if callback.from_user.is_bot:
+        return
+    user = await _get_user_sync(callback.from_user.id)
+    if not user:
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    except TelegramBadRequest:
+        pass
+    await callback.message.answer(get_text(user, 'ASK_DISTRICT_CUSTOM'))
+    await state.set_state(RegistrationStates.waiting_for_district_custom)
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith(CALLBACK_REG_DISTRICT))
+async def process_reg_district(callback: CallbackQuery, state: FSMContext):
+    """Пользователь выбрал туман из списка при регистрации."""
+    if callback.from_user.is_bot:
+        return
+    payload = callback.data[len(CALLBACK_REG_DISTRICT):]
+    parts = payload.split(':', 1)
+    if len(parts) != 2:
+        await callback.answer()
+        return
+    region_code, district_code = parts
+
+    @sync_to_async
+    def save_district():
+        u = TelegramUser.objects.filter(telegram_id=callback.from_user.id).first()
+        if not u:
+            return None
+        region = UzRegion.objects.filter(code=region_code).first()
+        district = None
+        if region:
+            district = UzDistrict.objects.filter(region=region, code=district_code).first()
+        u.district = district
+        u.district_custom = ''
+        u.save(update_fields=['district', 'district_custom'])
+        return u
+
+    user = await save_district()
+    if not user:
+        await callback.answer()
+        return
+
+    language = user.language or 'uz_latin'
+    d_data = find_district_data(region_code, district_code) or {}
+    district_name = d_data.get('name_ru' if language == 'ru' else 'name_uz') or district_code
+
+    try:
+        await callback.message.edit_text(
+            get_text(user, 'DISTRICT_SAVED', district=district_name),
+            parse_mode='HTML',
+        )
+    except TelegramBadRequest:
+        await callback.message.answer(
+            get_text(user, 'DISTRICT_SAVED', district=district_name),
+            parse_mode='HTML',
+        )
+    await callback.answer()
+    await finish_registration(callback.message, user, state)
+
+
+@dp.message(RegistrationStates.waiting_for_district_custom)
+async def process_district_custom(message: Message, state: FSMContext):
+    """Foydalanuvchi "Boshqa" tumanni qo'lda kiritdi."""
+    if message.from_user.is_bot:
+        return
+    # Command (/start va h.k.) — state ni clear va cmd_start
+    if message.text and message.text.startswith('/'):
+        await state.clear()
+        if message.text.lower().startswith('/start'):
+            await cmd_start(message, state)
+        return
+
+    district_name = message.text.strip() if message.text else ""
+    if not district_name:
+        return
+    if len(district_name) < 2:
+        user = await _get_user_sync(message.from_user.id)
+        if user:
+            await message.answer(get_text(user, 'DISTRICT_TOO_SHORT'))
+        return
+    if len(district_name) > 120:
+        district_name = district_name[:120]
+
+    @sync_to_async
+    def save_custom():
+        u = TelegramUser.objects.filter(telegram_id=message.from_user.id).first()
+        if not u:
+            return None
+        u.district = None
+        u.district_custom = district_name
+        u.save(update_fields=['district', 'district_custom'])
+        return u
+
+    user = await save_custom()
+    if not user:
+        return
+    await message.answer(get_text(user, 'DISTRICT_SAVED', district=district_name), parse_mode='HTML')
+    await finish_registration(message, user, state)
 
 
 async def _get_admin_contact_str() -> str:
@@ -1427,7 +1639,11 @@ async def process_language_selection(callback: CallbackQuery, state: FSMContext)
         else:
             # Регистрация не завершена — продолжаем по новому flow
             logger.info(f"[process_language_selection] Регистрация не завершена, продолжаем регистрацию")
-            if not user.privacy_accepted:
+            if not user.first_name:
+                await ask_name(callback.message, user, state)
+            elif not user.last_name:
+                await ask_last_name(callback.message, user, state)
+            elif not user.privacy_accepted:
                 await ask_privacy_acceptance(callback.message, user, state)
             elif not user.phone_number:
                 await ask_phone(callback.message, user, state)
@@ -1940,6 +2156,8 @@ async def handle_message(message: Message, state: FSMContext = None):
             RegistrationStates.waiting_for_verification_code,
             RegistrationStates.waiting_for_location,
             RegistrationStates.waiting_for_region,
+            RegistrationStates.waiting_for_district,
+            RegistrationStates.waiting_for_district_custom,
             RegistrationStates.waiting_for_user_type,
             RegistrationStates.waiting_for_seller_id,
             RegistrationStates.waiting_for_store_confirmation,

@@ -116,6 +116,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',ui-sans-serif,system-u
 /* gifts */
 .page-title{font-size:25px;font-weight:800;letter-spacing:-.03em;margin:14px 2px 4px;}
 .section-sub{font-size:13px;color:var(--sub);font-weight:500;margin:0 2px 16px;}
+.ord-info{background:linear-gradient(135deg,#eef4ff,#f4ecff);border:1px solid #d9e2ff;border-radius:14px;padding:14px 16px;margin:0 2px 16px;font-size:13.5px;line-height:1.5;color:#3a4a6b;font-weight:500;}
 .gift-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
 .gift-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--xs);cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;}
 .gift-card:active{transform:scale(.97);}
@@ -274,6 +275,7 @@ const T={
   ord_s:IS_RU?'Статус ваших заказов':'Buyurtmalaringiz holati',
   ord_e:IS_RU?'Заявок пока нет':"Hali so'rovlar yo'q",
   ord_es:IS_RU?'Обменяйте баллы на подарок':"Ballarni sovg'aga almashtiring",
+  ord_info:IS_RU?'🎁 Подарки выдаются раз в квартал (каждые 3 месяца). Когда подарок будет готов, администраторы JIP свяжутся с вами.':"🎁 Sovg'alar har kvartalda (3 oyda bir marta) tarqatiladi. Sovg'angiz tayyor bo'lganda JIP adminlari siz bilan bog'lanadi.",
   prof_h:IS_RU?'Профиль':'Profil',
   balls:IS_RU?'Баллов':'Balllar',
   scans:IS_RU?'Сканов':'Skanlar',
@@ -338,7 +340,7 @@ async function apiPost(p,b){const r=await fetch(BASE+p,{method:'POST',headers:{'
 const toastEl=document.getElementById('toast');
 let toastTm;
 function toast(msg,type=''){toastEl.textContent=msg;toastEl.className='toast '+(type==='ok'?'ok':type==='err'?'err':'')+' show';clearTimeout(toastTm);toastTm=setTimeout(()=>toastEl.classList.remove('show'),2800);}
-function spInfo(status){return({pending:{pill:'sp-blue',lbl:IS_RU?'На рассмотрении':'Kutilmoqda',steps:[1,0,0,0]},approved:{pill:'sp-blue',lbl:IS_RU?'Одобрено':'Tasdiqlandi',steps:[2,1,0,0]},sent:{pill:'sp-blue',lbl:IS_RU?'Отправлено':'Yuborildi',steps:[2,2,1,0]},completed:{pill:'sp-green',lbl:IS_RU?'Доставлено':'Yetkazildi',steps:[2,2,2,2]},rejected:{pill:'sp-red',lbl:IS_RU?'Отклонено':'Rad etildi',steps:null},cancelled_by_user:{pill:'sp-gray',lbl:IS_RU?'Отменено':'Bekor qilindi',steps:null},not_received:{pill:'sp-red',lbl:IS_RU?'Не получено':'Yetib kelmadi',steps:null}})[status]||{pill:'sp-gray',lbl:status,steps:null};}
+function spInfo(status){return({pending:{pill:'sp-blue',lbl:IS_RU?'На рассмотрении':'Kutilmoqda'},approved:{pill:'sp-blue',lbl:IS_RU?'Одобрено':'Tasdiqlandi'},sent:{pill:'sp-green',lbl:IS_RU?'Готов к выдаче':'Berishga tayyor'},completed:{pill:'sp-green',lbl:IS_RU?'Получено':'Olindi'},rejected:{pill:'sp-red',lbl:IS_RU?'Отклонено':'Rad etildi'},cancelled_by_user:{pill:'sp-gray',lbl:IS_RU?'Отменено':'Bekor qilindi'},not_received:{pill:'sp-red',lbl:IS_RU?'Не получено':'Yetib kelmadi'}})[status]||{pill:'sp-gray',lbl:status};}
 /* screens */
 function homeScreen(){
   const u=S.user,bal=u?.points||0,in_=ini(u),fn=fname(u);
@@ -357,9 +359,9 @@ function historyScreen(){
   return `<div class="page-title">${T.hist_h}</div><div class="card" style="margin-top:8px;">${S.history.map(h=>`<div class="hist-item"><div class="hist-ico">${svg(I.qr)}</div><div style="flex:1;"><div class="hist-code">${h.code||h.qr_code||'—'}</div><div class="hist-date">${h.scanned_at||h.date||''}</div></div><div class="hist-pts">+${h.points||h.points_earned||0} ball</div></div>`).join('')}</div>`;
 }
 function ordersScreen(){
-  if(!S.orders.length)return `<div class="page-title">${T.ord_h}</div><div class="empty"><div class="empty-ico">${svg(I.list)}</div><h4>${T.ord_e}</h4><p>${T.ord_es}</p></div>`;
-  const SLBLS=[T.s1,T.s2,T.s3,T.s4];
-  return `<div class="page-title">${T.ord_h}</div><div class="section-sub">${T.ord_s}</div>${S.orders.map(o=>{const n=o.gift?.name||'—';const si=spInfo(o.status);const col=gCol(o.gift?.id||1);const ico=gIco(n);const stHtml=si.steps?`<div class="steps">${SLBLS.map((lbl,i)=>{const s=si.steps[i];const pDone=i>0&&si.steps[i-1]===2;const dot=s===2?`<div class="step-dot done">${svg(I.check)}</div>`:s===1?`<div class="step-dot active"><i></i></div>`:`<div class="step-dot"></div>`;return `<div class="step ${i===0?'first':''}"><div class="step-line ${pDone?'done':''}"></div>${dot}<div class="step-lbl ${s===2?'done':s===1?'active':''}">${lbl}</div></div>`;}).join('')}</div>`:'';const actHtml=o.status==='pending'?`<div class="order-actions"><button class="btn-sm btn-sm-danger" data-cancel="${o.id}">${IS_RU?'✕ Отменить':'✕ Bekor qilish'}</button></div>`:o.status==='sent'?`<div class="order-actions"><button class="btn-sm btn-sm-green" data-confirm="${o.id}">${IS_RU?'✓ Получил':'✓ Qabul qildim'}</button><button class="btn-sm btn-sm-danger" data-notrcv="${o.id}">${IS_RU?'✕ Не получил':'✕ Kelmadi'}</button></div>`:'';return `<div class="card order-card"><div class="order-row"><div class="order-img ${col}">${svg(I[ico]||I.gift)}</div><div style="flex:1;"><div class="order-top"><h3>${n}</h3><span class="sp ${si.pill}">${si.lbl}</span></div><div class="order-date">${fdate(o.requested_at)} · ${o.gift?.points_cost||0} ball</div></div></div>${stHtml}${actHtml}</div>`;}).join('')}`;
+  const banner=`<div class="ord-info">${T.ord_info}</div>`;
+  if(!S.orders.length)return `<div class="page-title">${T.ord_h}</div>${banner}<div class="empty"><div class="empty-ico">${svg(I.list)}</div><h4>${T.ord_e}</h4><p>${T.ord_es}</p></div>`;
+  return `<div class="page-title">${T.ord_h}</div><div class="section-sub">${T.ord_s}</div>${banner}${S.orders.map(o=>{const n=o.gift?.name||'—';const si=spInfo(o.status);const col=gCol(o.gift?.id||1);const ico=gIco(n);const actHtml=o.status==='pending'?`<div class="order-actions"><button class="btn-sm btn-sm-danger" data-cancel="${o.id}">${IS_RU?'✕ Отменить':'✕ Bekor qilish'}</button></div>`:o.status==='sent'?`<div class="order-actions"><button class="btn-sm btn-sm-green" data-confirm="${o.id}">${IS_RU?'✓ Получил':'✓ Qabul qildim'}</button><button class="btn-sm btn-sm-danger" data-notrcv="${o.id}">${IS_RU?'✕ Не получил':'✕ Kelmadi'}</button></div>`:'';return `<div class="card order-card"><div class="order-row"><div class="order-img ${col}">${svg(I[ico]||I.gift)}</div><div style="flex:1;"><div class="order-top"><h3>${n}</h3><span class="sp ${si.pill}">${si.lbl}</span></div><div class="order-date">${fdate(o.requested_at)} · ${o.gift?.points_cost||0} ball</div></div></div>${actHtml}</div>`;}).join('')}`;
 }
 function profileScreen(){
   const u=S.user,in_=ini(u),fn=fname(u),curL=u?.language||LANG;

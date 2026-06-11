@@ -14,6 +14,9 @@ TRANSLATIONS = {
         'ASK_NAME': "👤 Iltimos, ismingizni kiriting:",
         'NAME_SAVED': "✅ Ismingiz saqlandi!",
         'NAME_TOO_SHORT': "❌ Ismingiz juda qisqa. Iltimos, kamida 2 ta belgi kiriting.",
+        'ASK_LAST_NAME': "👤 Endi familiyangizni kiriting:",
+        'LAST_NAME_SAVED': "✅ Familiyangiz saqlandi!",
+        'LAST_NAME_TOO_SHORT': "❌ Familiyangiz juda qisqa. Iltimos, kamida 2 ta belgi kiriting.",
         'SEND_PHONE': "Telefon raqamini yuborish uchun tugmani bosing:",
         'PHONE_SAVED': "✅ Telefon raqamingiz saqlandi!\n\nEndi quyidagi tugma orqali joylashuvingizni yuboring.",
         'SEND_LOCATION': "Joylashuvni yuborish uchun tugmani bosing:",
@@ -115,6 +118,11 @@ TRANSLATIONS = {
         # Viloyat tanlash
         'CHOOSE_REGION': "📍 Yashash viloyatingizni tanlang:",
         'REGION_SAVED': "✅ Viloyat saqlandi: <b>{region}</b>",
+        'CHOOSE_DISTRICT': "📍 Tumaningizni tanlang:",
+        'DISTRICT_OTHER': "✏️ Boshqa (ro'yxatda yo'q)",
+        'ASK_DISTRICT_CUSTOM': "✏️ Tumaningiz nomini yozib yuboring:",
+        'DISTRICT_SAVED': "✅ Tuman saqlandi: <b>{district}</b>",
+        'DISTRICT_TOO_SHORT': "❌ Tuman nomi juda qisqa. Iltimos, kamida 2 ta belgi kiriting.",
         'SEND_PHONE_BUTTON': "📱 Telefon raqamini yuborish",
         'REGISTRATION_COMPLETE_MESSAGE': "✅ Ro'yxatdan o'tish muvaffaqiyatli yakunlandi! Endi botdan foydalanishingiz mumkin.",
         'SEND_PROMO_CODE': "Iltimos, o'z promo-kodingizni kiriting.",
@@ -166,9 +174,9 @@ TRANSLATIONS = {
         'NOT_ENOUGH_POINTS': "❌ Sizda yetarli ball yo'q. Sizga {needed} ball kerak, lekin sizda {have} ball bor.",
         'GIFT_REQUEST_SENT': "✅ Sovg'a olish so'rovingiz '{gift_name}' qabul qilindi!\n\nAdministrator so'rovingizni tez orada ko'rib chiqadi.\n💰 Joriy balansingiz: {remaining_points} ball",
         'GIFT_STATUS_APPROVED': "✅ Tabriklaymiz! Sizning '{gift_name}' sovg'angiz tasdiqlandi!\n\nMahsulot tayyorlash bosqichida.",
-        'GIFT_STATUS_SENT': "📦 Sizning '{gift_name}' sovg'angiz yetkazib berish xizmatiga topshirildi!\n\nTez orada sizga yetkaziladi.",
+        'GIFT_STATUS_SENT': "🎁 Sizning '{gift_name}' sovg'angiz tayyor!\n\nSovg'alar har kvartalda (3 oyda bir marta) tarqatiladi — JIP adminlari siz bilan bog'lanadi.",
         'GIFT_STATUS_REJECTED': "❌ Afsuski, sizning '{gift_name}' sovg'angiz so'rovi bekor qilindi.\n\nSabab: {admin_notes}\n\nAdministrator bilan bog'laning.",
-        'GIFT_STATUS_COMPLETED': "🎉 Tabriklaymiz! Sizning '{gift_name}' sovg'angiz yetkazildi!\n\nMahsulotni qabul qilganingizni tasdiqlang.",
+        'GIFT_STATUS_COMPLETED': "🎉 Tabriklaymiz! Sizning '{gift_name}' sovg'angiz topshirildi!\n\nQabul qilganingizni tasdiqlang.",
         'INSUFFICIENT_POINTS': "❌ Bu sovg'a uchun yetarli ball yo'q!",
         'GIFT_NOT_FOUND': "❌ Sovg'a topilmadi!",
         'GIFT_NOT_AVAILABLE_FOR_USER_TYPE': "❌ Bu sovg'a sizning foydalanuvchi turingiz uchun mavjud emas!",
@@ -429,6 +437,9 @@ TRANSLATIONS = {
         'ASK_NAME': "👤 Пожалуйста, введите ваше имя:",
         'NAME_SAVED': "✅ Имя сохранено!",
         'NAME_TOO_SHORT': "❌ Имя слишком короткое. Пожалуйста, введите минимум 2 символа.",
+        'ASK_LAST_NAME': "👤 Теперь введите вашу фамилию:",
+        'LAST_NAME_SAVED': "✅ Фамилия сохранена!",
+        'LAST_NAME_TOO_SHORT': "❌ Фамилия слишком короткая. Пожалуйста, введите минимум 2 символа.",
         'SEND_PHONE': "Нажмите на кнопку, чтобы отправить номер телефона:",
         'PHONE_SAVED': "✅ Номер телефона сохранен!\n\nТеперь отправьте вашу локацию, используя кнопку ниже.",
         'SEND_LOCATION': "Нажмите на кнопку, чтобы отправить локацию:",
@@ -505,6 +516,11 @@ TRANSLATIONS = {
         # Выбор региона
         'CHOOSE_REGION': "📍 Выберите ваш регион:",
         'REGION_SAVED': "✅ Регион сохранён: <b>{region}</b>",
+        'CHOOSE_DISTRICT': "📍 Выберите ваш район:",
+        'DISTRICT_OTHER': "✏️ Другое (нет в списке)",
+        'ASK_DISTRICT_CUSTOM': "✏️ Напишите название вашего района:",
+        'DISTRICT_SAVED': "✅ Район сохранён: <b>{district}</b>",
+        'DISTRICT_TOO_SHORT': "❌ Название района слишком короткое. Введите минимум 2 символа.",
         'SELLER_STORE_NOT_FOUND': "❗ Ваш номер телефона не привязан ни к одному магазину. Пожалуйста, свяжитесь с администратором: {admin_contact}",
         'SELLER_STORE_CONFIRM': "🏪 Ваш магазин: <b>{store_name}</b>\n\nАдрес: {address}\n\nВерно?",
         'SELLER_STORE_CONFIRMED': "✅ Вы привязаны к магазину: <b>{store_name}</b>",
@@ -581,9 +597,9 @@ TRANSLATIONS = {
         'NOT_ENOUGH_POINTS': "❌ Недостаточно баллов. Вам нужно {needed} баллов, но у вас {have} баллов.",
         'GIFT_REQUEST_SENT': "✅ Ваш запрос на получение подарка '{gift_name}' принят!\n\nАдминистратор обработает ваш запрос в ближайшее время.\n💰 Ваш текущий баланс: {remaining_points} баллов",
         'GIFT_STATUS_APPROVED': "✅ Поздравляем! Ваш запрос на подарок '{gift_name}' одобрен!\n\nПродукт находится в стадии подготовки.",
-        'GIFT_STATUS_SENT': "📦 Ваш подарок '{gift_name}' передан в службу доставки!\n\nСкоро он будет доставлен вам.",
+        'GIFT_STATUS_SENT': "🎁 Ваш подарок '{gift_name}' готов!\n\nПодарки выдаются раз в квартал (каждые 3 месяца) — администраторы JIP свяжутся с вами.",
         'GIFT_STATUS_REJECTED': "❌ К сожалению, ваш запрос на подарок '{gift_name}' отменен.\n\n{admin_notes}\n\nСвяжитесь с администратором.",
-        'GIFT_STATUS_COMPLETED': "🎉 Поздравляем! Ваш подарок '{gift_name}' доставлен!\n\nПодтверждение получения продукта.",
+        'GIFT_STATUS_COMPLETED': "🎉 Поздравляем! Ваш подарок '{gift_name}' выдан!\n\nПодтвердите получение.",
         'INSUFFICIENT_POINTS': "❌ Недостаточно баллов для этого подарка!",
         'GIFT_NOT_FOUND': "❌ Подарок не найден!",
         'GIFT_NOT_AVAILABLE_FOR_USER_TYPE': "❌ Этот подарок недоступен для вашего типа пользователя!",
@@ -861,6 +877,18 @@ def get_text(user, key, **kwargs):
         except KeyError:
             return text
     
+    return text
+
+
+def get_text_lang(language, key, **kwargs):
+    """Til kodi bo'yicha to'g'ridan-to'g'ri tarjima (user obyektisiz)."""
+    translations = TRANSLATIONS.get(language, TRANSLATIONS['uz_latin'])
+    text = translations.get(key, key)
+    if kwargs:
+        try:
+            return text.format(**kwargs)
+        except KeyError:
+            return text
     return text
 
 

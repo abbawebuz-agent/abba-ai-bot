@@ -188,6 +188,11 @@ class TelegramUser(models.Model):
         db_index=True,
         verbose_name='Tuman',
     )
+    # "Boshqa" tanlanganda — ro'yxatda yo'q tuman nomi qo'lda kiritiladi
+    district_custom = models.CharField(
+        max_length=120, blank=True, default='',
+        verbose_name='Tuman (qo\'lda kiritilgan)',
+    )
     user_type = models.CharField(
         max_length=20,
         choices=USER_TYPE_CHOICES,
