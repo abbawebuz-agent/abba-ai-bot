@@ -147,4 +147,9 @@ class Command(BaseCommand):
             return val
         if isinstance(val, (list, dict)):
             return str(val)
-        return val
+        # openpyxl faqat primitiv turlarni qabul qiladi (str/int/float/bool/Decimal/None);
+        # boshqa har qanday obyektni str() qilamiz — "Cannot convert ... to Excel" bo'lmasin
+        from decimal import Decimal
+        if isinstance(val, (str, int, float, bool, Decimal)):
+            return val
+        return str(val)
