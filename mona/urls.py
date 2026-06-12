@@ -1199,6 +1199,66 @@ def admin_backup_now_view(request):
     return redirect('admin:index')
 
 
+def admin_wipe_test_data_view(request):
+    """Admin tugma: Gift'dan tashqari HAMMA test/foydalanuvchi ma'lumotini o'chiradi.
+
+    Avval avtomatik backup (SQL+Excel) oladi, keyin wipe qiladi.
+    XAVFSIZLIK: superuser + ?confirm=WIPE shart.
+    """
+    import io, logging, traceback
+    from django.contrib import messages
+    from django.core.management import call_command
+
+    logger = logging.getLogger(__name__)
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Faqat superuser uchun")
+
+    if request.GET.get('confirm') != 'WIPE':
+        messages.warning(
+            request,
+            "⚠️ Tasdiq kerak. O'chirish uchun: "
+            "/admin/wipe-test-data/?confirm=WIPE — Gift'dan boshqa HAMMA ma'lumot o'chadi!"
+        )
+        return redirect('admin:index')
+
+    # 1) Avval xavfsizlik uchun backup (SQL + Excel)
+    try:
+        call_command('backup_db')
+        call_command('backup_excel')
+        logger.info("admin_wipe_test_data: pre-wipe backup OK")
+    except Exception:
+        logger.exception("admin_wipe_test_data: pre-wipe backup xato (davom etamiz)")
+
+    # 2) Wipe
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        call_command('wipe_user_data', '--yes', stdout=out, stderr=err)
+        log = (out.getvalue() or err.getvalue()).strip()
+        logger.info("admin_wipe_test_data OK:\n%s", log)
+        last = '\n'.join(log.splitlines()[-3:])
+        messages.success(
+            request,
+            f"✅ Test ma'lumotlar o'chirildi (Sovg'alar qoldi). Backup kanalga yuborildi.\n\n{last}"
+        )
+        try:
+            from core.models import log_event, ActivityLog as _AL
+            log_event(
+                action_type=_AL.ACTION_BACKUP, user=request.user,
+                description="WIPE: barcha test data o'chirildi (Gift qoldi)",
+                request=request, log_tail=last[:500],
+            )
+        except Exception:
+            pass
+    except Exception as exc:
+        tb = traceback.format_exc()
+        logger.error("admin_wipe_test_data FAILED:\n%s", tb)
+        messages.error(request, f"❌ Wipe xato:\n{type(exc).__name__}: {str(exc)[:500]}")
+    return redirect('admin:index')
+
+
 def admin_backup_excel_now_view(request):
     """Admin tugma: barcha ma'lumotlarni Excel jadval qilib Telegram kanalga yuborish."""
     import io, logging, traceback
@@ -1272,6 +1332,7 @@ urlpatterns = [
     path('admin/qrcodebatch/<int:batch_id>/xlsx/', admin.site.admin_view(admin_batch_xlsx_view), name='admin_batch_xlsx'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-excel-now/', admin.site.admin_view(admin_backup_excel_now_view), name='admin_backup_excel_now'),
+    path('admin/wipe-test-data/', admin.site.admin_view(admin_wipe_test_data_view), name='admin_wipe_test_data'),
     path('admin/backup-test/', admin.site.admin_view(admin_backup_test_view), name='admin_backup_test'),
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
