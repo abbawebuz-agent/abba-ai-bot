@@ -42,8 +42,16 @@ async def _daily_backup_loop():
             _blog.info('Keyingi avto-backup: %s (%.0f s)', nxt.isoformat(), wait_s)
             await asyncio.sleep(wait_s)
             loop = asyncio.get_event_loop()
+            # 1) SQL dump
             await loop.run_in_executor(None, lambda: call_command('backup_db'))
-            _blog.info('Avto-backup bajarildi')
+            _blog.info('Avto-backup (SQL) bajarildi')
+            # 2) Excel data eksport — Celery beat Railway'da ishlamaydi,
+            #    shuning uchun Excel ham shu loop orqali yuboriladi.
+            try:
+                await loop.run_in_executor(None, lambda: call_command('backup_excel'))
+                _blog.info('Avto-backup (Excel) bajarildi')
+            except Exception:
+                _blog.exception('Avto-backup (Excel) xato — SQL baribir yuborildi')
         except asyncio.CancelledError:
             raise
         except Exception:
