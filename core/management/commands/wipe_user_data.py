@@ -22,6 +22,7 @@ from core.models import (
     TelegramUser, QRCode, QRCodeBatch, GiftRedemption,
     Seller, SellerBatch, SellerPointsTransaction,
     MonthlyPromoTicket, SellerRegistrationCode,
+    LiveStreamWinner,
 )
 
 try:
@@ -60,6 +61,9 @@ class Command(BaseCommand):
 
         # FK PROTECT/CASCADE tartibi muhim: bolalardan ota-onaga.
         _del(lambda: GiftRedemption.objects.all(), 'gift_redemptions')
+        # LiveStreamWinner.user -> PROTECT(TelegramUser): userdan OLDIN o'chmasa
+        # TelegramUser.delete() ProtectedError beradi va userlar qolib ketadi.
+        _del(lambda: LiveStreamWinner.objects.all(), 'livestream_winners')
         _del(lambda: MonthlyPromoTicket.objects.all(), 'monthly_tickets')
         _del(lambda: SellerPointsTransaction.objects.all(), 'seller_txns')
         _del(lambda: SellerBatch.objects.all(), 'seller_batches')
