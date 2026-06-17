@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile.prod"
   },
   "deploy": {
-    "startCommand": "sh -c 'export DJANGO_SETTINGS_MODULE=mona.settings.production && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && (python manage.py createsuperuser --no-input 2>/dev/null || true) && (python manage.py clear_test_data 2>/dev/null || true) && (python manage.py set_webhook 2>/dev/null || true) && uvicorn mona.asgi:application --host 0.0.0.0 --port ${PORT:-8000} --workers 1'",
+    "startCommand": "sh -c 'export DJANGO_SETTINGS_MODULE=mona.settings.production && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && (python manage.py createsuperuser --no-input 2>/dev/null || true) && (python manage.py set_webhook 2>/dev/null || true) && uvicorn mona.asgi:application --host 0.0.0.0 --port ${PORT:-8000} --workers 1'",
     "healthcheckPath": "/health/",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
