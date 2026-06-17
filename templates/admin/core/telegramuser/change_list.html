@@ -12,4 +12,12 @@
         📍 Отправить по области
     </a>
     {% endif %}
+    {# VAQTINCHALIK: test data wipe tugmasi — bir marta ishlatilib, keyin OLIB TASHLANADI #}
+    <a href="#" onclick="if(confirm('⚠️ DIQQAT!\n\nBu HAMMA test ma\'lumotni o\'chiradi:\n• Foydalanuvchilar\n• Promokod partiyalar + sketch-kartalar\n• Sotuvchilar + ball tranzaksiyalari\n• Arizalar, g\'oliblar\n\nQOLADI: Sovg\'alar, viloyatlar, admin.\n\nAvval avtomatik BACKUP olinadi. Davom etilsinmi?')){window.location.href='/admin/wipe-test-data/?confirm=WIPE';}return false;"
+       style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+              background:#dc2626;color:#fff;border-radius:6px;font-size:13px;
+              font-weight:700;text-decoration:none;white-space:nowrap;"
+       onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+        🗑 TEST DATANI O'CHIRISH
+    </a>
 {% endblock %}

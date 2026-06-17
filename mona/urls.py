@@ -1211,9 +1211,11 @@ def admin_wipe_test_data_view(request):
 
     logger = logging.getLogger(__name__)
 
-    if not request.user.is_superuser:
+    # VAQTINCHALIK: superuser o'rniga staff yetarli (login muammosi sabab).
+    # Bir marta wipe qilingach BU TEKSHIRUV is_superuser'ga QAYTARILADI / endpoint olib tashlanadi.
+    if not request.user.is_staff:
         from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("Faqat superuser uchun")
+        return HttpResponseForbidden("Faqat admin uchun")
 
     if request.GET.get('confirm') != 'WIPE':
         messages.warning(
