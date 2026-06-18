@@ -1316,6 +1316,8 @@ def jip_admin_spa_view(request, **kwargs):
     return TemplateResponse(request, 'jip_admin/index.html', {'stats': stats})
 
 
+from core.dashboard_api import jip_admin_api, jip_admin_api_user  # noqa: E402
+
 urlpatterns = [
     path('', root_redirect, name='root'),
     path('health/', health_check, name='health_check'),
@@ -1337,6 +1339,9 @@ urlpatterns = [
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
+    # JIP Admin dashboard read-only JSON API (must precede the SPA catch-all)
+    path('jip-admin/api/user/<int:user_id>/', jip_admin_api_user, name='jip_admin_api_user'),
+    path('jip-admin/api/<str:section>/', jip_admin_api, name='jip_admin_api'),
     path('jip-admin/', jip_admin_spa_view, name='jip_admin_spa'),
     path('jip-admin/<path:subpath>', jip_admin_spa_view, name='jip_admin_spa_sub'),
 ]

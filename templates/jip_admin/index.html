@@ -1,65 +1,54 @@
-{% load static %}{% comment %}JIP Admin SPA — Claude Design 1:1{% endcomment %}<!DOCTYPE html>
-<html lang="ru" data-sidebar="dark" data-density="comfortable" data-theme="dark">
+{% load static %}{% comment %}JIP Admin Dashboard — "Modern Apple style UI" (Claude Design handoff). Build-free React via React.createElement, wired to /jip-admin/api/. Does NOT touch Django admin.{% endcomment %}<!DOCTYPE html>
+<html lang="uz">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>JIP Admin — Loyalty Platform</title>
+<title>JIP Dashboard — Loyalty Platform</title>
 <link rel="icon" type="image/png" href="{% static 'core_admin/img/favicon.png' %}"/>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;background:#F6F7F9;}
+  #root{height:100%;}
+  button{font-family:inherit;}
+  input{font-family:inherit;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:rgba(140,140,150,.32);border-radius:10px;border:2px solid transparent;background-clip:content-box;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(140,140,150,.5);background-clip:content-box;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  @keyframes cardIn{from{transform:translateY(14px) scale(.985);}to{transform:none;}}
+  @keyframes dash{from{stroke-dashoffset:1;}to{stroke-dashoffset:0;}}
+  @keyframes pop{from{transform:scale(.95);}to{transform:none;}}
+  @keyframes fadeIn{from{transform:translateY(6px);}to{transform:none;}}
+  @keyframes drawerIn{from{transform:translateX(48px);}to{transform:none;}}
+  @keyframes overlayIn{from{opacity:.4;}to{opacity:1;}}
+  @keyframes barGrow{from{transform:scaleX(.35);}to{transform:none;}}
+  @keyframes barGrowY{from{transform:scaleY(.35);}to{transform:none;}}
+  @keyframes slideContent{from{transform:translateY(14px);}to{transform:none;}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
 
-<!-- Geist font -->
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"/>
-
-<!-- JIP Design System tokens -->
-<link rel="stylesheet" href="{% static 'admin_ui/spa/tokens.css' %}"/>
-
-<!-- Yandex.Metrika -->
-<script type="text/javascript">
-(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=107195245','ym');
-ym(107195245,'init',{ssr:true,webvisor:true,clickmap:true,trackLinks:true,accurateTrackBounce:true});
-</script>
-</head>
-<body>
-
-<!-- ── Django context injected as JS globals ── -->
+<!-- Django context as JS globals -->
 <script>
 window.DJANGO_USER = {
   username: '{{ request.user.username|escapejs }}',
   name: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
   is_superuser: {% if request.user.is_superuser %}true{% else %}false{% endif %},
-  is_staff: {% if request.user.is_staff %}true{% else %}false{% endif %},
+  is_staff: {% if request.user.is_staff %}true{% else %}false{% endif %}
 };
-
 window.DJANGO_ADMIN_BASE = '/admin/';
 window.DJANGO_SPA_BASE   = '/jip-admin/';
 window.CSRF_TOKEN        = '{{ csrf_token }}';
-
-window.DJANGO_STATS = {
-  users_total:    {{ stats.users_total|default:0 }},
-  users_santenik: {{ stats.users_santenik|default:0 }},
-  users_sotuvchi: {{ stats.users_sotuvchi|default:0 }},
-  batches_total:  {{ stats.batches_total|default:0 }},
-  batches_active: {{ stats.batches_active|default:0 }},
-  qr_total:       {{ stats.qr_total|default:0 }},
-  qr_scanned:     {{ stats.qr_scanned|default:0 }},
-  gifts_pending:  {{ stats.gifts_pending|default:0 }},
-  txns_total:     {{ stats.txns_total|default:0 }},
-  audit_total:    {{ stats.audit_total|default:0 }},
-};
 </script>
-
+</head>
+<body>
 <div id="root"></div>
 
-<!-- React 18 self-hosted (no CDN dependency) -->
+<!-- React 18 (self-hosted, no CDN dependency) -->
 <script src="{% static 'admin_ui/spa/react.production.min.js' %}"></script>
 <script src="{% static 'admin_ui/spa/react-dom.production.min.js' %}"></script>
 
-<!-- Mock / seed data -->
-<script src="{% static 'admin_ui/spa/data.js' %}"></script>
-
-<!-- Single compiled SPA bundle (all JSX → JS, esbuild) -->
-<script src="{% static 'admin_ui/spa/bundle.js' %}"></script>
-
+<!-- Dashboard (build-free React.createElement, reads /jip-admin/api/) -->
+<script src="{% static 'admin_ui/spa/dashboard.js' %}?v=20260618a"></script>
 </body>
 </html>
