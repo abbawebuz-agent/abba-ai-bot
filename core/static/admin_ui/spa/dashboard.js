@@ -32,9 +32,19 @@
   class Dashboard extends React.Component {
     constructor(props) {
       super(props);
+      // Allow deep-linking from the admin button: /jip-admin/?page=gift&tab=requests
+      var VALID = ["overview", "users", "promo", "gift", "seller", "geo", "fraud", "broadcast", "lottery", "photos", "audit"];
+      var initPage = "overview", initTabs = {};
+      try {
+        var qp = new URLSearchParams(window.location.search || "");
+        var p = qp.get("page");
+        if (p && VALID.indexOf(p) >= 0) initPage = p;
+        var tb = qp.get("tab");
+        if (tb && initPage !== "overview") initTabs[initPage] = tb;
+      } catch (e) { }
       this.state = {
-        page: "overview", theme: "light", lang: "uz", range: "30d",
-        collapsed: false, tabs: {}, filters: {}, detail: null, cache: {}
+        page: initPage, theme: "light", lang: "uz", range: "30d",
+        collapsed: false, tabs: initTabs, filters: {}, detail: null, cache: {}
       };
       this._loading = null;
       this.h = function (t, p) { return React.createElement.apply(React, arguments); };
@@ -92,6 +102,36 @@
     reloadCurrent() {
       var key = this.cacheKey(this.state.page);
       this.setState(function (s) { var c = Object.assign({}, s.cache); delete c[key]; return { cache: c }; });
+    }
+
+    // Excel export — reuses the admin /admin/dashboard/export/ engine (read-only).
+    // Returns {module, tab} for the current page, or null if no export exists.
+    exportTarget() {
+      switch (this.state.page) {
+        case "overview": return { module: "general_summary", tab: "general" };
+        case "users": return { module: "users_list" };
+        case "promo": return { module: "activations_list" };
+        case "gift": return this.getTab("gift", "catalog") === "requests" ? { module: "redemptions_list" } : { module: "gifts_list" };
+        case "seller": return { module: "general_summary", tab: "stores" };
+        case "geo": return { module: "regional_list", tab: "general" };
+        default: return null;
+      }
+    }
+    exportRangeQuery() {
+      var r = this.state.range;
+      if (r === "all") return "preset=all";
+      if (r === "prev") return "preset=last_month";
+      if (r === "7d") return "preset=last_7_days";
+      var to = new Date(); var from = new Date(); from.setDate(from.getDate() - 29);
+      function f(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+      return "date_from=" + f(from) + "&date_to=" + f(to);
+    }
+    doExport() {
+      var t = this.exportTarget(); if (!t) return;
+      var url = ADMIN_BASE + "dashboard/export/?module=" + t.module + (t.tab ? "&tab=" + t.tab : "") + "&" + this.exportRangeQuery();
+      var ut = this.getFilter("userType", "all");
+      if (this.state.page === "users" && ut !== "all" && ut !== "none") url += "&user_type=" + ut;
+      window.open(url, "_blank");
     }
 
     // ----------------------------- formatting ------------------------------
@@ -847,6 +887,7 @@
             h("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
               h("div", { style: { display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 12, background: P.track } }, dateChips),
               iconButton("refresh", function () { self.reloadCurrent(); }, self.L({ uz: "Yangilash", ru: "Обновить" })),
+              this.exportTarget() ? h("button", { onClick: function () { self.doExport(); }, title: self.L({ uz: "Excel yuklab olish", ru: "Скачать Excel" }), style: { height: 38, padding: "0 14px", borderRadius: 11, border: "none", background: P.accent, color: "#fff", cursor: "pointer", font: "600 12.5px inherit", display: "inline-flex", alignItems: "center", gap: 7, transition: "all .18s", flex: "none" }, onMouseEnter: function (e) { e.currentTarget.style.filter = "brightness(1.08)"; }, onMouseLeave: function (e) { e.currentTarget.style.filter = "none"; } }, self.icon("export", 16, 1.9, "#fff"), h("span", null, "Excel")) : null,
               h("button", { style: { height: 38, padding: "0 14px", borderRadius: 11, border: "1px solid " + P.sep, background: P.card, color: P.text, cursor: "pointer", font: "700 12.5px inherit", letterSpacing: ".02em", transition: "all .18s", flex: "none" }, onMouseEnter: langHov.onMouseEnter, onMouseLeave: function (e) { e.currentTarget.style.background = P.card; e.currentTarget.style.borderColor = P.sep; e.currentTarget.style.color = P.text; }, onClick: function () { self.setState(function (s) { return { lang: s.lang === "uz" ? "ru" : "uz" }; }); } }, lang === "uz" ? "UZ" : "RU"),
               iconButton(this.state.theme === "dark" ? "sun" : "moon", function () { self.setState(function (s) { return { theme: s.theme === "dark" ? "light" : "dark" }; }); }, "Theme"),
               h("div", { style: { display: "flex", alignItems: "center", gap: 10, paddingLeft: 6, marginLeft: 2 } }, h("div", { style: { width: 38, height: 38, borderRadius: "50%", background: P.iconBg, color: P.text2, display: "flex", alignItems: "center", justifyContent: "center", font: "700 14px inherit", flex: "none" } }, (self.initials(userName) || "AD").toUpperCase()), expanded ? h("div", { style: { lineHeight: 1.2 } }, h("div", { style: { font: "600 13px inherit", color: P.text, whiteSpace: "nowrap" } }, userName), h("div", { style: { font: "500 11.5px inherit", color: P.text3 } }, self.L({ uz: "Administrator", ru: "Администратор" }))) : null)

@@ -463,7 +463,7 @@ JAZZMIN_SETTINGS = {
 
     "topmenu_links": [
         {"name": "Bosh sahifa", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Boshqaruv paneli", "url": "dashboard", "permissions": ["auth.view_user"]},
+        {"name": "Boshqaruv paneli", "url": "jip_admin_spa", "permissions": ["auth.view_user"]},
     ],
 
     "language_chooser": True,

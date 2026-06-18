@@ -28,7 +28,7 @@
 {{ block.super }}
 <script>
 (function() {
-  var href = "{% if request.user.username == 'callcenter' %}/admin/dashboard/?tab=redemptions{% else %}/admin/dashboard/{% endif %}";
+  var href = "{% if request.user.username == 'callcenter' %}/jip-admin/?page=gift&tab=requests{% else %}/jip-admin/{% endif %}";
   var li = document.createElement('li');
   li.className = 'nav-item';
   li.innerHTML = '<a href="' + href + '" style="display:inline-flex;align-items:center;gap:6px;margin:0 8px;padding:5px 14px;background:#417690;color:#fff;border-radius:4px;font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.background=\'#2b5068\'" onmouseout="this.style.background=\'#417690\'">'
