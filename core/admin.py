@@ -3631,20 +3631,25 @@ class ActivityLogAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════
 
 class SellerBatchInlineForm(forms.ModelForm):
-    """T8: partiya yaratilgandan keyin 'gacha' (promo_to) qiymati qulflanadi."""
+    """Diapazon (dan..gacha) qo'lda kiritiladi; yaratilgandan keyin qulflanadi."""
     class Meta:
         model = SellerBatch
-        fields = ['promo_to']
+        fields = ['promo_from', 'promo_to']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Mavjud (saqlangan) partiya — promo_to tahrirlanmaydi (disabled => submit'da
+        # 'dan' majburiy (avtomatik emas endi)
+        pf = self.fields.get('promo_from')
+        if pf is not None:
+            pf.required = True
+        # Mavjud (saqlangan) partiya — diapazon tahrirlanmaydi (disabled => submit'da
         # o'zgarish e'tiborga olinmaydi, initial qiymat saqlanadi).
         if self.instance and self.instance.pk:
-            f = self.fields.get('promo_to')
-            if f is not None:
-                f.disabled = True
-                f.help_text = "Partiya yaratilgan — o'zgartirib bo'lmaydi."
+            for name in ('promo_from', 'promo_to'):
+                f = self.fields.get(name)
+                if f is not None:
+                    f.disabled = True
+                    f.help_text = "Partiya yaratilgan — o'zgartirib bo'lmaydi."
 
 
 class SellerBatchInline(admin.TabularInline):
@@ -3653,12 +3658,12 @@ class SellerBatchInline(admin.TabularInline):
     extra = 1
     can_delete = True
     readonly_fields = [
-        'promo_from_display', 'total_count_col', 'points_col',
+        'total_count_col', 'points_col',
         'activation_col', 'promos_btn', 'created_at',
     ]
-    # promo_from olib tashlandi (auto-fill), o'rniga promo_from_display ko'rsatamiz
+    # promo_from endi qo'lda kiritiladi (avto emas)
     fields = [
-        'promo_from_display', 'promo_to', 'total_count_col', 'points_col',
+        'promo_from', 'promo_to', 'total_count_col', 'points_col',
         'activation_col', 'promos_btn', 'created_at',
     ]
     verbose_name = 'Partiya'
@@ -3666,25 +3671,16 @@ class SellerBatchInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        # Hint sifatida keyingi raqamni description'da ko'rsatamiz
+        # Keyingi bo'sh raqamni faqat taklif sifatida ko'rsatamiz
         next_from = SellerBatch.get_next_promo_from()
+        formset.form.base_fields['promo_from'].help_text = (
+            f"Diapazon boshini kiriting. Taklif: <strong>#{next_from}</strong> "
+            f"(oxirgi partiyadan keyingi bo'sh raqam)."
+        )
         formset.form.base_fields['promo_to'].help_text = (
-            f"Yangi partiya boshlanish raqami avtomatik: <strong>#{next_from}</strong>. "
-            f"Faqat 'gacha' qiymatini kiriting (kamida {next_from} bo'lishi kerak)."
+            "Diapazon oxirini kiriting ('dan' qiymatidan katta yoki teng)."
         )
         return formset
-
-    def promo_from_display(self, obj):
-        """Mavjud partiya uchun promo_from, yangi uchun avto-keyingi son."""
-        if obj and obj.pk and obj.promo_from is not None:
-            return format_html('<strong style="color:#1d4ed8;">#{}</strong>', obj.promo_from)
-        # Yangi partiya — keyingi avto raqamni ko'rsatamiz
-        next_from = SellerBatch.get_next_promo_from()
-        return format_html(
-            '<span style="color:#16a34a;">#{} (avto)</span>',
-            next_from,
-        )
-    promo_from_display.short_description = 'Promokod dan (avto)'
 
     def total_count_col(self, obj):
         if not obj.pk:

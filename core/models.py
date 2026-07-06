@@ -1996,8 +1996,8 @@ class SellerBatch(models.Model):
     )
     promo_from = models.PositiveIntegerField(
         verbose_name='Promokod dan (raqam)',
-        help_text='Avtomatik (oxirgi partiya + 1) — saqlanganda o\'zgartirilmaydi.',
-        blank=True, null=True,  # save() avtomatik to'ldiradi
+        help_text='Diapazon boshlanish raqami — qo\'lda kiriting.',
+        blank=False, null=True,
     )
     promo_to = models.PositiveIntegerField(verbose_name='Promokod gacha (raqam)')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')
@@ -2012,34 +2012,20 @@ class SellerBatch(models.Model):
 
     @classmethod
     def get_next_promo_from(cls):
-        """Keyingi partiya boshlanishi — global oxirgi promo_to + 1."""
+        """Keyingi bo'sh raqam — global oxirgi promo_to + 1 (faqat taklif sifatida)."""
         from django.db.models import Max
         result = cls.objects.aggregate(m=Max('promo_to'))
         return (result['m'] or 0) + 1
 
-    def save(self, *args, **kwargs):
-        """Yangi partiya yaratilganda promo_from avtomatik max+1.
-
-        Admin qiymat kiritsa ham, foydalanmaydi — har doim auto.
-        """
-        if not self.pk:
-            self.promo_from = self.__class__.get_next_promo_from()
-        super().save(*args, **kwargs)
-
     def clean(self):
         """Diapazon validatsiyasi:
-        - Yangi partiya uchun promo_from avtomatik aniqlanadi (save() da)
-        - clean() uchun keyingi raqamni hisoblaymiz
+        - promo_from va promo_to qo'lda kiritiladi
         - promo_to >= promo_from bo'lishi shart
         - Kesishish bo'lmasligi shart (overlap_check)
         """
         from django.core.exceptions import ValidationError
 
-        # Yangi partiya yaratilayotgan bo'lsa promo_from auto
-        if not self.pk:
-            self.promo_from = self.__class__.get_next_promo_from()
-
-        if self.promo_to is None:
+        if self.promo_from is None or self.promo_to is None:
             return  # field-level validation handles it
 
         if self.promo_from > self.promo_to:
