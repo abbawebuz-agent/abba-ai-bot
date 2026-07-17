@@ -1288,7 +1288,16 @@ function ProfileScreen({ points, scans, gifts, lang, setLang, onNav }) {
       <Card pad={0} className="anim" style={{ "--anim": "fadeUp .5s ease .15s both" }}>
         <InfoRow icon="activity" label={t("Ball harakatlari tarixi", "История баллов")} onClick={() => onNav("activity")} />
         <LangRow lang={lang} setLang={setLang} />
-        <InfoRow icon="doc" label={t("Maxfiylik siyosati", "Политика конфиденциальности")} onClick={() => { const u = location.origin + "/api/webapp/privacy-policy/"; try { (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) ? window.Telegram.WebApp.openLink(u) : window.open(u, "_blank"); } catch (e) {} }} last />
+        <InfoRow icon="doc" label={t("Maxfiylik siyosati", "Политика конфиденциальности")} onClick={async () => {
+          try {
+            const r = await fetch(location.origin + "/api/webapp/privacy-policy/?lang=" + (lang === "ru" ? "ru" : "uz_latin"), { headers: { "Accept": "application/json" } });
+            const d = await r.json();
+            if (!d || !d.pdf_url) return;
+            (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink)
+              ? window.Telegram.WebApp.openLink(d.pdf_url)
+              : window.open(d.pdf_url, "_blank");
+          } catch (e) {}
+        }} last />
       </Card>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 26, gap: 8,
