@@ -2553,7 +2553,9 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         ('Banner', {
             'fields': ('title', 'image_url', 'image', 'image_preview', 'link_url', 'date', 'order', 'is_active'),
             'description': "Banner rasmini fayl sifatida yuklang YOKI internet havolasini kiriting (image_url). "
-                           "Havola to'ldirilsa, yuklangan fayldan ustun turadi.",
+                           "Havola to'ldirilsa, yuklangan fayldan ustun turadi.<br>"
+                           "<b>Rasm o'lchami: 1000x500 px (2:1).</b> Webapp'da banner shu nisbatda ko'rsatiladi, "
+                           "boshqa nisbatdagi rasm markazi bo'yicha kesiladi.",
         }),
         ('Системная информация', {
             'fields': ('created_at', 'updated_at'),
@@ -2567,8 +2569,10 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
         """Превью баннера (image_url yoki yuklangan fayl)."""
         src = obj.image_url or (obj.image.url if obj.image else '')
         if src:
+            # Webapp'dagidek 2:1 (1000x500) nisbatda ko'rsatamiz
             return format_html(
-                '<img src="{}" style="max-width: 240px; max-height: 90px; object-fit: cover; border-radius: 8px; border:1px solid #ddd;" />',
+                '<img src="{}" style="width: 240px; height: 120px; object-fit: cover; '
+                'border-radius: 8px; border:1px solid #ddd; background:#0F1730;" />',
                 src
             )
         return '-'

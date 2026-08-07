@@ -430,6 +430,50 @@ function HeroStat({ label, value, icon }) {
   );
 }
 
+/* Bitta banner slaydi.
+   Rasm bo'lsa — rasm to'liq (cover) ko'rsatiladi; sarlavha bo'lsa ustiga scrim bilan yoziladi.
+   Rasm bo'lmasa yoki yuklanmasa — eski gradient + ikonka ko'rinishiga qaytadi. */
+function BannerSlide({ b, lang, onTap }) {
+  const [failed, setFailed] = useStateH(false);
+  const hasImg = !!b.image && !failed;
+  const title = pick(b.title, lang);
+  const sub = pick(b.sub, lang);
+  const showText = !hasImg || !!title;
+
+  return (
+    <button onClick={onTap} className="btn-press"
+      style={{ flex: "0 0 100%", minWidth: "100%", height: "100%", border: "none", cursor: "pointer",
+        textAlign: "left", padding: "18px 20px", position: "relative", overflow: "hidden", fontFamily: "inherit",
+        background: hasImg ? "#0F1730" : b.grad, color: "#fff",
+        display: "flex", flexDirection: "column", justifyContent: hasImg ? "flex-end" : "center" }}>
+      {hasImg ? (
+        <img src={b.image} alt={title || ""} loading="lazy" onError={() => setFailed(true)}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      ) : (
+        <div style={{ position: "absolute", right: -14, bottom: -18, opacity: 0.16 }}>
+          <Icon name={b.icon} size={120} stroke={1.3} color="#fff" />
+        </div>
+      )}
+      {hasImg && showText && (
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "62%",
+          background: "linear-gradient(to top, rgba(8,12,28,.78) 0%, rgba(8,12,28,.34) 48%, rgba(8,12,28,0) 100%)" }} />
+      )}
+      {showText && (
+        <React.Fragment>
+          <span style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.08em",
+            background: "rgba(255,255,255,.2)", padding: "4px 9px", borderRadius: 7, position: "relative" }}>{pick(b.tag, lang)}</span>
+          <div style={{ fontSize: 19.5, fontWeight: 720, letterSpacing: "-0.02em", marginTop: 9, position: "relative",
+            textWrap: "balance", maxWidth: "84%", lineHeight: 1.12 }}>{title}</div>
+          {!!sub && (
+            <div style={{ fontSize: 12.5, fontWeight: 500, color: "rgba(255,255,255,.82)", marginTop: 4,
+              position: "relative", maxWidth: "84%" }}>{sub}</div>
+          )}
+        </React.Fragment>
+      )}
+    </button>
+  );
+}
+
 function BannerSlider({ onNav }) {
   const lang = useLang();
   const [i, setI] = useStateH(0);
@@ -450,28 +494,22 @@ function BannerSlider({ onNav }) {
     setPaused(false);
   };
 
+  // Banner bosilganda: link_url bo'lsa — tashqi havola, aks holda sovg'alar tabi
+  const onBannerTap = (b) => {
+    if (b.link) {
+      try { TG.openLink(b.link); return; } catch (e) { window.open(b.link, "_blank"); return; }
+    }
+    onNav("rewards");
+  };
+
   return (
     <div className="anim" style={{ "--anim": "fadeUp .5s ease .04s both" }}>
-      <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius)" }}
+      {/* 1000x500 (2:1) formatdagi banner */}
+      <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius)", aspectRatio: "2 / 1" }}
         onTouchStart={onStart} onTouchEnd={onEnd} onMouseDown={onStart} onMouseUp={onEnd}>
-        <div style={{ display: "flex", transform: `translateX(-${i * 100}%)`,
+        <div style={{ display: "flex", height: "100%", transform: `translateX(-${i * 100}%)`,
           transition: "transform .55s cubic-bezier(.22,1,.36,1)" }}>
-          {BANNERS.map((b) => (
-            <button key={b.id} onClick={() => onNav("rewards")} className="btn-press"
-              style={{ flex: "0 0 100%", minWidth: "100%", border: "none", cursor: "pointer", textAlign: "left",
-                padding: "18px 20px", height: 124, position: "relative", overflow: "hidden", fontFamily: "inherit",
-                background: b.grad, color: "#fff", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ position: "absolute", right: -14, bottom: -18, opacity: 0.16 }}>
-                <Icon name={b.icon} size={120} stroke={1.3} color="#fff" />
-              </div>
-              <span style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.08em",
-                background: "rgba(255,255,255,.2)", padding: "4px 9px", borderRadius: 7, position: "relative" }}>{pick(b.tag, lang)}</span>
-              <div style={{ fontSize: 19.5, fontWeight: 720, letterSpacing: "-0.02em", marginTop: 9, position: "relative",
-                textWrap: "balance", maxWidth: "84%", lineHeight: 1.12 }}>{pick(b.title, lang)}</div>
-              <div style={{ fontSize: 12.5, fontWeight: 500, color: "rgba(255,255,255,.82)", marginTop: 4,
-                position: "relative", maxWidth: "84%" }}>{pick(b.sub, lang)}</div>
-            </button>
-          ))}
+          {BANNERS.map((b) => <BannerSlide key={b.id} b={b} lang={lang} onTap={() => onBannerTap(b)} />)}
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 11 }}>
@@ -1717,7 +1755,9 @@ async function loadData() {
   window.BANNERS = plist.length ? plist.map((p, i) => ({
     id: 'b' + (p.id || i), tag: { uz: 'AKSIYA', ru: 'АКЦИЯ' },
     title: p.title || '', sub: p.subtitle || p.description || '',
-    image: p.image || p.image_url || null, icon: 'spark', grad: BANNER_GRADS[i % BANNER_GRADS.length],
+    // admin: internet havola (image_url) yuklangan fayldan ustun turadi
+    image: p.image_url || p.image || null, link: p.link || p.link_url || null,
+    icon: 'spark', grad: BANNER_GRADS[i % BANNER_GRADS.length],
   })) : DEFAULT_BANNERS;
 
   window.__projectsInit = asList(proj, 'photos').map((p) => ({

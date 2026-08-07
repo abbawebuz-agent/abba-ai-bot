@@ -1466,11 +1466,16 @@ class RegionMessageLog(models.Model):
 class Promotion(models.Model):
     """Модель для акций/баннеров в слайдере Web App."""
     title = models.CharField(max_length=255, verbose_name='Sarlavha', blank=True, null=True)
-    image = models.ImageField(upload_to='promotions/', blank=True, null=True, verbose_name='Banner rasmi (fayl)')
+    image = models.ImageField(
+        upload_to='promotions/', blank=True, null=True,
+        verbose_name='Banner rasmi (fayl)',
+        help_text="Tavsiya etilgan o'lcham: 1000x500 px (2:1). Boshqa nisbatdagi rasm markazi bo'yicha kesiladi.",
+    )
     image_url = models.URLField(
         max_length=500, blank=True, default='',
         verbose_name='Banner rasmi (internet havola)',
-        help_text="Tashqi rasm URL'i. To'ldirilsa, yuklangan fayldan ustun turadi (media saqlanmaganda ham ishlaydi).",
+        help_text="Tashqi rasm URL'i (tavsiya: 1000×500 px). To'ldirilsa, yuklangan fayldan ustun turadi "
+                  "(media saqlanmaganda ham ishlaydi).",
     )
     link_url = models.URLField(
         max_length=500, blank=True, default='',
