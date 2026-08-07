@@ -22,6 +22,7 @@ from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.urls import path, reverse
 from django.shortcuts import render, redirect
 from django.template.response import TemplateResponse
@@ -2552,10 +2553,13 @@ class PromotionAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
     fieldsets = (
         ('Banner', {
             'fields': ('title', 'image_url', 'image', 'image_preview', 'link_url', 'date', 'order', 'is_active'),
-            'description': "Banner rasmini fayl sifatida yuklang YOKI internet havolasini kiriting (image_url). "
-                           "Havola to'ldirilsa, yuklangan fayldan ustun turadi.<br>"
-                           "<b>Rasm o'lchami: 1000x500 px (2:1).</b> Webapp'da banner shu nisbatda ko'rsatiladi, "
-                           "boshqa nisbatdagi rasm markazi bo'yicha kesiladi.",
+            # mark_safe: Jazzmin fieldset description'ni escape qiladi
+            'description': mark_safe(
+                "Banner rasmini fayl sifatida yuklang YOKI internet havolasini kiriting (image_url). "
+                "Havola to'ldirilsa, yuklangan fayldan ustun turadi.<br>"
+                "<b>Rasm o'lchami: 1000x500 px (2:1).</b> Webapp'da banner shu nisbatda ko'rsatiladi, "
+                "boshqa nisbatdagi rasm markazi bo'yicha kesiladi."
+            ),
         }),
         ('Системная информация', {
             'fields': ('created_at', 'updated_at'),
