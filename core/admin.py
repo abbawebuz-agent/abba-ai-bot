@@ -925,6 +925,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                         bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
                         sent, failed = 0, 0
                         errors = Counter()
+                        photo_cache = {}
                         try:
                             for i, user in enumerate(filtered):
                                 from core.messaging import send_message_to_user
@@ -932,6 +933,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                                     bot=bot, user=user, text=message_text,
                                     parse_mode='HTML', photo_path=photo_path,
                                     disable_link_preview=True,
+                                    photo_cache=photo_cache,
                                 )
                                 if success:
                                     sent += 1

@@ -403,6 +403,7 @@ def send_region_message_task(
             bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
             sent, failed = 0, 0
             errors = Counter()
+            photo_cache = {}
             try:
                 for i, user in enumerate(filtered):
                     success, err = await send_message_to_user(
@@ -412,6 +413,7 @@ def send_region_message_task(
                         parse_mode='HTML',
                         photo_path=photo_path,
                         disable_link_preview=True,
+                        photo_cache=photo_cache,
                     )
                     if success:
                         sent += 1

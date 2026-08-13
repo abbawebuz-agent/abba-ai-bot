@@ -57,6 +57,7 @@ async def send_message_to_user(
     photo_path: Optional[str] = None,
     disable_link_preview: bool = False,
     reply_markup=None,
+    photo_cache: Optional[dict] = None,
 ) -> tuple[bool, Optional[str]]:
     """
     Отправляет сообщение конкретному пользователю.
@@ -71,6 +72,8 @@ async def send_message_to_user(
         photo_path: Путь к файлу изображения (если указан — отправляется фото с caption)
         disable_link_preview: Не показывать превью по ссылкам в тексте (только для текстовых сообщений)
         reply_markup: Клавиатура (InlineKeyboardMarkup/ReplyKeyboardMarkup) для прикрепления к сообщению
+        photo_cache: Общий dict для рассылки — файл загружается на серверы Telegram один раз,
+                     дальше переиспользуется file_id (быстрее и меньше таймаутов)
 
     Returns:
         tuple: (успешно ли отправлено, сообщение об ошибке если есть)
@@ -95,15 +98,21 @@ async def send_message_to_user(
             if caption and body_len > TELEGRAM_CAPTION_LIMIT:
                 caption, tail = None, body
             if not state['photo_sent']:
-                await bot.send_photo(
+                cached_id = (photo_cache or {}).get('file_id')
+                sent_msg = await bot.send_photo(
                     chat_id=user.telegram_id,
-                    photo=FSInputFile(photo_path),
+                    photo=cached_id or FSInputFile(photo_path),
                     caption=caption,
                     parse_mode=mode if caption else None,
                     disable_notification=disable_notification,
                     reply_markup=reply_markup if not tail else None,
                 )
                 state['photo_sent'] = True
+                # Faylni faqat bir marta yuklaymiz — keyingilariga file_id yetarli
+                if photo_cache is not None and not cached_id:
+                    sizes = getattr(sent_msg, 'photo', None)
+                    if sizes:
+                        photo_cache['file_id'] = sizes[-1].file_id
             if tail:
                 await bot.send_message(
                     chat_id=user.telegram_id,
