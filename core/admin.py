@@ -921,8 +921,10 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
                     async def send_all():
                         from aiogram import Bot
+                        from collections import Counter
                         bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
                         sent, failed = 0, 0
+                        errors = Counter()
                         try:
                             for i, user in enumerate(filtered):
                                 from core.messaging import send_message_to_user
@@ -935,9 +937,10 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                                     sent += 1
                                 else:
                                     failed += 1
+                                    errors[(err or 'Noma\'lum xato')[:200]] += 1
                                 if i < len(filtered) - 1:
                                     await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
-                            return sent, failed
+                            return sent, failed, errors
                         finally:
                             await bot.session.close()
                             if photo_path and os.path.exists(photo_path):
@@ -949,7 +952,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                     try:
                         # asgiref async_to_sync — Django ichida ishlatish uchun xavfsiz
                         from asgiref.sync import async_to_sync
-                        sent, failed = async_to_sync(send_all)()
+                        sent, failed, send_errors = async_to_sync(send_all)()
                     except Exception as send_exc:
                         tb = traceback.format_exc()
                         _logger.exception("region_message send_all failed: %s", send_exc)
@@ -976,6 +979,12 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 
                     # RegionMessageLog yozuv (kichik rassılka uchun ham)
                     from django.utils import timezone as _tz
+                    error_summary = ''
+                    if send_errors:
+                        error_summary = 'Xatolar sabablari:\n' + '\n'.join(
+                            f'• {count} × {reason}'
+                            for reason, count in send_errors.most_common(5)
+                        )
                     RegionMessageLog.objects.create(
                         region_code=region_code,
                         user_type_filter=user_type_filter,
@@ -986,6 +995,7 @@ class TelegramUserAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                         status='completed',
                         initiated_by=request.user,
                         message_text=message_text,
+                        error_message=error_summary,
                         completed_at=_tz.now(),
                     )
 
@@ -2226,7 +2236,8 @@ class RegionMessageLogAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     """Логи рассылок по областям (результаты Celery-задач)."""
     list_display = [
         'region_code', 'total', 'sent_count', 'failed_count', 'status',
-        'scheduled_at', 'initiated_by', 'created_at', 'completed_at', 'cancel_button',
+        'error_short', 'scheduled_at', 'initiated_by', 'created_at',
+        'completed_at', 'cancel_button',
     ]
     list_filter = ['status', 'region_code', ('created_at', DateTimeRangeFilterBuilder(title='Дата'))]
     readonly_fields = [
@@ -2294,6 +2305,19 @@ class RegionMessageLogAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
         )
 
     cancel_button.short_description = 'Отмена'
+
+    def error_short(self, obj):
+        """Xato sababini ro'yxatda ko'rsatish (batafsili — yozuv ichida)."""
+        if not obj.error_message:
+            return ''
+        text = obj.error_message.strip().replace('\n', ' · ')
+        return format_html(
+            '<span style="color:#dc3545;" title="{}">{}</span>',
+            obj.error_message,
+            text if len(text) <= 90 else text[:90] + '…',
+        )
+
+    error_short.short_description = 'Причина ошибок'
 
 
 @admin.register(BroadcastMessage)

@@ -3,48 +3,49 @@
 """
 import asyncio
 import logging
-import re
 from typing import List, Optional
 from aiogram import Bot
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramAPIError
+from aiogram.exceptions import (
+    TelegramBadRequest,
+    TelegramForbiddenError,
+    TelegramAPIError,
+    TelegramRetryAfter,
+    TelegramNetworkError,
+)
 from aiogram.types import LinkPreviewOptions
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone
 from .models import TelegramUser, BroadcastMessage
+from .telegram_html import (
+    sanitize_html_for_telegram,
+    html_to_plain_text,
+    visible_text_length,
+)
 
 logger = logging.getLogger(__name__)
 
 # Лимиты Telegram API
-# 30 сообщений в секунду для broadcast
-TELEGRAM_BROADCAST_RATE_LIMIT = 30  # сообщений в секунду
-TELEGRAM_MESSAGE_DELAY = 1.0 / TELEGRAM_BROADCAST_RATE_LIMIT  # ~0.033 секунды между сообщениями
+# 30 сообщений в секунду для broadcast (фото тяжелее — берём с запасом)
+TELEGRAM_BROADCAST_RATE_LIMIT = 20  # сообщений в секунду
+TELEGRAM_MESSAGE_DELAY = 1.0 / TELEGRAM_BROADCAST_RATE_LIMIT  # 0.05 секунды между сообщениями
 
-# Telegram HTML поддерживает только: b, strong, i, em, u, ins, s, strike, del, span, tg-spoiler, a, code, pre, blockquote
-# Теги <p>, <div>, <br> вызывают "Unsupported start tag"
-# Quill: каждая строка = <p>, двойной Enter = <p><br></p> (пустой абзац)
-TELEGRAM_UNSUPPORTED_TAG_REPLACEMENTS = [
-    (re.compile(r'</p>\s*<p>\s*<br\s*/?>\s*</p>\s*<p>', re.I), '\n\n'),  # абзац (двойной Enter)
-    (re.compile(r'<p>\s*<br\s*/?>\s*</p>', re.I), '\n\n'),               # пустой абзац
-    (re.compile(r'</p>\s*\n+\s*<p>', re.I), '\n\n'),                    # абзац (уже есть \n\n между блоками)
-    (re.compile(r'</p>\s*<p>', re.I), '\n'),                            # новая строка (один Enter)
-    (re.compile(r'^<p>|</p>$', re.I), ''),                              # обёртка в начале/конце
-    (re.compile(r'</?p\s*/?>', re.I), '\n'),
-    (re.compile(r'<br\s*/?>', re.I), '\n'),
-    (re.compile(r'</?div\s*[^>]*>', re.I), '\n'),
-]
+# Лимиты длины (Bot API)
+TELEGRAM_CAPTION_LIMIT = 1024
+TELEGRAM_TEXT_LIMIT = 4096
 
+# Ошибки разметки: сообщение доставляем ещё раз, но уже без parse_mode
+_PARSE_ERROR_MARKERS = (
+    "can't parse entities",
+    'unsupported start tag',
+    'unmatched end tag',
+    "can't find end tag",
+    'unexpected end tag',
+    'entity',
+)
 
-def sanitize_html_for_telegram(text: str) -> str:
-    """Преобразует HTML в формат, поддерживаемый Telegram (убирает <p>, <div>, <br> и др.)."""
-    if not text:
-        return text
-    result = text
-    for pattern, replacement in TELEGRAM_UNSUPPORTED_TAG_REPLACEMENTS:
-        result = pattern.sub(replacement, result)
-    # Нормализуем абзацы: 3+ переносов подряд → ровно 2 (один пустой абзац)
-    result = re.sub(r'\n{3,}', '\n\n', result)
-    return result.strip()
+# Сколько раз повторяем при flood control / сетевой ошибке
+_MAX_RETRIES = 3
 
 
 async def send_message_to_user(
@@ -74,33 +75,91 @@ async def send_message_to_user(
     Returns:
         tuple: (успешно ли отправлено, сообщение об ошибке если есть)
     """
-    try:
-        if parse_mode and parse_mode.upper() == 'HTML' and text:
-            text = sanitize_html_for_telegram(text)
+    is_html = bool(parse_mode) and parse_mode.upper() == 'HTML'
+    html_text = sanitize_html_for_telegram(text) if (is_html and text) else (text or '')
+    plain_text = html_to_plain_text(text) if (is_html and text) else (text or '')
+
+    # Повтор после ошибки не должен слать фото второй раз
+    state = {'photo_sent': False}
+
+    async def _deliver(body: str, mode: Optional[str]):
+        """Одна попытка доставки (фото с подписью / текст, с учётом лимитов длины)."""
+        from aiogram.types import FSInputFile
+
         if photo_path:
-            from aiogram.types import FSInputFile
-            photo = FSInputFile(photo_path)
-            await bot.send_photo(
-                chat_id=user.telegram_id,
-                photo=photo,
-                caption=text or None,
-                parse_mode=parse_mode,
-                disable_notification=disable_notification,
-                reply_markup=reply_markup,
-            )
-        else:
-            send_kwargs = {
-                'chat_id': user.telegram_id,
-                'text': text,
-                'parse_mode': parse_mode,
-                'disable_notification': disable_notification,
-            }
-            if disable_link_preview:
-                send_kwargs['link_preview_options'] = LinkPreviewOptions(is_disabled=True)
-            if reply_markup is not None:
-                send_kwargs['reply_markup'] = reply_markup
-            await bot.send_message(**send_kwargs)
-        
+            # Подпись к фото — максимум 1024 символа. Длинный текст шлём отдельным сообщением,
+            # иначе Telegram отклоняет ВСЮ отправку ("caption is too long").
+            body_len = visible_text_length(body) if mode else len(body)
+            caption = body or None
+            tail = None
+            if caption and body_len > TELEGRAM_CAPTION_LIMIT:
+                caption, tail = None, body
+            if not state['photo_sent']:
+                await bot.send_photo(
+                    chat_id=user.telegram_id,
+                    photo=FSInputFile(photo_path),
+                    caption=caption,
+                    parse_mode=mode if caption else None,
+                    disable_notification=disable_notification,
+                    reply_markup=reply_markup if not tail else None,
+                )
+                state['photo_sent'] = True
+            if tail:
+                await bot.send_message(
+                    chat_id=user.telegram_id,
+                    text=tail[:TELEGRAM_TEXT_LIMIT],
+                    parse_mode=mode,
+                    disable_notification=True,
+                    reply_markup=reply_markup,
+                )
+            return
+
+        send_kwargs = {
+            'chat_id': user.telegram_id,
+            'text': body[:TELEGRAM_TEXT_LIMIT],
+            'parse_mode': mode,
+            'disable_notification': disable_notification,
+        }
+        if disable_link_preview:
+            send_kwargs['link_preview_options'] = LinkPreviewOptions(is_disabled=True)
+        if reply_markup is not None:
+            send_kwargs['reply_markup'] = reply_markup
+        await bot.send_message(**send_kwargs)
+
+    try:
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                await _deliver(html_text if is_html else (text or ''), parse_mode)
+                break
+            except TelegramRetryAfter as e:
+                # Flood control — ждём столько, сколько просит Telegram, и повторяем
+                if attempt > _MAX_RETRIES:
+                    raise
+                wait = getattr(e, 'retry_after', 5) or 5
+                logger.warning(
+                    "Flood control для %s: ждём %s с (попытка %s)",
+                    user.telegram_id, wait, attempt,
+                )
+                await asyncio.sleep(wait + 1)
+            except TelegramNetworkError as e:
+                if attempt > _MAX_RETRIES:
+                    raise
+                logger.warning("Сетевая ошибка для %s: %s (попытка %s)", user.telegram_id, e, attempt)
+                await asyncio.sleep(2 * attempt)
+            except TelegramBadRequest as e:
+                # Разметка сломана (Quill <span style>, <p>, &nbsp; и т.п.) —
+                # доставляем то же самое, но простым текстом, чтобы рассылка не падала целиком
+                err = str(e).lower()
+                if is_html and any(marker in err for marker in _PARSE_ERROR_MARKERS):
+                    logger.warning(
+                        "HTML-разметка отклонена Telegram (%s) — отправляем как обычный текст", e,
+                    )
+                    await _deliver(plain_text, None)
+                    break
+                raise
+
         # Обновляем время последнего сообщения
         @sync_to_async
         def update_user_success():

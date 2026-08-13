@@ -335,6 +335,15 @@ def send_region_message_task(
         except RegionMessageLog.DoesNotExist:
             pass
 
+    def update_progress(sent, failed, total):
+        """Jarayonni admin panelda jonli ko'rsatish uchun."""
+        try:
+            RegionMessageLog.objects.filter(id=log_id).update(
+                sent_count=sent, failed_count=failed, total=total,
+            )
+        except Exception:  # progress yozilmasa ham rassilka to'xtamasin
+            pass
+
     # Отложенная рассылка: уважаем отмену, иначе помечаем как running.
     try:
         log = RegionMessageLog.objects.get(id=log_id)
@@ -347,20 +356,18 @@ def send_region_message_task(
     except RegionMessageLog.DoesNotExist:
         pass
 
-    users_qs = TelegramUser.objects.filter(
-        latitude__isnull=False,
-        longitude__isnull=False,
-        is_active=True,
-    )
+    users_qs = TelegramUser.objects.filter(is_active=True)
     if user_type_filter:
         users_qs = users_qs.filter(user_type=user_type_filter)
     if language_filter:
         users_qs = users_qs.filter(language=language_filter)
 
-    users = list(users_qs)
     if region_code == 'all':
-        filtered = users
+        # «Все регионы» — koordinatasi yo'q foydalanuvchilar ham oladi
+        # (admin sahifasidagi hisob bilan bir xil bo'lishi uchun)
+        filtered = list(users_qs)
     else:
+        users = list(users_qs.filter(latitude__isnull=False, longitude__isnull=False))
         filtered = [
             u for u in users
             if get_user_region_code(u) == region_code
@@ -385,10 +392,17 @@ def send_region_message_task(
             with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
                 tmp.write(f.read())
                 photo_path = tmp.name
+    total = len(filtered)
+    update_progress(0, 0, total)
+
     try:
         async def _send_all():
+            from collections import Counter
+            from asgiref.sync import sync_to_async
+
             bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
             sent, failed = 0, 0
+            errors = Counter()
             try:
                 for i, user in enumerate(filtered):
                     success, err = await send_message_to_user(
@@ -403,22 +417,32 @@ def send_region_message_task(
                         sent += 1
                     else:
                         failed += 1
-                    if i < len(filtered) - 1:
+                        errors[(err or 'Noma\'lum xato')[:200]] += 1
+                    # Har 20 ta xabardan keyin admin panelda progressni yangilaymiz
+                    if (i + 1) % 20 == 0:
+                        await sync_to_async(update_progress)(sent, failed, total)
+                    if i < total - 1:
                         await asyncio.sleep(TELEGRAM_MESSAGE_DELAY)
-                return sent, failed
+                return sent, failed, errors
             finally:
                 await bot.session.close()
 
-        sent, failed = asyncio.run(_send_all())
+        sent, failed, errors = asyncio.run(_send_all())
         logger.info(
             'Рассылка по области %s завершена: отправлено %s, ошибок %s (всего %s)',
-            region_code, sent, failed, len(filtered),
+            region_code, sent, failed, total,
         )
-        update_log(sent, failed, status='completed')
-        return {'sent': sent, 'failed': failed, 'total': len(filtered)}
+        error_summary = ''
+        if errors:
+            error_summary = 'Xatolar sabablari:\n' + '\n'.join(
+                f'• {count} × {reason}' for reason, count in errors.most_common(5)
+            )
+            logger.warning('Рассылка %s — причины ошибок: %s', log_id, error_summary)
+        update_log(sent, failed, status='completed', error_msg=error_summary)
+        return {'sent': sent, 'failed': failed, 'total': total}
     except Exception as e:
         logger.exception('send_region_message_task: ошибка при рассылке')
-        update_log(0, len(filtered), status='failed', error_msg=str(e))
+        update_log(0, total, status='failed', error_msg=str(e))
         raise
     finally:
         if photo_path and os.path.exists(photo_path):
