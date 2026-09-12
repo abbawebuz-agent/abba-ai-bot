@@ -1458,6 +1458,7 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
                 name='core_qrcode_export_monthly_xlsx',
             ),
             path('<path:object_id>/clear_scans/', self.admin_site.admin_view(self.clear_scans_view), name='core_qrcode_clear_scans'),
+            path('purge_by_sequence/', self.admin_site.admin_view(self.purge_by_sequence_view), name='core_qrcode_purge_by_sequence'),
         ]
         return custom_urls + urls
 
@@ -1767,6 +1768,73 @@ class QRCodeAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
             'clear_scans_url': request.path,
         }
         return TemplateResponse(request, 'admin/core/qrcode/clear_scans_confirm.html', context)
+
+    def purge_by_sequence_view(self, request):
+        """ВРЕМЕННО (одноразово): полное удаление QR-кодов по диапазону sequence_number.
+
+        Только superuser, только POST. Перед удалением возвращает полный backup
+        JSON (в теле ответа) — вызывающая сторона обязана сохранить его перед
+        подтверждением необратимого удаления. Используется только для явно
+        подтверждённых пользователем разовых операций (напр. компрометированная
+        партия промокодов). Убрать этот метод и его URL после использования.
+        """
+        from django.core.exceptions import PermissionDenied
+        from django.db import transaction
+
+        if not request.user.is_superuser:
+            raise PermissionDenied("Только суперадмин.")
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST kerak'}, status=405)
+
+        try:
+            seq_from = int(request.POST.get('seq_from'))
+            seq_to = int(request.POST.get('seq_to'))
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'seq_from va seq_to (int) kerak'}, status=400)
+
+        qs = QRCode.objects.filter(
+            sequence_number__gte=seq_from, sequence_number__lte=seq_to
+        ).select_related('scanned_by', 'store', 'batch')
+
+        backup = []
+        for qr in qs:
+            backup.append({
+                'id': qr.id,
+                'code': qr.code,
+                'hash_code': qr.hash_code,
+                'serial_number': qr.serial_number,
+                'sequence_number': qr.sequence_number,
+                'points': qr.points,
+                'store': qr.store.name if qr.store_id else None,
+                'batch': qr.batch.name if qr.batch_id else None,
+                'is_scanned': qr.is_scanned,
+                'is_deleted': qr.is_deleted,
+                'scanned_by_telegram_id': qr.scanned_by.telegram_id if qr.scanned_by_id else None,
+                'scanned_by_name': (
+                    f"{qr.scanned_by.first_name or ''} {qr.scanned_by.last_name or ''}".strip()
+                    if qr.scanned_by_id else None
+                ),
+                'scanned_at': qr.scanned_at.isoformat() if qr.scanned_at else None,
+                'generated_at': qr.generated_at.isoformat() if qr.generated_at else None,
+            })
+
+        if not backup:
+            return JsonResponse({'error': 'Bu oraliqda QR-kod topilmadi', 'seq_from': seq_from, 'seq_to': seq_to}, status=404)
+
+        with transaction.atomic():
+            deleted_count, details = qs.delete()
+
+        return JsonResponse(
+            {
+                'action': 'hard_delete',
+                'seq_from': seq_from,
+                'seq_to': seq_to,
+                'deleted_count': deleted_count,
+                'deleted_details': details,
+                'backup': backup,
+            },
+            json_dumps_params={'ensure_ascii': False, 'indent': 2},
+        )
 
     def generate_qr_codes_view(self, request):
         """Promokodlarni ommaviy yaratish (batch'siz).
