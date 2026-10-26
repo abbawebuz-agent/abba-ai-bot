@@ -1126,6 +1126,33 @@ def admin_claude_inbox_view(request):
     return HttpResponse('\n'.join(html))
 
 
+
+def admin_full_backup_download_view(request, kind):
+    """TEMP: superuser yuklab olishi uchun to'liq backup (db | media | excel). Ishlatilgach o'chiriladi."""
+    import glob, tempfile
+    from django.core.management import call_command
+    from django.http import FileResponse, HttpResponseForbidden, Http404
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Faqat superuser uchun")
+    out_dir = tempfile.mkdtemp(prefix='jipdl_')
+    if kind == 'db':
+        call_command('backup_db', '--no-upload', '--out', out_dir)
+        pattern = 'jip_db_*.sql.gz'
+    elif kind == 'media':
+        call_command('backup_db', '--no-upload', '--keep-media', '--out', out_dir)
+        pattern = 'jip_media_*.tar.gz'
+    elif kind == 'excel':
+        call_command('backup_excel', '--no-upload', '--out', out_dir)
+        pattern = '*.xlsx'
+    else:
+        raise Http404
+    files = glob.glob(os.path.join(out_dir, pattern))
+    if not files:
+        raise Http404("fayl yaratilmadi")
+    path = files[0]
+    return FileResponse(open(path, 'rb'), as_attachment=True, filename=os.path.basename(path))
+
+
 def admin_backup_now_view(request):
     """Admin paneldagi "Backup ni Telegramga yuklash" tugma.
 
@@ -1332,6 +1359,7 @@ urlpatterns = [
     path('admin/qr-diag/', admin.site.admin_view(admin_qr_diag_view), name='admin_qr_diag'),
     path('admin/eskiz-diag/', admin.site.admin_view(admin_eskiz_diag_view), name='admin_eskiz_diag'),
     path('admin/qrcodebatch/<int:batch_id>/xlsx/', admin.site.admin_view(admin_batch_xlsx_view), name='admin_batch_xlsx'),
+    path('admin/full-backup-download/<str:kind>/', admin.site.admin_view(admin_full_backup_download_view), name='admin_full_backup_download'),
     path('admin/backup-now/', admin.site.admin_view(admin_backup_now_view), name='admin_backup_now'),
     path('admin/backup-excel-now/', admin.site.admin_view(admin_backup_excel_now_view), name='admin_backup_excel_now'),
     path('admin/wipe-test-data/', admin.site.admin_view(admin_wipe_test_data_view), name='admin_wipe_test_data'),
