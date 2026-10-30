@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 # like the prototype). We cap the row payload and send the true total separately
 # so KPI counts stay accurate even when the table shows a recent slice.
 ROW_CAP = 200
+# Period scan list is shown in full (Excel export has no cap at all).
+SCANNED_CAP = 5000
 
 
 # --------------------------------------------------------------------------- #
@@ -217,6 +219,7 @@ def _users(request, df, dt, lang):
 
 
 def _promo(request, df, dt, lang):
+    from django.db.models import Sum
     from core.models import QRCode
     from core.dashboard_stats import compute_general_stats
 
@@ -241,6 +244,29 @@ def _promo(request, df, dt, lang):
             "batch": q.batch.name if q.batch else "",
         })
 
+    # Promo codes scanned within the selected range (overview "Skanlangan" card).
+    sqs = (QRCode.objects.filter(is_deleted=False, is_scanned=True)
+           .select_related("scanned_by", "scanned_by__region", "batch")
+           .order_by("-scanned_at"))
+    if df:
+        sqs = sqs.filter(scanned_at__date__gte=df)
+    if dt:
+        sqs = sqs.filter(scanned_at__date__lte=dt)
+    scanned_total = sqs.count()
+    scanned_points = sqs.aggregate(p=Sum("points"))["p"] or 0
+    scanned_rows = []
+    for q in sqs[:SCANNED_CAP]:
+        u = q.scanned_by
+        scanned_rows.append({
+            "code": q.code or q.hash_code or "",
+            "serial": q.serial_number or "",
+            "points": q.points or 0,
+            "by": {"name": _user_name(u), "phone": u.phone_number or ""} if u else None,
+            "region": _region_name(u.region, lang) if u else "",
+            "at": _fdatetime(q.scanned_at),
+            "batch": q.batch.name if q.batch else "",
+        })
+
     qr_total = (g.get("life_qr_e_total", 0) or 0) + (g.get("life_qr_s_total", 0) or 0)
     qr_scan = (g.get("life_qr_e_scanned", 0) or 0) + (g.get("life_qr_s_scanned", 0) or 0)
     act = round(qr_scan / qr_total * 100, 1) if qr_total else 0.0
@@ -251,7 +277,9 @@ def _promo(request, df, dt, lang):
         "activation": act,
         "points": g.get("life_points_total", 0),
     }
-    return {"kpis": kpis, "rows": rows, "total": total}
+    return {"kpis": kpis, "rows": rows, "total": total,
+            "scanned_rows": scanned_rows, "scanned_total": scanned_total,
+            "scanned_points": scanned_points}
 
 
 def _gift(request, df, dt, lang):

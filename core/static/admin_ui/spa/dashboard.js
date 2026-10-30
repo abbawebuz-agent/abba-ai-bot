@@ -460,7 +460,7 @@
         { label: { uz: "Sotuvchilar", ru: "Продавцы" }, value: head.uSel, sub: { uz: "hamkor", ru: "партнёры" }, icon: "seller", onClick: function () { self.setFilter("userType", "sotuvchi"); self.setPage("users"); } },
         { label: { uz: "Rol tanlamagan", ru: "Без роли" }, value: head.uUns, icon: "users" },
         { label: { uz: "Jami promokod", ru: "Всего промокодов" }, value: head.qrTotal, icon: "promo", onClick: function () { self.setPage("promo"); } },
-        { label: { uz: "Skanlangan", ru: "Сканировано" }, value: head.qrScan, sub: { uz: "aktivatsiya " + this.pct(actPct), ru: "активация " + this.pct(actPct) }, icon: "promo" },
+        { label: { uz: "Skanlangan", ru: "Сканировано" }, value: head.qrScan, sub: { uz: "aktivatsiya " + this.pct(actPct), ru: "активация " + this.pct(actPct) }, icon: "promo", onClick: function () { self.setTab("promo", "scanned"); self.setPage("promo"); } },
         { label: { uz: "Tarqatilgan ball", ru: "Начислено баллов" }, value: head.ptsTotal, trend: tr.points, icon: "lottery" },
         { label: { uz: "Kutilayotgan so'rov", ru: "Ожидающие заявки" }, value: head.giftsPending, icon: "gift", onClick: function () { self.setTab("gift", "requests"); self.setPage("gift"); } }
       ];
@@ -540,7 +540,34 @@
         { key: "at", label: { uz: "Sana", ru: "Дата" }, align: "right", get: function (p) { return p.at; }, render: function (p, P) { return p.at ? p.at : h("span", { style: { color: P.text3 } }, "—"); } },
         { key: "batch", label: { uz: "Partiya", ru: "Партия" }, get: function (p) { return p.batch; } }
       ];
+      var tab = this.getTab("promo", "all");
+      var tabs = [{ key: "all", label: { uz: "Barcha promokodlar", ru: "Все промокоды" } }, { key: "scanned", label: { uz: "Davrda skanlangan", ru: "Сканировано за период" } }];
+      var seg = h("div", { key: "seg" }, this.segmented(P, tabs, tab, function (kk) { self.setTab("promo", kk); }));
+      if (tab === "scanned") {
+        var srows = d.scanned_rows || [];
+        var users = {}; srows.forEach(function (r) { if (r.by) users[r.by.phone || r.by.name] = 1; });
+        var skpis = [
+          { label: { uz: "Skanlangan (davr)", ru: "Сканировано (период)" }, value: d.scanned_total, icon: "promo" },
+          { label: { uz: "Berilgan ball", ru: "Начислено баллов" }, value: d.scanned_points, icon: "lottery" },
+          { label: { uz: "Foydalanuvchilar", ru: "Пользователей" }, value: Object.keys(users).length, icon: "users" }
+        ];
+        var scols = [
+          { key: "code", label: { uz: "Kod", ru: "Код" }, get: function (p) { return p.code; }, render: function (p, P) { return h("span", { style: { font: "600 13px ui-monospace,SFMono-Regular,Menlo,monospace", color: P.text } }, p.code); } },
+          { key: "serial", label: { uz: "Serial", ru: "Серийный" }, get: function (p) { return p.serial; } },
+          { key: "points", label: { uz: "Ball", ru: "Баллы" }, align: "right", get: function (p) { return p.points; } },
+          cols[5],
+          { key: "region", label: { uz: "Viloyat", ru: "Регион" }, get: function (p) { return p.region || ""; } },
+          { key: "at", label: { uz: "Sana", ru: "Дата" }, align: "right", get: function (p) { var m = /(\d+)\.(\d+)\.(\d+) (\S+)/.exec(p.at || ""); return m ? m[3] + m[2] + m[1] + m[4] : ""; }, render: function (p) { return p.at; } }
+        ];
+        var xbtn = h("button", { onClick: function () { self.doExport(); }, style: { height: 36, padding: "0 14px", borderRadius: 10, border: "none", background: P.accent, color: "#fff", cursor: "pointer", font: "600 12.5px inherit", display: "inline-flex", alignItems: "center", gap: 7 } }, self.icon("export", 16, 1.9, "#fff"), h("span", null, self.L({ uz: "Excel yuklab olish", ru: "Скачать Excel" })));
+        return this.pageWrap(P, [
+          seg,
+          h("div", { key: "k" }, this.kpiGrid(P, skpis, 3)),
+          h("div", { key: "t" }, h(this.DataTable, { columns: scols, rows: srows, P: P, pageSize: 15, toolbar: xbtn }))
+        ]);
+      }
       return this.pageWrap(P, [
+        seg,
         h("div", { key: "k" }, this.kpiGrid(P, kpis, 5)),
         h("div", { key: "t" }, h(this.DataTable, { columns: cols, rows: d.rows || [], P: P, pageSize: 9 }))
       ]);
